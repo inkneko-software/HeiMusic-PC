@@ -1,0 +1,32 @@
+.app-main-frame{
+    display: flex;
+    height: 100%;
+}
+
+.left-control-panel{
+    width: 200px;
+    min-width: 200px;
+    background-color: #eff0f1;
+    text-align: center;
+    display: flex;
+    flex-flow: column;
+    overflow: hidden;
+    resize:horizontal;
+}
+
+.left-control-panel:hover{
+    overflow-y: auto;
+    
+}
+.display-page{
+    display:flex;
+    flex-direction: column;
+    flex-grow: 1;
+}
+
+
+#display-browser{
+    flex-grow: 1;
+    width: 100%;
+    overflow: scroll;
+}

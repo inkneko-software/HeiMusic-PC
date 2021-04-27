@@ -1,0 +1,80 @@
+.left-panel-logo-wrap{
+    height: 50px;
+    display: flex;
+    padding-left: 16px;
+    padding-top: 8px;
+    -webkit-app-region: drag;
+}
+
+.left-panel-logo{
+    height: 38px;
+    width: 38px;
+    margin: auto;
+    padding-left: 8px;
+    text-align: left;
+}
+
+.left-panel-appname{
+    text-align: left;
+    margin:auto;
+    margin-left: 8px;
+    flex: 1;
+}
+
+.panel{
+    text-align: center !important;
+    background-color: inherit !important;
+    min-height: unset !important;
+    margin:0 !important;
+}
+
+.panel-summary{
+    min-height: unset !important;
+    border-bottom: gainsboro 1px solid !important;
+}
+
+.panel-summary-text{
+    margin: 5px 0 5px 5px !important;
+    display: block !important;
+    text-align: left !important;
+    font-size: 12px !important;
+    
+}
+
+.panel-detail{
+    padding-top: 0 !important;
+    flex: 1;
+    display: flex;
+    flex-flow: column;
+}
+
+.panel-music-list{
+    flex: 1;
+    display: flex;
+    flex-flow: column;
+}
+.panel-music-list-details{
+    flex: 1;
+}
+
+.panel-button{
+    display: inline-block !important;
+    text-align: left;
+    margin: 5px 0px !important;
+    width: 100% !important;
+    text-transform: none !important;
+}
+
+.panel-button-selected{
+    color: white !important;
+    background-color: rgb(32, 168, 111) !important;
+}
+
+.panel-button-content{
+    justify-content: unset !important;
+    font-size: 14px !important;
+    
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis !important;
+}

@@ -1,0 +1,97 @@
+.music-player-panel{
+    height: 70px;
+    max-height: 70px;
+    width: 100%;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+}
+
+
+.music-player-panel-wrapper{
+    flex-grow: 1;
+    display: flex;
+}
+
+.music-info{
+    display: flex;
+    margin-left: 20px;
+    width: 35%;
+    text-align: left;
+}
+
+.music-player-album-cover{
+    margin: auto 0;
+    border-radius: 2px !important;
+}
+
+.music-info-text-wrapper{
+    margin-left: 15px;
+    margin-top: auto;
+    margin-bottom: auto;
+    display: flex;
+    flex-direction: column;
+    text-align: left;
+}
+
+.music-info-name{
+    overflow: hidden;
+    text-overflow:ellipsis
+}
+
+.music-info-singer{
+    font-size: 12px;
+    color: #a1a1a1;
+    overflow: hidden;
+    text-overflow:ellipsis
+}
+
+.music-control{
+    flex-grow: 1;
+}
+
+.music_control-skip-btn{
+    background-color: transparent !important;
+    color: #000 !important
+    
+}
+
+.music_control-skip-btn:hover{
+    color:rgb(28, 161, 106) !important;
+}
+
+.music_control-play-btn{
+    color:rgb(28, 161, 106) !important;
+}
+
+.music-misc-panel{
+    margin: auto 0;
+    width: 30%;
+    text-align: right;
+    display: flex;
+}
+
+.misc-panel-qulity-info{
+    margin: auto 0px auto 8px;
+}
+
+.misc-panel-duration{
+    margin: auto 0;
+    flex-grow: 1;
+    color: gray;
+}
+
+.misc-panel-playing-list-btn{
+    background-color: transparent !important;
+    padding-left: 8px !important;
+    padding-right: 8px !important;
+}
+
+.music_control-volume-wrap{
+    display:flex;
+    flex-direction: column;
+}
+
+.music_control-volume-btn{
+    flex-grow: 1;
+}

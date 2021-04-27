@@ -1,0 +1,10 @@
+#title-bar-user-region{
+    margin:auto;
+    -webkit-app-region: no-drag;
+    font-size: 14px;
+}
+
+.title-bar-user-region-loginbtn{
+    flex-direction: column;
+    flex-grow: 1;
+}
