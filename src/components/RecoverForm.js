@@ -18,11 +18,11 @@ class RecoverForm extends React.Component{
         return (
             <Dialog open={this.props.open} onClose={this.closeCallback} aria-labelledby="form-dialog-title">
                 <DialogTitle id="form-dialog-title">找回密码</DialogTitle>
-                <DialogContent>
-                    <TextField margin="dense" id="email" label="邮箱地址" type="email" fullWidth />
-                    <TextField margin="dense" id="password" label="密码" type="password" fullWidth />
-                    <TextField margin="dense" id="password" label="确认密码" type="password" fullWidth />
-                    <TextField margin="dense" id="password" label="认证码" type="text" fullWidth />
+                <DialogContent dividers={true}>
+                    <TextField margin="dense" id="email" label="邮箱地址" type="email" fullWidth  variant="outlined"/>
+                    <TextField margin="dense" id="password" label="密码" type="password" fullWidth variant="outlined"/>
+                    <TextField margin="dense" id="password" label="确认密码" type="password" fullWidth variant="outlined" />
+                    <TextField margin="dense" id="password" label="认证码" type="text" fullWidth variant="outlined"/>
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={this.closeCallback} color="primary">重置密码</Button>

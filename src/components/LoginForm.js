@@ -20,9 +20,9 @@ class LoginForm extends React.Component{
         return (
             <Dialog open={this.props.open} onClose={this.closeCallback} aria-labelledby="form-dialog-title">
                 <DialogTitle id="form-dialog-title">登录</DialogTitle>
-                <DialogContent>
-                    <TextField margin="dense" id="email" label="邮箱地址" type="email" fullWidth />
-                    <TextField margin="dense" id="password" label="密码" type="password" fullWidth />
+                <DialogContent dividers={true}>
+                    <TextField margin="dense" id="email" label="邮箱地址" type="email" fullWidth variant="outlined" />
+                    <TextField margin="dense" id="password" label="密码" type="password" fullWidth variant="outlined"/>
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={this.closeCallback} color="primary">登录</Button>

@@ -1,0 +1,11 @@
+.register-form-input-region{
+    display: flex;
+}
+
+.register-form-input-hint{
+    color: black !important;
+    font-size: 12px !important;
+    margin-left: 30px;
+    vertical-align: middle !important;
+    flex-grow: 1;
+}
