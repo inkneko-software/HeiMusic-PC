@@ -14,6 +14,9 @@ import TableRow from '@material-ui/core/TableRow';
 import MusicNote from "@material-ui/icons/MusicNote"
 
 import "./css/MusicListDisplay.css"
+const remote = window.require("electron").remote
+
+const config = remote.require("./heiMusicConfig")
 
 class MusicListDisplay extends React.Component{
     constructor(props){
@@ -124,20 +127,20 @@ class MusicListDisplay extends React.Component{
     }
     
     componentDidMount(){
-        var https = window.require("https")
+        var https = window.require("http")
         if (this.tid === null)
         {
             return
         }
 
         var options ={
-            host: 'c.y.qq.com',
-            port: 443,
+            host: 'music.inkneko.com',
+            port: 80,
             method: "GET",
             headers:{
-                "Referer": `https://y.qq.com/n/yqq/playlist/${this.tid}.html`
+                "User-Agent": config.client_ua
             },
-            path: `/qzone/fcg-bin/fcg_ucc_getcdinfo_byids_cp.fcg?type=1&json=1&utf8=1&onlysong=0&new_format=1&disstid=${this.tid}&loginUin=${this.loginUser}&format=json&inCharset=utf8&outCharset=utf-8`
+            path: `/api/v1/getCollection?id=${this.tid}&loginUin=${this.loginUser}`
         }
         let callback = function(response)
         {
@@ -149,47 +152,49 @@ class MusicListDisplay extends React.Component{
             response.on('end', function()
             {
                 let json = JSON.parse(str)
-                let dissinfo = json.cdlist[0]
-                let album_pic = `https://y.gtimg.cn/music/photo_new/T002R300x300M000${dissinfo.album_pic_mid}.jpg`
+                console.log(json)
+                let dissinfo = json
+                let album_pic = `http://music.inkneko.com/${json.cover_url}`
                 if (dissinfo.dissname==="我喜欢"){
                     album_pic = "https://y.gtimg.cn/mediastyle/global/img/cover_like.png"
                 }
                 //cd info
                 this.setState({
                     albumInfo:{
-                        tid: dissinfo.dissid,
-                        name: dissinfo.dissname,
-                        ptid: dissinfo.album_pic_mid,
+                        tid: json.collection_id,
+                        name: json.name,
                         pic:  album_pic,
-                        listen_num: dissinfo.visitnum,
-                        create_time: dissinfo.ctime,
-                        cur_song_num: dissinfo.cur_song_num,
-                        total_song_num: dissinfo.total_song_num
+                        listen_num: 0,
+                        create_time: 0,
+                        cur_song_num: 1,
+                        total_song_num: json.music_nums
                     }
                 })
 
                 //song list
                 let musicList = []
-                for (let i = 0; i < dissinfo.songlist.length; ++i){
-                    let singer = [];
+                for (let i = 0; i < dissinfo.list.length; ++i){
+                    let singer = [];/*
                     for (let singerIndex=0; singerIndex<dissinfo.songlist[i].singer.length; ++singerIndex)
                     {
                         singer.push(dissinfo.songlist[i].singer[singerIndex].title)
-                    }
-                    
+                    }*/
+                    singer.push("nao")
                     let musicInfo = {
-                        mid: dissinfo.songlist[i].mid,
-                        song_name: dissinfo.songlist[i].name,
+                        mid: dissinfo.list[i].music_id,
+                        song_name: dissinfo.list[i].music_name,
                         singer: singer.join("/"),
-                        album_name: dissinfo.songlist[i].album.name,
-                        album_pmid: dissinfo.songlist[i].album.pmid,
+                        album_name: dissinfo.list[i].album_name,
+                        album_pmid: null,
                         file:{
-                            media_fid: dissinfo.songlist[i].file.media_mid,
-                            size_128mp3: dissinfo.songlist[i].file.size_128mp3,
-                            size_320mp3: dissinfo.songlist[i].file.size_320mp3,
-                            size_flac: dissinfo.songlist[i].file.size_flac
+                            media_fid: dissinfo.list[i].media_list.media_id,
+                            size_128mp3: dissinfo.list[i].media_list.mp3_320k,
+                            size_320mp3: dissinfo.list[i].media_list.mp3_128k,
+                            size_flac: dissinfo.list[i].media_list.media_flac
                         }
                     }
+                    console.log(dissinfo.list[i].media_list.media_id)
+
                     musicList.push(musicInfo)
                 }
 

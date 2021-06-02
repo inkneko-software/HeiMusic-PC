@@ -138,13 +138,13 @@ class MusicPlayer extends React.Component{
             ipcRenderer.sendSync('window-control', {action: "quit"})
         })
 
-        let history = config.getHistory()
+        let history = config.getHistory()/*
         if (history !== null){
             this.playlist = history.playlist
             this.currentTid = history.tid
             this.currentPlayIndex = history.index
             this.PlayMusic(this.playlist[this.currentPlayIndex], history.playedTime, false)
-        }
+        }*/
 
         //播放本地文件
         // console.log(config.bin)
@@ -262,6 +262,40 @@ class MusicPlayer extends React.Component{
         this.PlayMusic(this.playlist[this.currentPlayIndex])
     }
 
+    PlayMusic(musicInfo, playedTime = 0, play = true) {
+        console.log(musicInfo)
+        //config.saveHistory(this.currentTid, this.playlist, this.currentPlayIndex, this.audio.currentTime)
+        this.audioInfo = {
+            song_cover_pmid: musicInfo.album_ptid,
+            song_name: musicInfo.song_name,
+            singer:musicInfo.singer,
+            duration: null
+        }
+
+        let qualityName = "none"
+        let qulityColor = "orange"
+        let filename = musicInfo.file.media_fid
+        qualityName = "HQ"
+        qulityColor= "rgb(78, 140, 151)"
+       
+
+        this.setState({
+            music_cover_url: `http://music.inkneko.com/music_base/dimension_tripper.jpg`,
+            music_name: musicInfo.song_name,
+            music_singer: musicInfo.singer
+        })
+
+        this.setState({
+            qulity: qualityName,
+            qulityColor: qulityColor
+        })
+
+        let resourceURL = `http://music.inkneko.com/music_base/${filename}.mp3`
+        this.setAudio(resourceURL, playedTime, play)
+        
+    }
+
+    /*
     PlayMusic(musicInfo, playedTime=0, play=true){
         config.saveHistory(this.currentTid, this.playlist, this.currentPlayIndex, this.audio.currentTime)
         this.audioInfo = {
@@ -375,7 +409,7 @@ class MusicPlayer extends React.Component{
                 }.bind(this)).end()
             }.bind(this))
         }.bind(this)).end()
-    }
+    }*/
 
     OnSliderChange(event, newValue){
         if (this.audio.src===""){

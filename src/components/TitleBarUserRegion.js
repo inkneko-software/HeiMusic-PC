@@ -29,7 +29,17 @@ class TitleBarUserRegion extends React.Component{
     }
 
     componentDidMount(){
-        
+        fetch("https://music.inkneko.com/api/v1/user/getSelfProfile", {
+            credentials: 'include'
+        }).then(res => {
+            if (res.status === 200) {
+                return res.json();
+            } else {
+                return null;
+            }
+        }).then(res => {
+            console.log(res);
+        })
     }
 
     openLoginForm() {

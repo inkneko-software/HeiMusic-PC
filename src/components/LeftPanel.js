@@ -64,7 +64,6 @@ class LeftPanel extends React.Component{
             <MusicListDisplay tid={this.tid}/>,
             document.getElementById("display-browser")
         )
-        console.log(config)
         var http = window.require("http")
         var options ={
             host: 'music.inkneko.com',
@@ -73,7 +72,7 @@ class LeftPanel extends React.Component{
             headers:{
                 "User-Agent": config.client_ua
             },
-            path: "/api/v1/getUserCollectionList"
+            path: "/api/v1/getCollectionList"
         }
         let callback = function(response){
             let str =""
@@ -85,7 +84,7 @@ class LeftPanel extends React.Component{
             {
                 let json = JSON.parse(str)
                 this.setState({
-                    userCollectionList: json.list
+                    userCollectionList: json.collections
                 })
             }.bind(this))
         }.bind(this)

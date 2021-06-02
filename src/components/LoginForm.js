@@ -25,12 +25,34 @@ class LoginForm extends React.Component{
                     <TextField margin="dense" id="password" label="密码" type="password" fullWidth variant="outlined"/>
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={this.closeCallback} color="primary">登录</Button>
+                    <Button onClick={this.login.bind(this)} color="primary">登录</Button>
                     <Button onClick={() => { this.closeCallback(); this.registerCallback()}} color="primary">注册</Button>
                     <Button onClick={() => { this.closeCallback(); this.recoverCallback()}} color="primary">忘记密码</Button>
                 </DialogActions>
             </Dialog>
         )
+    }
+
+    login() {
+        var email = document.getElementById("email").value;
+        var password = document.getElementById("password").value;
+        fetch("https://music.inkneko.com/api/v1/auth/login", {
+            method: "POST",
+            body: `login_name=${encodeURI(email)}&password=${password}`,
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded"
+            }
+        }).then(res => {
+            if (res.status === 200) {
+                return res.json();
+            } else {
+                return null;
+            }
+        }).then(res => {
+            if (res !== null) {
+                console.log(res);
+            }
+        })
     }
 
 }
