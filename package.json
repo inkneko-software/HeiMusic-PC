@@ -40,7 +40,8 @@
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
-    "electron-start": "set NODE_ENV=debug&& electron .",
+    "electron-start": "export NODE_ENV=debug&& electron .",
+    "electron-start-win": "set NODE_ENV=debug&& electron .",
     "electron-build": "electron-builder -l --x64 --dir",
     "electron-pack": "electron-builder -l --x64",
     "electron-pack-win": "electron-builder -w --x64"
