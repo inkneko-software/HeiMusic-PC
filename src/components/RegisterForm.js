@@ -294,9 +294,14 @@ class RegisterForm extends React.Component{
     }
 
     sendAccessCode() {
+        var event = new Event("global_notification")
         if (this.state.emailCheckFailed === true) {
-            alert("邮箱格式不正确");
+            event.level = "error";
+            event.message = "邮箱格式不正确";
+            window.dispatchEvent(event);
+            return null;
         }
+        
         let email = document.getElementById("email").value;
         fetch("https://music.inkneko.com/api/v1/auth/sendRegisterEmailCode", {
             method: "POST",
@@ -308,12 +313,13 @@ class RegisterForm extends React.Component{
             if (res.status == 200) {
                 return res.json();
             } else {
-                this.setState({ emailHint: "服务器未响应，请稍后再试", emailCheckFailed: true })
+                event.level = "error";
+                event.message = "服务器错误，状态码：" + res.status;
+                window.dispatchEvent(event);
                 return null;
             }
         }).then(res => {
             if (res !== null) {
-                var event = new Event("global_notification")
                 this.accessCodeInterval = 60;
                 this.setState({
                     accessCodeSended: true
