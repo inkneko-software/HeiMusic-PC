@@ -1,0 +1,31 @@
+.link{
+    color:#2196f3;
+}
+
+/* .login-dialog:-webkit-autofill,
+.login-dialog:-webkit-autofill:hover,
+.login-dialog:-webkit-autofill:focus,
+.login-dialog:-webkit-autofill:active{
+    -webkit-box-shadow: 0 0 0 30px white inset !important;
+} */
+
+.login-dialog input:-webkit-autofill:focus  {
+    box-shadow: 0 0 0 30px white inset !important;
+    -webkit-box-shadow: 0 0 0 30px white inset !important;
+}
+
+.login-diaog input:-webkit-autofill:hover {
+    box-shadow: 0 0 0 30px white inset !important;
+    -webkit-box-shadow: 0 0 0 30px white inset !important;
+
+}
+
+.login-dialog input:-webkit-autofill{
+    box-shadow: 0 0 0 30px white inset !important;
+    -webkit-box-shadow: 0 0 0 30px white inset !important;
+}
+
+.login-dialog input:-webkit-autofill:active{
+    box-shadow: 0 0 0 30px white inset !important;
+    -webkit-box-shadow: 0 0 0 30px white inset !important;
+}

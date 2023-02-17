@@ -4,6 +4,7 @@ import { ThemeProvider, Theme, StyledEngineProvider } from '@mui/material/styles
 import CssBaseline from '@mui/material/CssBaseline';
 import { theme } from '../lib/theme';
 import type { AppProps } from 'next/app';
+import HeiMusicThemeProvider from '../lib/HeiMusicThemeProvider';
 
 
 declare module '@mui/styles/defaultTheme' {
@@ -28,10 +29,10 @@ export default function(props: AppProps) {
         <meta name="viewport" content="minimum-scale=1, initial-scale=1, width=device-width" />
       </Head>
       <StyledEngineProvider injectFirst>
-        <ThemeProvider theme={theme}>
+        <HeiMusicThemeProvider >
           <CssBaseline />
           <Component {...pageProps} />
-        </ThemeProvider>
+        </HeiMusicThemeProvider>
       </StyledEngineProvider>
     </React.Fragment>
   );

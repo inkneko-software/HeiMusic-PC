@@ -3,7 +3,7 @@
   "include": [
     "next-env.d.ts",
     "**/*.ts",
-    "**/*.tsx"
+    "**/*.tsx", "components/Auth/LoginDialog.js",
   ],
   "exclude": [
     "node_modules"

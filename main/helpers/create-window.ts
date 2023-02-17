@@ -3,6 +3,8 @@ import {
   BrowserWindow,
   BrowserWindowConstructorOptions,
 } from 'electron';
+import path from 'path';
+
 import Store from 'electron-store';
 
 export default (windowName: string, options: BrowserWindowConstructorOptions): BrowserWindow => {
@@ -71,8 +73,6 @@ export default (windowName: string, options: BrowserWindowConstructorOptions): B
     ...options,
     ...state,
     webPreferences: {
-      nodeIntegration: true,
-      contextIsolation: false,
       ...options.webPreferences,
     },
   };

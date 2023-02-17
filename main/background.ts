@@ -1,6 +1,7 @@
-import { app } from 'electron';
+import { app, ipcMain } from 'electron';
 import serve from 'electron-serve';
 import { createWindow } from './helpers';
+import path from 'path';
 
 const isProd: boolean = process.env.NODE_ENV === 'production';
 
@@ -14,9 +15,16 @@ if (isProd) {
   await app.whenReady();
 
   const mainWindow = createWindow('main', {
-    width: 1000,
-    height: 600,
+    width: 1280,
+    height: 768,
+    minWidth: 1000,
+    minHeight: 600,
     frame: false,
+    webPreferences: {
+      nodeIntegration: true,
+      contextIsolation: true,
+      preload: path.join(__dirname, 'preload.js'),
+    },
   });
 
   if (isProd) {
@@ -31,3 +39,7 @@ if (isProd) {
 app.on('window-all-closed', () => {
   app.quit();
 });
+
+ipcMain.on("windowManagement-close", ()=>{
+  app.quit();
+})
