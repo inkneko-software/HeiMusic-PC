@@ -1,5 +1,5 @@
 import { createTheme } from '@mui/material/styles';
-import { red } from '@mui/material/colors';
+import { red,grey } from '@mui/material/colors';
 
 export const theme = createTheme({
     palette: {
@@ -18,6 +18,10 @@ export const theme = createTheme({
         },
         background: {
             default: '#fff',
+        },
+        pannelBackground:{
+            main: "#fafafa",
+            light:"#fffefe"
         },
         blueButton: {
             main: "#2196f3",
@@ -50,6 +54,10 @@ export const customizedDarkMode = createTheme({
             default: 'black',
             paper: "black"
         },
+        pannelBackground:{
+            main: "rgba(255,255,255,0.1)",
+            light: "rgba(255,255,255,0.05)",
+        },
         blueButton: {
             main: "#2196f3",
             contrastText: "#ffffff"
@@ -61,19 +69,19 @@ export const customizedDarkMode = createTheme({
     }
 });
 
+
 declare module '@mui/material/styles' {
     interface Palette {
         blueButton: Palette['primary'];
         pannelButton: Palette['primary'];
-
+        pannelBackground: Palette['primary'];
 
     }
 
     interface PaletteOptions {
         blueButton: PaletteOptions['primary'];
         pannelButton: PaletteOptions['primary'];
-
-
+        pannelBackground: PaletteOptions['primary'];
     }
 }
 

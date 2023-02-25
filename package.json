@@ -22,7 +22,8 @@
     "electron-serve": "^1.1.0",
     "electron-store": "^8.1.0",
     "react": "^17.0.2",
-    "react-dom": "^17.0.2"
+    "react-dom": "^17.0.2",
+    "react-virtuoso": "^4.1.0"
   },
   "devDependencies": {
     "@types/node": "^16.11.7",

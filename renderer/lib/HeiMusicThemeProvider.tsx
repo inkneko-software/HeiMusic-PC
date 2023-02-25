@@ -24,7 +24,7 @@ function HeiMusicThemeProvider(props: IHeiMusicThemeProvider) {
     const [appTheme, setAppTheme] = React.useState<IHeiMusicTheme>({
         theme: theme,
         name: "light",
-        backgroundUrl: "/images/intro_bg01.jpg"
+        backgroundUrl: ""
     })
 
     const appThemeTranslator = (mode: string)=>{
@@ -32,7 +32,7 @@ function HeiMusicThemeProvider(props: IHeiMusicThemeProvider) {
             light:{
                 theme: theme,
                 name: "light",
-                backgroundUrl: "/images/intro_bg01.jpg"
+                backgroundUrl: ""
             },
             customizedDarkMode: {
                 theme: customizedDarkMode,
