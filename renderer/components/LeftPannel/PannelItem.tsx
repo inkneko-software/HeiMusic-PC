@@ -1,7 +1,7 @@
 import React from "react"
 import Box from "@mui/material/Box"
 import Typography from "@mui/material/Typography"
-import { BoxProps, ListItemButtonProps, ListProps } from "@mui/material"
+import { BoxProps, ListItemButtonProps, ListProps, Stack } from "@mui/material"
 import List from "@mui/material/List"
 import ListItemButton from "@mui/material/ListItemButton"
 import FavoriteOutlinedIcon from '@mui/icons-material/FavoriteOutlined';
@@ -18,8 +18,9 @@ import HeadphonesOutlinedIcon from '@mui/icons-material/HeadphonesOutlined';
 import { theme } from "../../lib/theme"
 import { styled } from "@mui/material/styles"
 
-import {PannelListContext} from "./PannelList"
-import {RadioPannelListContext} from "./RadioPannelList"
+import { PannelListContext } from "./PannelList"
+import { RadioPannelListContext } from "./RadioPannelList"
+import Link from "next/link"
 
 export const StyledListItemButton = styled(ListItemButton)<ListItemButtonProps>({
     borderRadius: "6px",
@@ -48,6 +49,7 @@ interface IPannelItem extends ListItemButtonProps {
     index: number,
     text: string,
     icon?: React.ReactNode,
+    href: string,
 }
 
 function PannelItem(props: IPannelItem) {
@@ -67,20 +69,23 @@ function PannelItem(props: IPannelItem) {
                                         }
                                     }
                                     return (
-                                        <StyledListItemButton
-                                            selected={props.index === radioPannelListCtx.activeIndex && pannelItemCtx.name === radioPannelListCtx.activeName}
-                                            onClick={itemClickedHandler}
-                                            {...props}
-                                        >
-                                            {
-                                                typeof (props.icon) !== "undefined" ? props.icon : null
-                                            }
-                                            <ListItemText>
-                                                <Typography noWrap={true} variant="subtitle2">
-                                                    {props.text}
-                                                </Typography>
-                                            </ListItemText>
-                                        </StyledListItemButton>
+                                        <Link href={props.href}  passHref>
+                                            <StyledListItemButton
+                                                selected={props.index === radioPannelListCtx.activeIndex && pannelItemCtx.name === radioPannelListCtx.activeName}
+                                                onClick={itemClickedHandler}
+                                                {...props}
+                                            >
+                                                {
+                                                    typeof (props.icon) !== "undefined" ? props.icon : null
+                                                }
+                                                <ListItemText sx={[typeof (props.icon) !== "undefined" && { marginLeft: "8px" }]} >
+                                                    <Typography noWrap={true} variant="subtitle2">
+                                                        {props.text}
+                                                    </Typography>
+                                                </ListItemText>
+
+                                            </StyledListItemButton>
+                                        </Link>
                                     )
                                 }
                             }
