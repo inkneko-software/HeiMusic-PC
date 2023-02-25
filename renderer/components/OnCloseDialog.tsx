@@ -6,7 +6,7 @@ import DialogActions from '@mui/material/DialogActions';
 import { Button, DialogProps, FormControlLabel, Radio, RadioGroup } from "@mui/material";
 function OnCloseDialog(props: DialogProps) {
     return (
-        <Dialog open={props.open}>
+        <Dialog open={props.open} onClose={props.onClose}>
             <DialogTitle>是否退出？</DialogTitle>
             <DialogContent>
                 <RadioGroup
@@ -20,7 +20,7 @@ function OnCloseDialog(props: DialogProps) {
             </DialogContent>
             <DialogActions>
                 <Button onClick={() => { window.electronAPI.windowManagement.close() }}>确认</Button>
-                <Button onClick={() => props.onClose}>取消</Button>
+                <Button onClick={(e) => props.onClose(e, "backdropClick")}>取消</Button>
             </DialogActions>
         </Dialog>
     )

@@ -47,7 +47,7 @@ function HeiMusicMainLayout({children}) {
     return (
         <Box sx={{ width: "calc(100vw)", height: "calc(100vh)", display: "flex", flexDirection: 'column', background: `url(${heimusicThemeContext.backgroundUrl})`, backgroundRepeat: "no-repeat", backgroundSize: "cover" }}>
             <LoginDialog open={loginDialogOpen} onClose={() => setLoginDialogOpen(false)} />
-            <OnCloseDialog open={dialogOpen} onClose={() => { setDialogOpen(false) }} />
+            <OnCloseDialog open={dialogOpen} onClose={() =>  setDialogOpen(false) } />
             {/* Logo 与 系统标题栏 */}
             <Box sx={{ height: 64, width: "100%", display: "flex", WebkitAppRegion: "drag", userSelect: "none", }}>
                 <Box sx={{ width: "196px", height: "100%", background: theme.palette.pannelBackground.main, display:"flex"}}  >
