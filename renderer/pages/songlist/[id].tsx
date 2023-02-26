@@ -92,10 +92,10 @@ const rows: Data[] = Array.from({ length: 2000 }, (_, index) => {
 
 const VirtuosoTableComponents: TableComponents<Data> = {
     Scroller: React.forwardRef<HTMLDivElement>((props, ref) => (
-        <TableContainer component={Paper} {...props} ref={ref} sx={{ borderRadius: "0px", boxShadow: "unset", background:"rgba(0,0,0,0)"}} />
+        <TableContainer component={Paper} {...props} ref={ref} sx={{ borderRadius: "0px", boxShadow: "unset", background: "rgba(0,0,0,0)" }} />
     )),
     Table: (props) => (
-        <Table {...props} sx={{  borderCollapse: 'separate', tableLayout: 'fixed' }}/>
+        <Table {...props} sx={{ borderCollapse: 'separate', tableLayout: 'fixed' }} />
     ),
     TableHead,
     TableRow: ({ item: _item, ...props }) => <TableRow {...props} />,
@@ -141,25 +141,29 @@ function rowContent(_index: number, row: Data) {
 
 
 interface SongListProps extends BoxProps {
-
+    songlistId?: number
 }
 
 function SongList(props: SongListProps) {
     const router = useRouter()
-    var {id} = router.query;
+    var { id } = router.query;
     var [albumInfo, setAlbumInfo] = React.useState({
         name: "songlist id: " + id,
         cover: "",
         listenedCount: 0,
     })
 
-    var [albumName, setAlbumName] = React.useState("songlist id: "  + id)
-    React.useEffect(()=>{
-        if (router.isReady){
-            console.log(id)
-            setAlbumName("songlist id: " + id)
+    var [albumName, setAlbumName] = React.useState("songlist id: " + id)
+    React.useEffect(() => {
+        if (router.isReady) {
+            console.log(typeof (props.songlistId))
+            if (typeof (props.songlistId) !== "undefined") {
+                setAlbumName("songlist id: " + props.songlistId)
+            } else {
+                setAlbumName("songlist id: " + id)
+            }
         }
-    },[router.isReady, id])
+    }, [router.isReady, id])
 
 
     const [viewAtTopState, setViewAtTopState] = React.useState(true)

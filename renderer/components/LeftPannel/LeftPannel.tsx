@@ -15,15 +15,45 @@ import ExpandMore from '@mui/icons-material/ExpandMore';
 import PannelList from './PannelList'
 import PannelItem, { StyledListItemButton } from './PannelItem'
 import RadioPannelList from "./RadioPannelList";
+import { useRouter } from "next/router";
 interface LeftPannelProps extends BoxProps {
     uid?: number;
 }
 
 function LeftPannel(props: LeftPannelProps) {
+    const router = useRouter();
+
 
     const [activeList, setActiveList] = React.useState("在线音乐")
     const [activeIndex, setActiveIndex] = React.useState(1)
     const [myMusicListOpen, setMyMusicListOpen] = React.useState(false);
+
+    React.useEffect(()=>{
+        if (!router.isReady){
+            return;
+        }
+
+        var path = router.asPath;
+        
+        if(path.startsWith("/home")){
+            //default state
+        }else if (path.startsWith("/album")){
+            setActiveList("在线音乐");
+            setActiveIndex(2);
+        }else if (path.startsWith("/songlist")){
+            const regex = path.match(/\/songlist\/(\d+)/);
+            if (regex.length > 0){
+                if (regex.at(1) === "0"){
+                    setActiveList("我的音乐");
+                    setActiveIndex(1);
+                }else{
+                    setActiveList("创建的歌单");
+                    setActiveIndex(parseInt(regex.at(1)));
+                    setMyMusicListOpen(true);
+                }
+            }
+        }
+    }, [router.isReady, router.asPath])
 
     const list:number[] = new Array;
     for(var i = 1; i < 100; i++){   
@@ -55,7 +85,7 @@ function LeftPannel(props: LeftPannelProps) {
                             primary="我的音乐"
                             primaryTypographyProps={{ variant: "subtitle2", sx: { userSelect: "none" } }}
                         />
-                        <PannelItem index={1} icon={<FavoriteOutlinedIcon />} text="我喜欢"  href="/songlist/0" />
+                        <PannelItem index={1} icon={<FavoriteOutlinedIcon />} text="我喜欢"  href="/favoriate" />
                         <PannelItem index={2} icon={<FileDownloadOutlinedIcon />} text="本地和下载" href=""/>
                         <PannelItem index={3} icon={<RestoreOutlinedIcon />} text="最近播放"href="" />
                     </PannelList>
@@ -69,7 +99,7 @@ function LeftPannel(props: LeftPannelProps) {
                             {
                                 list.map((value, index)=>{
                                     return (
-                                        <PannelItem index={index} key={index} text="VOCALOID" href={`/songlist/${index}`}/>
+                                        <PannelItem index={value} key={index} text="VOCALOID" href={`/songlist/${value}`}/>
                                     )
                                 })
                             }
