@@ -1,5 +1,5 @@
 import Box from '@mui/material/Box'
-import { BoxProps } from "@mui/material"
+import { BoxProps, Typography } from "@mui/material"
 
 import * as React from 'react';
 import Table from '@mui/material/Table';
@@ -14,7 +14,8 @@ import Avatar from "@mui/material/Avatar"
 import Button from '@mui/material/Button';
 import { TableVirtuoso, TableComponents } from 'react-virtuoso';
 import { useRouter } from 'next/router';
-
+import NextLink from 'next/link';
+import Link from "@mui/material/Link"
 
 interface Data {
     calories: number;
@@ -132,7 +133,7 @@ function rowContent(_index: number, row: Data) {
                     key={column.dataKey}
                     align={column.numeric || false ? 'right' : 'left'}
                 >
-                    {row[column.dataKey]}
+                    {column.dataKey === "carbs" ? <NextLink href={`/album/${row.id}`} passHref><Link underline='none'>专辑id {row.id}</Link></NextLink>  : row[column.dataKey]}
                 </TableCell>
             ))}
         </React.Fragment>

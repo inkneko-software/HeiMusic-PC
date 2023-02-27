@@ -13,6 +13,7 @@ import MusicNote from '@mui/icons-material/MusicNote'
 import Avatar from "@mui/material/Avatar"
 import Button from '@mui/material/Button';
 import { TableVirtuoso, TableComponents } from 'react-virtuoso';
+import { useRouter } from 'next/router';
 
 
 interface Data {
@@ -131,7 +132,9 @@ function rowContent(_index: number, row: Data) {
                     key={column.dataKey}
                     align={column.numeric || false ? 'right' : 'left'}
                 >
-                    {row[column.dataKey]}
+                    {
+                        column.dataKey === "dessert"? _index: row[column.dataKey]
+                    }
                 </TableCell>
             ))}
         </React.Fragment>
@@ -144,8 +147,10 @@ interface MusicAlbumProps extends BoxProps {
 }
 
 function MusicAlbum(props: MusicAlbumProps) {
+    const router = useRouter()
+    const {id} = router.query
     const [albumInfo, setAlbumInfo] = React.useState({
-        name: "--",
+        name: "album id: " + id,
         cover: "",
         listenedCount: 0,
     })
@@ -198,15 +203,16 @@ function MusicAlbum(props: MusicAlbumProps) {
                 <Box sx={{ margin: "14px 0px", fontSize: "14px", color: "gray" }}>{"播放量 " + albumInfo.listenedCount}</Box>
             </Box>
             <Box sx={{ marginTop: "auto" }}>
-                <Button sx={{ width: "90px", height: "32px", marginRight: "30px" }} >播放全部</Button>
-                <Button className="album-brief-tool-bar-btn">下载</Button>
+                <Button sx={{ width: "90px", height: "32px", marginRight: "30px" }} variant='contained'>播放全部</Button>
+                <Button className="album-brief-tool-bar-btn" variant='outlined'>下载</Button>
             </Box>
         </Box>
     )
 
     return (
         <Box sx={{ height: '100%', width: '100%', display: "flex", flexDirection: "column", }}>
-            {viewAtTopState ? AlbumInfo : AlbumInfoLite}
+            {/* {viewAtTopState ? AlbumInfo : AlbumInfoLite} */}
+            {AlbumInfoLite}
             <TableVirtuoso
                 data={rows}
                 components={VirtuosoTableComponents}

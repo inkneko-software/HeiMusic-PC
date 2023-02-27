@@ -77,7 +77,7 @@ function LeftPannel(props: LeftPannelProps) {
                             primaryTypographyProps={{ variant: "subtitle2", sx: { userSelect: "none" } }}
                         />
                         <PannelItem index={1} icon={<AutoAwesomeIcon />} text="推荐" href="/home"/>
-                        <PannelItem index={2} icon={<LibraryMusicIcon />} text="专辑管理"  href="/album" />
+                        <PannelItem index={2} icon={<LibraryMusicIcon />} text="专辑管理"  href="/album/managment" />
                     </PannelList>
                     <PannelList  context={{ name: "我的音乐" }} key="我的音乐" >
                         <ListItemText
