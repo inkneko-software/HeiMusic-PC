@@ -1,5 +1,5 @@
 import Box from '@mui/material/Box'
-import { BoxProps } from "@mui/material"
+import { BoxProps, Typography } from "@mui/material"
 
 import * as React from 'react';
 import Table from '@mui/material/Table';
@@ -17,123 +17,79 @@ import { useRouter } from 'next/router';
 
 
 interface Data {
-    calories: number;
-    carbs: number;
-    dessert: string;
-    fat: number;
-    id: number;
-    protein: number;
+    title: string,
+    artists: string[],
+    duration: string,
 }
 
 interface ColumnData {
-    dataKey: keyof Data;
-    label: string;
-    numeric?: boolean;
-    width: number;
+    key: string,
+    label: string,
+    width: number,
 }
 
-type Sample = [string, number, number, number, number];
-
-const sample: readonly Sample[] = [
-    ['Frozen yoghurt', 159, 6.0, 24, 4.0],
-    ['Ice cream sandwich', 237, 9.0, 37, 4.3],
-    ['Eclair', 262, 16.0, 24, 6.0],
-    ['Cupcake', 305, 3.7, 67, 4.3],
-    ['Gingerbread', 356, 16.0, 49, 3.9],
-];
-
-function createData(
-    id: number,
-    dessert: string,
-    calories: number,
-    fat: number,
-    carbs: number,
-    protein: number,
-): Data {
-    return { id, dessert, calories, fat, carbs, protein };
-}
+const rows: Data[] = Array.from({ length: 2000 }, (_, index) => {
+    return { title: "歌曲名称" + index, artists: ["艺术家a", "艺术家b"], duration: "1:59" };
+});
 
 const columns: ColumnData[] = [
     {
-        width: 200,
-        label: 'Dessert',
-        dataKey: 'dessert',
+        key: "title",
+        label: "歌曲",
+        width: 300
     },
     {
-        width: 120,
-        label: 'Calories\u00A0(g)',
-        dataKey: 'calories',
-        numeric: true,
+        key: "artists",
+        label: "歌手",
+        width: 300
     },
     {
-        width: 120,
-        label: 'Fat\u00A0(g)',
-        dataKey: 'fat',
-        numeric: true,
+        key: "duration",
+        label: "时长",
+        width: 100
     },
-    {
-        width: 120,
-        label: 'Carbs\u00A0(g)',
-        dataKey: 'carbs',
-        numeric: true,
-    },
-    {
-        width: 120,
-        label: 'Protein\u00A0(g)',
-        dataKey: 'protein',
-        numeric: true,
-    },
-];
-
-const rows: Data[] = Array.from({ length: 2000 }, (_, index) => {
-    const randomSelection = sample[Math.floor(Math.random() * sample.length)];
-    return createData(index, ...randomSelection);
-});
+]
 
 const VirtuosoTableComponents: TableComponents<Data> = {
     Scroller: React.forwardRef<HTMLDivElement>((props, ref) => (
-        <TableContainer component={Paper} {...props} ref={ref} sx={{ borderRadius: "0px", boxShadow: "unset", background:"rgba(0,0,0,0)"}} />
+        <TableContainer component={Paper} {...props} ref={ref} sx={{ borderRadius: "0px", boxShadow: "unset", background: "rgba(0,0,0,0)" }} />
     )),
     Table: (props) => (
-        <Table {...props} sx={{  borderCollapse: 'separate', tableLayout: 'fixed' }}/>
+        <Table {...props} sx={{ borderCollapse: 'separate', tableLayout: 'fixed' }} />
     ),
-    TableHead,
+    TableHead: () => (<TableRow>
+        {columns.map((column) => (
+            <TableCell
+                key={column.key}
+                variant="head"
+                style={{ width: column.width }}
+                sx={{
+                    backgroundColor: 'background.paper',
+                    borderBottom: "unset"
+                }}
+            >
+                {column.label}
+            </TableCell>
+        ))}
+    </TableRow>),
     TableRow: ({ item: _item, ...props }) => <TableRow {...props} />,
     TableBody: React.forwardRef<HTMLTableSectionElement>((props, ref) => (
         <TableBody {...props} ref={ref} />
     )),
 };
 
-function fixedHeaderContent() {
-    return (
-        <TableRow>
-            {columns.map((column) => (
-                <TableCell
-                    key={column.dataKey}
-                    variant="head"
-                    align={column.numeric || false ? 'right' : 'left'}
-                    style={{ width: column.width }}
-                    sx={{
-                        backgroundColor: 'background.paper',
-                    }}
-                >
-                    {column.label}
-                </TableCell>
-            ))}
-        </TableRow>
-    );
-}
+
 
 function rowContent(_index: number, row: Data) {
     return (
         <React.Fragment>
             {columns.map((column) => (
                 <TableCell
-                    key={column.dataKey}
-                    align={column.numeric || false ? 'right' : 'left'}
+                    key={column.key}
+                    sx={{ borderBottom: "unset" }}
                 >
                     {
-                        column.dataKey === "dessert"? _index: row[column.dataKey]
+                        row[column.key]
                     }
                 </TableCell>
             ))}
@@ -148,35 +104,50 @@ interface MusicAlbumProps extends BoxProps {
 
 function MusicAlbum(props: MusicAlbumProps) {
     const router = useRouter()
-    const {id} = router.query
+    const { id } = router.query
     const [albumInfo, setAlbumInfo] = React.useState({
-        name: "album id: " + id,
-        cover: "",
+        name: "TVアニメ『ぼっち・ざ・ろっく!』フルアルバム「結束バンド」",
+        artist: "結束バンド",
+        cover: "https://oss.inkneko.com/heimusic/avatar/COVER.jpg",
+        date: undefined,
         listenedCount: 0,
     })
+
+    /**
+     * 
+     *         setMusicCoverUrl("https://oss.inkneko.com/heimusic/avatar/COVER.jpg");
+        setMusicName("星座になれたら");
+        setMusicSinger("結束バンド")
+     */
     const [viewAtTopState, setViewAtTopState] = React.useState(true)
     const AlbumInfo = (
         <Box sx={{
             marginLeft: '3%',
             marginRight: '3%',
             marginTop: '20px',
-            display: 'flex',
+            width: "auto",
             paddingBottom: '10px',
+            display: 'flex',
         }}>
             <Avatar sx={{
-                width: '180px', height: '180px', borderRadius: '3%'
+                width: '180px', height: '180px', borderRadius: '3%', flex: "0 0 auto"
             }} variant="square" src={albumInfo.cover}><MusicNote style={{ fontSize: 72 }} /></Avatar>
             <Box sx={{
                 marginLeft: '20px',
-                flex: '1',
+                marginRight: '20px',
+                width: "auto",
+                overflow: "hidden",
+                flex: "1 1 auto",
                 display: 'flex',
-                flexFlow: 'column',
+                flexDirection: 'column',
             }}>
-                <Box sx={{ marginLeft: "-2px", fontSize: '28px' }}>{albumInfo.name}</Box>
-                <Box sx={{ margin: "14px 0px", fontSize: "14px", color: "gray" }}>{"播放量 " + albumInfo.listenedCount}</Box>
+                <Typography fontWeight={600} variant='h5' noWrap >{albumInfo.name}</Typography>
+                <Typography variant='body2' noWrap >{albumInfo.artist}</Typography>
+                {albumInfo.date ? <Typography variant='caption' noWrap >{albumInfo.date}</Typography> : null}
+                <Typography variant='caption' sx={{ marginTop: "12px" }} >{"播放量 " + albumInfo.listenedCount}</Typography>
                 <Box sx={{ marginTop: "auto" }}>
-                    <Button sx={{ width: "90px", height: "32px", marginRight: "30px" }} >播放全部</Button>
-                    <Button className="album-brief-tool-bar-btn">下载</Button>
+                    <Button sx={{ width: "90px", height: "32px", marginRight: "30px" }} variant="contained" >播放全部</Button>
+                    <Button sx={{ width: "90px", height: "32px", marginRight: "30px" }} variant="outlined">下载</Button>
                 </Box>
             </Box>
         </Box>
@@ -195,11 +166,14 @@ function MusicAlbum(props: MusicAlbumProps) {
             }} variant="square" src={albumInfo.cover}><MusicNote style={{ fontSize: 72 }} /></Avatar>
             <Box sx={{
                 marginLeft: '20px',
+                width: "auto",
+                overflow: "hidden",
                 flex: '1',
                 display: 'flex',
                 flexFlow: 'column',
             }}>
-                <Box sx={{ marginLeft: "-2px", fontSize: '28px' }}>{albumInfo.name}</Box>
+                <Typography fontWeight={600} variant='h5' noWrap >{albumInfo.name}</Typography>
+
                 <Box sx={{ margin: "14px 0px", fontSize: "14px", color: "gray" }}>{"播放量 " + albumInfo.listenedCount}</Box>
             </Box>
             <Box sx={{ marginTop: "auto" }}>
@@ -211,12 +185,10 @@ function MusicAlbum(props: MusicAlbumProps) {
 
     return (
         <Box sx={{ height: '100%', width: '100%', display: "flex", flexDirection: "column", }}>
-            {/* {viewAtTopState ? AlbumInfo : AlbumInfoLite} */}
-            {AlbumInfoLite}
+            {viewAtTopState ? AlbumInfo : AlbumInfoLite}
             <TableVirtuoso
                 data={rows}
                 components={VirtuosoTableComponents}
-                fixedHeaderContent={fixedHeaderContent}
                 itemContent={rowContent}
                 atTopStateChange={(atTop) => setViewAtTopState(atTop)}
             />
