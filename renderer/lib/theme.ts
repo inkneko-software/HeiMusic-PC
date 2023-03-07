@@ -51,8 +51,8 @@ export const customizedDarkMode = createTheme({
             secondary: "#fff"
         },
         background: {
-            default: 'black',
-            paper: "black"
+            default: 'rgba(0,0,0,0)',
+            paper: "#2c2c2c"
         },
         pannelBackground:{
             main: "rgba(255,255,255,0.1)",

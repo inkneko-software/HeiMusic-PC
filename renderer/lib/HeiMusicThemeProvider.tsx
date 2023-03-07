@@ -37,7 +37,7 @@ function HeiMusicThemeProvider(props: IHeiMusicThemeProvider) {
             customizedDarkMode: {
                 theme: customizedDarkMode,
                 name: "customizedDarkMode",
-                backgroundUrl:"/images/lxh-background02.jpg"
+                backgroundUrl:"/images/nep-2730x1536.png"
             },
             lightOrange:{
                 theme: theme,
