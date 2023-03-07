@@ -85,7 +85,7 @@ function PasswordLogin(props) {
     <>
       <Box sx={{ border: "1px solid #e3e3e3", borderRadius: 1 }}>
         <Input label="账号" placeholder="请输入账号" value={accountInput} onChange={(event) => { setAccountInput(event.target.value); console.log(event) }} />
-        <Divider />
+        <Divider sx={{borderColor: "#e3e3e3"}} />
         <Input label="密码" placeholder="请输入密码" type='password' value={password} onChange={(event) => { setPassword(event.target.value) }} />
       </Box>
       <Stack sx={{ marginTop: 2, display: "flex" }} direction='row' spacing={2}>
@@ -170,7 +170,7 @@ function AuthCodeLogin(props) {
     <>
       <Box sx={{ border: "1px solid #e3e3e3", borderRadius: 1 }}>
         <Input value={email} onChange={(event) => { setEmail(event.target.value) }} label="邮箱" placeholder="请输入账号" />
-        <Divider />
+        <Divider sx={{borderColor: "#e3e3e3"}} />
         <Input value={code} onChange={(event) => setCode(event.target.value)} label="验证码" placeholder="请输入验证码" type='numeric'>
           <Button variant="text" sx={{ margin: 'auto', cursor: "pointer", padding: 0 }} onClick={sendEmailRequest} disabled={countDown !== 0}>{countDown === 0 ? "获取验证码" : countDown + "s"}</Button>
         </Input>
@@ -233,7 +233,7 @@ export default function LoginDialog(props) {
       <DialogContent sx={{ margin: '40px 60px 20px 60px' }}>
         <Stack sx={{ margin: 'auto', justifyContent: 'center', marginBottom: 3 }} direction='row' spacing={2}>
           <Tab tabIndex={0} currentIndex={tabIndex} text="密码登录" onClick={() => { changePanel(0) }} />
-          <Divider flexItem orientation='vertical' />
+          <Divider flexItem orientation='vertical' sx={{borderColor: "#e3e3e3"}}/>
           <Tab tabIndex={1} currentIndex={tabIndex} text="验证登录" onClick={() => { changePanel(1) }} />
         </Stack>
         <TabPanel tabIndex={0} currentIndex={tabIndex}>
