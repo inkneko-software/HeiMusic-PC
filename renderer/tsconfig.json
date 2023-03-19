@@ -4,6 +4,7 @@
     "next-env.d.ts",
     "**/*.ts",
     "**/*.tsx", "components/Auth/LoginDialog.js",
+    "../main/types/*.ts",
   ],
   "exclude": [
     "node_modules"
