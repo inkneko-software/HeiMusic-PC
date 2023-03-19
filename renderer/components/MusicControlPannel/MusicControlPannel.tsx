@@ -25,7 +25,7 @@ interface IMusicControlPannel extends BoxProps {
 function MusicControlPannel(props: IMusicControlPannel) {
     const theme = useTheme();
 
-    const [musicCoverUrl, setMusicCoverUrl] = React.useState<string>("undefined");
+    const [musicCoverUrl, setMusicCoverUrl] = React.useState<string>(null);
     const [musicName, setMusicName] = React.useState("HeiMusic!");
     const [musicSinger, setMusicSinger] = React.useState("author: inkneko.");
     const [playBtnIcon, setPlayBtnIcon] = React.useState(<PlayCircleFilled style={{ fontSize: 42 }} />);
