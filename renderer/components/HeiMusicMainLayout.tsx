@@ -34,22 +34,60 @@ import { HeiMusicThemeContext } from '../lib/HeiMusicThemeProvider';
 import { useTheme } from '@mui/styles';
 import OnCloseDialog from './OnCloseDialog';
 
+import * as userapi from "../api/user"
+
+
 function HeiMusicMainLayout({ children }) {
     const theme = useTheme();
     const heimusicThemeContext = React.useContext(HeiMusicThemeContext)
     const [dialogOpen, setDialogOpen] = React.useState(false)
     const [loginDialogOpen, setLoginDialogOpen] = React.useState(false)
+
+    const [heiMusicConfig, setHeiMusicConfig] = React.useState<HeiMusicConfig>(null);
+
     var onCloseClicked = () => {
-        setDialogOpen(true);
-        // window.electronAPI.windowManagement.close()
+        if (heiMusicConfig.closeWindowMinimized === null) {
+            setDialogOpen(true);
+            return;
+        }
+
+        if (heiMusicConfig.closeWindowMinimized === false) {
+            window.electronAPI.windowManagement.close()
+        } else {
+            //window.electronAPI.windowManagement.minimize()
+        }
     }
+
+    const [userDetail, setUserDetail] = React.useState(null)
+
+    React.useEffect(() => {
+        window.electronAPI.config.get().then((value) => {
+            setHeiMusicConfig(value);
+        });
+    }, [])
+
+    React.useEffect(() => {
+        //建议window.location = '/'
+        userapi.nav()
+            .then(res => res.json())
+            .then(res => {
+                if (res.code === 0) {
+                    setUserDetail({ avatarUrl: res.data.avatarUrl, username: res.data.username === null ? "用户用户用户用户用户用户用户用户" + res.data.userId : res.data.username })
+                }
+            })
+            .catch(reason=>{
+                console.log(reason);
+            })
+
+        
+    }, [heiMusicConfig])
 
     return (
         <Box sx={{ width: "calc(100vw)", height: "calc(100vh)", display: "flex", flexDirection: 'column', background: `url(${heimusicThemeContext.backgroundUrl})`, backgroundRepeat: "no-repeat", backgroundSize: "cover" }}>
             <LoginDialog open={loginDialogOpen} onClose={() => setLoginDialogOpen(false)} />
             <OnCloseDialog open={dialogOpen} onClose={() => setDialogOpen(false)} />
             {/* Logo 与 系统标题栏 */}
-            <Box sx={{ height: 64, flex:"0 0 auto", width: "100%", display: "flex", WebkitAppRegion: "drag", userSelect: "none", }}>
+            <Box sx={{ height: 64, flex: "0 0 auto", width: "100%", display: "flex", WebkitAppRegion: "drag", userSelect: "none", }}>
                 <Box sx={{ width: "196px", height: "100%", background: theme.palette.pannelBackground.main, display: "flex" }}  >
                     <Box sx={{ margin: "auto auto auto 12px", display: "flex" }}>
                         <Avatar src='/images/logo.jpg'></Avatar>
@@ -58,13 +96,17 @@ function HeiMusicMainLayout({ children }) {
                 </Box>
                 <Box sx={{ flexGrow: 1, display: "flex", background: theme.palette.pannelBackground.light }}>
                     <Box sx={{ margin: "auto 5px auto auto", WebkitAppRegion: "no-drag", }}>
-                        <Button onClick={() => setLoginDialogOpen(true)} size="small" >点击登录</Button>
+                        {
+                            userDetail === null
+                                ? <Button onClick={() => setLoginDialogOpen(true)} size="small" >点击登录</Button>
+                                : <Box sx={{ display: "flex" }}><Avatar src={userDetail.avatarUrl} sx={{ width: "24px", height: "24px" }} /><Typography sx={{ margin: "auto 8px", maxWidth: "160px" }} noWrap>{userDetail.username}</Typography></Box>
+                        }
                     </Box>
                     <Box sx={{ margin: "auto 5px auto 0", WebkitAppRegion: "no-drag", }}>
                         <HeiMusicThemeContext.Consumer>
                             {
                                 context => {
-                                    return <IconButton  sx={{ color: theme.palette.text.primary }} onClick={() => context.setMode(context.mode === "light" ? "customizedDarkMode" : "light")}><Skin fontSize='small' /></IconButton>
+                                    return <IconButton sx={{ color: theme.palette.text.primary }} onClick={() => context.setMode(context.mode === "light" ? "customizedDarkMode" : "light")}><Skin fontSize='small' /></IconButton>
                                 }
                             }
                         </HeiMusicThemeContext.Consumer>
@@ -80,10 +122,10 @@ function HeiMusicMainLayout({ children }) {
                 </Box>
             </Box>
             {/* 左侧面板 与 右侧 */}
-            <Box sx={{display: "flex", height: "100%" }}>
-                <LeftPannel sx={{ width: "196px", flex:"0 0 auto", overflowY: "auto", display: "flex", flexDirection: "column", background: theme.palette.pannelBackground.main }} />
+            <Box sx={{ display: "flex", height: "calc(100vh - 64px)" }}>
+                <LeftPannel sx={{ width: "196px", flex: "0 0 auto", overflowY: "auto", display: "flex", flexDirection: "column", background: theme.palette.pannelBackground.main }} />
                 {/* 上部视窗 与 下部播放器 */}
-                <Box sx={{ overflow:"hidden", width:"100%",  display: "flex", flexDirection: "column", background: theme.palette.pannelBackground.light }}>
+                <Box sx={{ overflow: "hidden", width: "100%", display: "flex", flexDirection: "column", background: theme.palette.pannelBackground.light }}>
                     {/* <MusicAlbum sx={{ flexGrow: 1 }} /> */}
                     <Box sx={{ flexGrow: 1, flexShrink: 1, maxHeight: "calc(100vh - 64px - 76px)" }}>{children}</Box>
                     <MusicControlPannel sx={{ height: "76px", flexShrink: 0 }} />
