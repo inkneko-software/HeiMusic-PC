@@ -2,8 +2,12 @@ import { app, ipcMain } from 'electron';
 import serve from 'electron-serve';
 import { createWindow } from './helpers';
 import path from 'path';
+import os from "os"
+import fs from "fs"
 
 const isProd: boolean = process.env.NODE_ENV === 'production';
+const configPath = path.join(os.homedir(), ".heimusic/", "heimusic.json");
+var heiMusicConfig: HeiMusicConfig = null;
 
 if (isProd) {
   serve({ directory: 'app' });
@@ -11,8 +15,74 @@ if (isProd) {
   app.setPath('userData', `${app.getPath('userData')} (development)`);
 }
 
+function getDefaultConfig(): HeiMusicConfig {
+  return {
+    volume: 35,
+    userId: null,
+    sessionId: null,
+    lastStatus: {
+      coverUrl: null,
+      title: null,
+      artists: [],
+      album: null,
+      albumid: null,
+      duration: null,
+      currentTime: null,
+      quality: null,
+      songUrl: null
+    },
+    lastPannel: null,
+    closeWindowMinimized: null
+  }
+}
+
+function readConfig(): HeiMusicConfig {
+  //1aa0e861f28fe67eb8dfebed8a2dd4155a2e85a7
+  console.log(configPath)
+  if (fs.existsSync(configPath) === false) {
+    var defaultConfig = getDefaultConfig()
+    //heiMusicConfig = structuredClone(defaultConfig); // avaliable in nodejs 17
+    heiMusicConfig = { ...defaultConfig, lastStatus: { ...defaultConfig.lastStatus } }
+    fs.writeFileSync(configPath, JSON.stringify(heiMusicConfig))
+    return heiMusicConfig;
+  }
+  heiMusicConfig = JSON.parse(fs.readFileSync(configPath).toString())
+  return heiMusicConfig;
+}
+
+function saveConfig() {
+  console.log("main, save", heiMusicConfig)
+  fs.writeFileSync(configPath, JSON.stringify(heiMusicConfig))
+}
+
+
+
 (async () => {
   await app.whenReady();
+
+  //检查存储配置文件的文件夹是否存在
+  const configDir = path.join(os.homedir(), ".heimusic/");
+  if (fs.existsSync(configDir) === false) {
+    console.log("正在创建配置文件夹，路径：" + configDir)
+    fs.mkdirSync(configDir);
+  }
+
+  /**
+   * config
+   */
+  ipcMain.handle("config::get", () => { return heiMusicConfig === null ? readConfig() : heiMusicConfig })
+  ipcMain.handle("config::set", (event, value) => {
+    heiMusicConfig[value[0]] = value[1]
+    mainWindow.webContents.send("config::onChange", heiMusicConfig);
+  })
+  ipcMain.handle("config::save", saveConfig)
+  /**
+   * windowManagement
+   */
+  ipcMain.on("windowManagement::close", () => { app.quit() })
+  ipcMain.on("windowManagement::minimize", () => { mainWindow.minimize() })
+  ipcMain.on("windowManagement::maximize", () => { mainWindow.maximize() })
+
 
   const mainWindow = createWindow('main', {
     width: 1280,
@@ -34,12 +104,12 @@ if (isProd) {
     await mainWindow.loadURL(`http://localhost:${port}/home`);
     mainWindow.webContents.openDevTools();
   }
+
+
 })();
 
 app.on('window-all-closed', () => {
   app.quit();
 });
 
-ipcMain.on("windowManagement-close", ()=>{
-  app.quit();
-})
+
