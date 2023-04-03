@@ -16,5 +16,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
         set: (key, value) => ipcRenderer.invoke("config::set", [key, value]),
         save: () => ipcRenderer.invoke("config::save"),
         onChange: (callback: (event: Electron.IpcRendererEvent, config: HeiMusicConfig) => void) => ipcRenderer.on("config::onChange", callback)
+    },
+    music: {
+        parse: (filepath: string) => ipcRenderer.invoke("music::parse", filepath),
+        parseCue: (filepath: string) => ipcRenderer.invoke("music::parseCue", filepath),
     }
 })
+

@@ -1,4 +1,5 @@
 interface HeiMusicConfig {
+    apiHost: string,
     volume: number,
     userId: string,
     sessionId: string,

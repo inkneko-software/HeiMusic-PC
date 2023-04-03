@@ -65,20 +65,20 @@ function PasswordLogin(props) {
     }
 
     function Login() {
-        // account.Login(accountInput, password)
-        // .then(res=>{
-        //     if (res.data.code === 0){
-        //         notifyMessage("登录成功", "success")
-        //         setInterval(()=>{window.location="/"}, 2000)
-        //     }else{
-        //         console.log(res)
-        //         notifyMessage(`${res.data.message}`, "warning")
-        //     }
-        // })
-        // .catch((error)=>{
-        //     notifyMessage("请求错误", "error")
-        //     console.log(error)
-        // })
+        authapi.loginByPassowrd(accountInput, password)
+            .then(resp => resp.json().then(json => ({ headers: resp.headers, json })))
+            .then(({ headers, json }) => {
+                if (json.code !== 0) {
+                    notifyMessage(`${json.message}`, "warning")
+                } else {
+                    notifyMessage("登录成功", "success")
+                    setInterval(() => { location.reload() }, 2000)
+                }
+            })
+            .catch((error) => {
+                console.log(error)
+            })
+        
     }
 
 
@@ -160,10 +160,6 @@ function AuthCodeLogin(props) {
                     notifyMessage(`${json.message}`, "warning")
                 } else {
                     notifyMessage("登录成功", "success")
-                    console.log(headers.get("set-cookie"))
-                    window.electronAPI.config.set("userId", json.data.userId);
-                    window.electronAPI.config.set("sessionId", json.data.sessionId);
-                    window.electronAPI.config.save();
                     setInterval(() => { location.reload() }, 2000)
                 }
             })
