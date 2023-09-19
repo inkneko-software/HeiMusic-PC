@@ -21,10 +21,5 @@ export default async function baseFetch(props: IBaseFetch): Promise<Response> {
             heiMusicConfig = res;
         })
     }
-    return fetch(
-        `${heiMusicConfig.apiHost}${props.path}`,
-        {
-            ...props,
-        }
-    )
+    return fetch(`${heiMusicConfig.apiHost}${props.path}`, { ...props })
 }

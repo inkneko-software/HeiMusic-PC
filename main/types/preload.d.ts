@@ -1,5 +1,5 @@
 import { IAudioMetadata } from "music-metadata"
-import {ICueSheet} from "cue-parser/lib/types"
+import { ICueSheet } from "cue-parser/lib/types"
 declare global {
 
     interface Window {
@@ -22,6 +22,12 @@ declare global {
             music: {
                 parse: (filepath: string) => Promise<IAudioMetadata>,
                 parseCue: (filepath: string) => Promise<ICueSheet>
+            },
+            playback: {
+                play: (callback: () => void) => void,
+                next: (callback: () => void) => void,
+                prev: (callback: () => void) => void,
+                cleanup: () => void,
             }
         }
     }
@@ -31,4 +37,4 @@ declare global {
     }
 }
 
-export {}
+export { }

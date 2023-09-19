@@ -3,10 +3,22 @@
   "include": [
     "next-env.d.ts",
     "**/*.ts",
-    "**/*.tsx", "components/Auth/LoginDialog.js",
-    "../main/types/*.ts",
+    "**/*.tsx",
+    "components/Auth/LoginDialog.js",
+    "../main/types/*.ts"
   ],
   "exclude": [
     "node_modules"
-  ]
+  ],
+  "compilerOptions": {
+    "module": "esnext",
+    "paths": {
+      "@components/*": [
+        "./components/*"
+      ],
+      "@api/*": [
+        "./api/*"
+      ],
+    }
+  }
 }

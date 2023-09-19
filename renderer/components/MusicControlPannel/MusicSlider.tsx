@@ -9,7 +9,7 @@ function MusicSlider(props: SliderProps) {
             step={1}
             sx={{
                 height: 2,
-                padding: "2px 0px",
+                padding: "0px 0px 4px 0px",
                 display:"block",
                 '& .MuiSlider-thumb': {
                     display:"none",
@@ -36,6 +36,9 @@ function MusicSlider(props: SliderProps) {
                 },
                 '& .MuiSlider-rail': {
                     opacity: 0.28,
+                },
+                '@media (pointer: coarse)':{
+                    padding: "0px 0px 4px 0px",
                 },
             }} {...props} />
     )

@@ -1,6 +1,6 @@
 {
   "private": true,
-  "name": "hei-music",
+  "name": "heimusic",
   "description": "HeiMusic cross-platform PC client.",
   "version": "0.2.0",
   "author": "inkneko <legendlxh@gmail.com>",
@@ -9,7 +9,8 @@
   "scripts": {
     "dev": "nextron",
     "build": "nextron build",
-    "postinstall": "electron-builder install-app-deps"
+    "postinstall": "electron-builder install-app-deps",
+    "openapi": "openapi -i http://localhost/v3/api-docs/default -o renderer/api/codegen --request renderer/api/request.ts"
   },
   "dependencies": {
     "@emotion/react": "^11.10.5",
@@ -19,9 +20,12 @@
     "@mui/material": "^5.11.3",
     "@mui/styles": "^5.11.2",
     "@types/react": "^17.0.52",
+    "cue-parser": "^0.3.0",
     "electron-serve": "^1.1.0",
     "electron-store": "^8.1.0",
-    "node-id3": "^0.2.6",
+    "music-metadata": "^7.13.3",
+    "music-metadata-browser": "^2.5.9",
+    "node-fetch": "^3.3.1",
     "react": "^17.0.2",
     "react-dom": "^17.0.2",
     "react-virtuoso": "^4.1.0"
@@ -32,6 +36,7 @@
     "electron-builder": "^23.3.3",
     "next": "^12.2.5",
     "nextron": "^8.2.0",
-    "typescript": "^4.8.2"
+    "openapi-typescript-codegen": "^0.24.0",
+    "typescript": "^5.0.2"
   }
 }

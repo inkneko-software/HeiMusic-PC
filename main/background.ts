@@ -1,4 +1,4 @@
-import { app, ipcMain, session, protocol } from 'electron';
+import { app, ipcMain, session, protocol, nativeImage, ipcRenderer } from 'electron';
 import serve from 'electron-serve';
 import { createWindow } from './helpers';
 import path from 'path';
@@ -6,16 +6,17 @@ import os from "os"
 import fs from "fs"
 
 import { parseFile } from 'music-metadata';
-import {parse} from 'cue-parser';
+import { parse } from 'cue-parser';
 
 const isProd: boolean = process.env.NODE_ENV === 'production';
-const configPath = path.join(os.homedir(), ".heimusic/", "heimusic.json");
+var configPath = path.join(os.homedir(), ".heimusic/", "heimusic.json");
 var heiMusicConfig: HeiMusicConfig = null;
 
 if (isProd) {
     serve({ directory: 'app' });
 } else {
     app.setPath('userData', `${app.getPath('userData')} (development)`);
+    configPath = path.join(os.homedir(), ".heimusic/", "heimusic_dev.json");
 }
 
 function getDefaultConfig(): HeiMusicConfig {
@@ -42,7 +43,7 @@ function getDefaultConfig(): HeiMusicConfig {
 
 function readConfig(): HeiMusicConfig {
     //1aa0e861f28fe67eb8dfebed8a2dd4155a2e85a7
-    console.log("配置文件：", configPath)
+    console.log("读取配置，配置文件路径：", configPath)
     if (fs.existsSync(configPath) === false) {
         var defaultConfig = getDefaultConfig()
         //heiMusicConfig = structuredClone(defaultConfig); // avaliable in nodejs 17
@@ -63,6 +64,28 @@ function saveConfig() {
 
 (async () => {
     await app.whenReady();
+
+    const mainWindow = createWindow('main', {
+        width: 1280,
+        height: 768,
+        minWidth: 1000,
+        minHeight: 600,
+        frame: false,
+        webPreferences: {
+            nodeIntegration: false,
+            contextIsolation: true,
+            preload: path.join(__dirname, 'preload.js'),
+        },
+    });
+
+    if (isProd) {
+        await mainWindow.loadURL('app://./home.html');
+    } else {
+        const port = process.argv[2];
+        await mainWindow.loadURL(`http://localhost:${port}/home`);
+        mainWindow.webContents.openDevTools();
+    }
+
 
     //检查存储配置文件的文件夹是否存在
     const configDir = path.join(os.homedir(), ".heimusic/");
@@ -104,31 +127,47 @@ function saveConfig() {
     })
 
     /**
-     * web hooks
+     * web hooks，包括跨域，cookie设置
+     * 
+     * 已知问题是如果apiHost为http://localhost，则会匹配localhost:*，即匹配了前端webpack服务器的页面。
      */
 
     const filter = {
         urls: [heiMusicConfig.apiHost + "/*"]
     }
+
     session.defaultSession.webRequest.onBeforeSendHeaders(filter, (details, callback) => {
         details.requestHeaders["Cookie"] = `userId=${heiMusicConfig.userId}; sessionId=${heiMusicConfig.sessionId}`;
+        console.log("Electron webhook 已添加cookie：", details.url)
         callback({ requestHeaders: details.requestHeaders })
     })
+
     session.defaultSession.webRequest.onHeadersReceived(
         filter,
         (details, callback) => {
-            if (isProd) {
-                details.responseHeaders['Access-Control-Allow-Origin'] = [
-                    'app://.'
-                ];
-            } else {
-                details.responseHeaders['Access-Control-Allow-Origin'] = [
-                    `http://localhost:${process.argv[2]}`
-                ];
-            }
+            // if (details.method.toUpperCase() === "OPTIONS"){
+            //     details.statusCode = 200;
+            // }
 
-            if (typeof (details.responseHeaders["Set-Cookie"]) !== "undefined") {
-                const cookies: string[] = details.responseHeaders["Set-Cookie"];
+            // if (isProd) {
+            //     details.responseHeaders['Access-Control-Allow-Origin'] = [
+            //         'app://.'
+            //     ];
+            // } else {
+            //     details.responseHeaders['Access-Control-Allow-Origin'] = [
+            //         `http://localhost:${process.argv[2]}`
+            //     ];
+            // }
+            // console.log("Electron webhook 已添加跨域头：", details.url, details.method, details.statusCode)
+            var cookies: string[] = [];
+            if (typeof (details.responseHeaders["Set-Cookie"]) !== "undefined" ) {
+                 cookies = details.responseHeaders["Set-Cookie"];
+                
+            }
+            if (typeof (details.responseHeaders["set-cookie"]) !== "undefined"){
+                cookies = details.responseHeaders["set-cookie"];
+            }
+            if (cookies.length !== 0){
                 cookies.forEach((value, index) => {
                     if (value.startsWith("sessionId")) {
                         heiMusicConfig.sessionId = value.split(";")[0].split("=")[1];
@@ -144,28 +183,25 @@ function saveConfig() {
         }
     );
 
-    const mainWindow = createWindow('main', {
-        width: 1280,
-        height: 768,
-        minWidth: 1000,
-        minHeight: 600,
-        frame: false,
-        webPreferences: {
-            nodeIntegration: true,
-            contextIsolation: true,
-            preload: path.join(__dirname, 'preload.js'),
+    const ret = mainWindow.setThumbarButtons([
+        {
+            tooltip: '上一曲',
+            icon: nativeImage.createFromPath(path.join(__dirname, "images", "thumbar", "prev.png")),
+            click: ()=> { mainWindow.webContents.send("playback::prev") }
         },
-    });
+        {
+            tooltip: '播放',
+            icon: nativeImage.createFromPath(path.join(__dirname, "images", "thumbar", "play.png")),
+            click: ()=> { mainWindow.webContents.send("playback::play")  }
+        },
+        {
+            tooltip: '下一曲',
+            icon: nativeImage.createFromPath(path.join(__dirname, "images", "thumbar", "next.png")),
+            click: ()=> { mainWindow.webContents.send("playback::next")  }
+        }
+    ])
 
-    if (isProd) {
-        await mainWindow.loadURL('app://./home.html');
-    } else {
-        const port = process.argv[2];
-        await mainWindow.loadURL(`http://localhost:${port}/home`);
-        mainWindow.webContents.openDevTools();
-    }
-
-
+    console.log("创建托盘图标： ", ret)
 })();
 
 app.on('window-all-closed', () => {

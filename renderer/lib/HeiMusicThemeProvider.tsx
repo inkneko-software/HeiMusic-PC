@@ -1,7 +1,7 @@
 import React from "react"
 import { ThemeProvider, Theme, StyledEngineProvider } from '@mui/material/styles';
 import { ThemeProviderProps } from '@mui/styles';
-import {theme, customizedDarkMode} from './theme'
+import {theme, darkModeNeptune, darkMode} from './theme'
 interface IHeiMusicThemeContext {
     mode: string,
     backgroundUrl: string,
@@ -34,14 +34,19 @@ function HeiMusicThemeProvider(props: IHeiMusicThemeProvider) {
                 name: "light",
                 backgroundUrl: ""
             },
+            dark:{
+                theme: darkMode,
+                name: "darkMode",
+                backgroundUrl:""
+            },
             customizedDarkMode: {
-                theme: customizedDarkMode,
-                name: "customizedDarkMode",
+                theme: darkModeNeptune,
+                name: "darkModeNeptune",
                 backgroundUrl:"/images/nep-2730x1536.png"
             },
             lightOrange:{
                 theme: theme,
-                name: "light",
+                name: "lightOrange",
                 backgroundUrl: "/images/lxh-background01.jpg"
             }
         }

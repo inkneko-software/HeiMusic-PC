@@ -9,22 +9,25 @@ import { Button, DialogProps, FormControlLabel, Radio, RadioGroup, RadioGroupPro
 function OnCloseDialog(props: DialogProps) {
     const [selectedOption, setSelectedOption] = React.useState<string>("minimized");
     const [heiMusicConfig, setHeiMusicConfig] = React.useState<HeiMusicConfig>(null)
-    React.useEffect(()=>{
-        window.electronAPI.config.get().then(res=>{
-            setHeiMusicConfig(res);
-            res.closeWindowMinimized = false;
-        })
-        // window.electronAPI.config.onChange((e, res)=>{
-        //     setHeiMusicConfig(res)
-        // })
+    React.useEffect(() => {
+        if (window.electronAPI !== undefined) {
+            window.electronAPI.config.get().then(res => {
+                setHeiMusicConfig(res);
+                res.closeWindowMinimized = false;
+            })
+            // window.electronAPI.config.onChange((e, res)=>{
+            //     setHeiMusicConfig(res)
+            // })
+        }
+
     }, [])
-    
-    const onConfirm = ()=>{
-        if (selectedOption === "exit"){
+
+    const onConfirm = () => {
+        if (selectedOption === "exit") {
             window.electronAPI.config.set("closeWindowMinimized", false);
             window.electronAPI.config.save();
             window.electronAPI.windowManagement.close();
-        }else{
+        } else {
             window.electronAPI.config.set("closeWindowMinimized", true);
             window.electronAPI.config.save();
             window.electronAPI.windowManagement.minimize();
@@ -39,9 +42,9 @@ function OnCloseDialog(props: DialogProps) {
                     aria-labelledby="demo-radio-buttons-group-label"
                     defaultValue="minimized"
                     name="radio-buttons-group"
-                    onChange={(e, v)=>{setSelectedOption(v)}}
+                    onChange={(e, v) => { setSelectedOption(v) }}
                 >
-                    <FormControlLabel value="minimized" control={<Radio value="minimized"/>} label="最小化至托盘图标" />
+                    <FormControlLabel value="minimized" control={<Radio value="minimized" />} label="最小化至托盘图标" />
                     <FormControlLabel value="exit" control={<Radio value="exit" />} label="退出应用程序" />
                 </RadioGroup>
             </DialogContent>

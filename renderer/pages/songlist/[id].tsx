@@ -132,6 +132,7 @@ function rowContent(_index: number, row: Data) {
                 <TableCell
                     key={column.dataKey}
                     align={column.numeric || false ? 'right' : 'left'}
+                    sx={{borderBottom:"unset"}}
                 >
                     {column.dataKey === "carbs" ? <NextLink href={`/album/${row.id}`} passHref><Link underline='none'>专辑id {row.id}</Link></NextLink>  : row[column.dataKey]}
                 </TableCell>
@@ -149,7 +150,7 @@ function SongList(props: SongListProps) {
     const router = useRouter()
     var { id } = router.query;
     var [albumInfo, setAlbumInfo] = React.useState({
-        name: "songlist id: " + id,
+        title: "songlist id: " + id,
         cover: "",
         listenedCount: 0,
     })
@@ -170,11 +171,8 @@ function SongList(props: SongListProps) {
     const [viewAtTopState, setViewAtTopState] = React.useState(true)
     const AlbumInfo = (
         <Box sx={{
-            marginLeft: '3%',
-            marginRight: '3%',
-            marginTop: '20px',
             display: 'flex',
-            paddingBottom: '10px',
+            padding: '20px 12px 10px 12px',
         }}>
             <Avatar sx={{
                 width: '180px', height: '180px', borderRadius: '3%'
@@ -197,11 +195,10 @@ function SongList(props: SongListProps) {
 
     const AlbumInfoLite = (
         <Box sx={{
-            marginLeft: '3%',
-            marginRight: '3%',
             marginTop: '20px',
             display: 'flex',
-            paddingBottom: '10px',
+            padding: '20px 12px 10px 12px',
+
         }}>
             <Avatar sx={{
                 width: '90px', height: '90px', borderRadius: '3%'
@@ -212,7 +209,7 @@ function SongList(props: SongListProps) {
                 display: 'flex',
                 flexFlow: 'column',
             }}>
-                <Box sx={{ marginLeft: "-2px", fontSize: '28px' }}>{albumInfo.name}</Box>
+                <Box sx={{ marginLeft: "-2px", fontSize: '28px' }}>{albumInfo.title}</Box>
                 <Box sx={{ margin: "14px 0px", fontSize: "14px", color: "gray" }}>{"播放量 " + albumInfo.listenedCount}</Box>
             </Box>
             <Box sx={{ marginTop: "auto" }}>

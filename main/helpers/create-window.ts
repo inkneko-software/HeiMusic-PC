@@ -2,6 +2,7 @@ import {
   screen,
   BrowserWindow,
   BrowserWindowConstructorOptions,
+  nativeImage,
 } from 'electron';
 import path from 'path';
 

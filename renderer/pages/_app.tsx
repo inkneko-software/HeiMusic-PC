@@ -29,7 +29,30 @@ export default function (props: AppProps) {
       <Head>
         <meta name="viewport" content="minimum-scale=1, initial-scale=1, width=device-width" />
         <title>HeiMusic</title>
+        <style>
+          {
+            `::-webkit-scrollbar {
+                width: 12px;
+                height: 8px;
+                background-color: #e3e3e3; /* or add it to the track */
+                border-radius: 4px;
 
+              }
+              ::-webkit-scrollbar-thumb {
+                background: #aaa;
+                border-radius: 4px;
+              }
+              ::-webkit-scrollbar-thumb:hover {
+                background: #7c7c7c;
+                border-radius: 4px;
+              }
+              ::-webkit-scrollbar-track {
+              }
+              
+              `
+          }
+
+        </style>
       </Head>
       <StyledEngineProvider injectFirst>
         <HeiMusicThemeProvider >

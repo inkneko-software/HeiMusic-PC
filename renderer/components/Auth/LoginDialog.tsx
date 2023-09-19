@@ -20,7 +20,7 @@ import Typography from '@mui/material/Typography'
 import styles from "./LoginDialog.module.css"
 import { AlertColor } from '@mui/material/Alert';
 
-import * as authapi from "../../api/auth"
+import { AuthControllerService } from '../../api/codegen';
 
 function Input(props) {
     const { children, label, placeholder, type, ...others } = props;
@@ -65,9 +65,8 @@ function PasswordLogin(props) {
     }
 
     function Login() {
-        authapi.loginByPassowrd(accountInput, password)
-            .then(resp => resp.json().then(json => ({ headers: resp.headers, json })))
-            .then(({ headers, json }) => {
+        AuthControllerService.login({email: accountInput,password: password})
+            .then((json) => {
                 if (json.code !== 0) {
                     notifyMessage(`${json.message}`, "warning")
                 } else {
@@ -128,8 +127,7 @@ function AuthCodeLogin(props) {
     }
 
     function sendEmailRequest() {
-        authapi.sendLoginEmailCode(email)
-            .then(resp => resp.json())
+        AuthControllerService.sendLoginEmailCode(email)
             .then(resp => {
                 if (resp.code !== 0) {
                     notifyMessage(`${resp.message}`, "warning")
@@ -153,9 +151,8 @@ function AuthCodeLogin(props) {
     }
 
     function AuthLogin() {
-        authapi.login(email, code)
-            .then(resp => resp.json().then(json => ({ headers: resp.headers, json })))
-            .then(({ headers, json }) => {
+        AuthControllerService.login({email: email, code: code})
+            .then((json) => {
                 if (json.code !== 0) {
                     notifyMessage(`${json.message}`, "warning")
                 } else {
@@ -221,12 +218,18 @@ interface LoginDialogProps {
 
 export default function LoginDialog(props) {
     const [open, onClose] = [props.open, props.onClose];
-    const [tabIndex, setTabIndex] = React.useState(0)
+    const [tabIndex, setTabIndex] = React.useState(1)
 
     const changePanel = (index) => {
         console.log(index)
         setTabIndex(index)
     }
+
+    React.useEffect(()=>{
+        if (open === true){
+            setTabIndex(1);
+        }
+    }, [open])
 
 
     return (
@@ -248,7 +251,7 @@ export default function LoginDialog(props) {
 
                 <Stack sx={{ textAlign: 'center', marginTop: 5 }}>
                     <Typography variant="overline" sx={{ color: 'gray' }}>未注册过墨云音乐的邮箱，将自动注册账号</Typography>
-                    <Typography variant="overline" sx={{ color: 'gray' }}>登录或完成注册即代表你同意<Link className={styles["link"]} href="/">用户协议</Link>和<Link className={styles["link"]}>隐私政策</Link></Typography>
+                    {/* <Typography variant="overline" sx={{ color: 'gray' }}>登录或完成注册即代表你同意<Link className={styles["link"]} href="/">用户协议</Link>和<Link className={styles["link"]}>隐私政策</Link></Typography> */}
                 </Stack>
 
             </DialogContent>

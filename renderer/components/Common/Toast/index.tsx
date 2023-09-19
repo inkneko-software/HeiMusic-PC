@@ -27,11 +27,12 @@ export default function useToast(): [JSX.Element, (message: string, variant?: To
     const [notifyState, setNotifyState] = React.useState(state);
     const [snackPack, setSnackPack] = React.useState([]);
     const [centerDisplay, setCenterDisplay] = React.useState(false);
+    const [topDisplay, setTopDisplay] = React.useState(false);
 
     React.useEffect(() => {
-        if (snackPack.length  && !notifyState.open) {
+        if (snackPack.length && !notifyState.open) {
             // Set a new snack when we don't have an active one
-            var msg:ToastState = snackPack[0];
+            var msg: ToastState = snackPack[0];
 
             setSnackPack((prev) => prev.slice(1));
             setNotifyState({
@@ -42,7 +43,7 @@ export default function useToast(): [JSX.Element, (message: string, variant?: To
             })
         } else if (snackPack.length && notifyState.open) {
             // Close an active snack when a new one is added
-            setNotifyState({...notifyState, open: false})
+            setNotifyState({ ...notifyState, open: false })
         }
     }, [snackPack, notifyState]);
 
@@ -68,16 +69,14 @@ export default function useToast(): [JSX.Element, (message: string, variant?: To
                 actualPos = { vertical: "bottom", horizontal: "center" }
                 break;
             case "center":
-                actualPos = { vertical: "bottom", horizontal: "center" }
+                actualPos = { vertical: "top", horizontal: "center" }
             default:
                 actualPos = { vertical: "bottom", horizontal: "center" }
                 break;
         }
-        if (pos === "center"){
-            setCenterDisplay(true);
-        }else{
-            setCenterDisplay(false);
-        }
+        setCenterDisplay(pos === "center");
+        setTopDisplay(pos.startsWith("top"));
+
         setSnackPack((prev) => [...prev, {
             open: true,
             message: message,
@@ -87,28 +86,26 @@ export default function useToast(): [JSX.Element, (message: string, variant?: To
     }
 
     function notifyMessageClose(event, reason) {
-        if (reason !== 'clickaway'){
+        if (reason !== 'clickaway') {
             setNotifyState({ ...notifyState, open: false })
         }
     }
 
     const ToastComponent = (
         <Snackbar
-            sx={centerDisplay? { "&.MuiSnackbar-root":{left:"50%", bottom:"50%"}}: null}
-            open={notifyState.open} 
-            autoHideDuration={3000} 
-            onClose={notifyMessageClose} 
-            anchorOrigin={notifyState.anchorOrigin} 
+            sx={[centerDisplay && { "&.MuiSnackbar-root": { left: "50%", bottom: "50%" } }, topDisplay && { "&.MuiSnackbar-root": { top: "64px" } }]}
+            open={notifyState.open}
+            autoHideDuration={3000}
+            onClose={notifyMessageClose}
+            anchorOrigin={notifyState.anchorOrigin}
             TransitionComponent={Grow}
-         >
+        >
             <Box >
-                {centerDisplay? <></> : <Toolbar/>}
-                <Alert 
-                    
-                    severity={notifyState.variant} 
-                    variant="filled" 
-                    action={<IconButton color='inherit' onClick={(e)=>notifyMessageClose(e, "close")} sx={{padding:0, margin:'auto'}}><CloseIcon/></IconButton>}
-                
+                <Alert
+                    severity={notifyState.variant}
+                    variant="filled"
+                    action={<IconButton color='inherit' onClick={(e) => notifyMessageClose(e, "close")} sx={{ padding: 0, margin: 'auto' }}><CloseIcon /></IconButton>}
+
                 >
                     {notifyState.message}
                 </Alert>
