@@ -36,7 +36,7 @@ function AlbumEdit() {
     const [artistSearchInput, setArtistSearchInput] = React.useState<string>("")
     const [artistSearchCandidate, setArtistSearchCandidate] = React.useState<ArtistVo[]>([])
     const [addArtistDialogOpen, setAddArtistDialogOpen] = React.useState(false)
-    const [musicDialogContext, setMusicDialogContext] = React.useState<IMusicDialog>({ open: false, musicIndex: null})
+    const [musicDialogContext, setMusicDialogContext] = React.useState<IMusicDialog>({ open: false, musicIndex: null })
     //音乐列表
     const [musicList, setMusicList] = React.useState<IMusic[]>([])
 
@@ -55,7 +55,7 @@ function AlbumEdit() {
         // setMusicDialogContext({ ...musicDialogContext, open: true })
         musicFileRef.current.onchange = async () => {
             const files = musicFileRef.current.files;
-            for(var i = 0; i < files.length; ++i){
+            for (var i = 0; i < files.length; ++i) {
                 const file = files[i];
                 const metadata = await window.electronAPI.music.parse(file.path);
                 console.log(metadata.common)
@@ -65,11 +65,11 @@ function AlbumEdit() {
                 var coverUrl = null;
                 if (metadata.common.picture !== undefined) {
                     const b = new Blob([metadata.common.picture[0].data])
-                    
+
                     coverUrl = URL.createObjectURL(b);
                 }
-                var artists = []
-                if (metadata.common.artists !== undefined){
+                var artists: ArtistVo[] = []
+                if (metadata.common.artists !== undefined) {
                     artists = metadata.common.artists.map((name: string, index) => {
                         return {
                             artistId: null,
@@ -79,19 +79,97 @@ function AlbumEdit() {
                             birth: ""
                         }
                     });
+                    if (artists.length === 1) {
+                        //可能将多个作家合并为了一个条目，因此通过常见的分隔符进行分隔（・ 、 & /），能够处理以下格式：
+                        //ArtistA(cv1分隔符cv2分隔符cv3)分隔符ArtistB(cv1分隔符cv2)
+                        //ArtistA分隔符ArtistB分隔符ArtistC
+                        var artistsString = artists[0].name;
+                        artists = [];
+
+                        var artistLeft = 0;
+                        var artistRight = 0;
+                        var remarkLeft = 0;
+                        var isInsideRemark = false;
+                        var artistsStringLength = artistsString.length;
+                        for (var i = 0; i < artistsStringLength; ++i) {
+                            var char = artistsString.charAt(i);
+                            //如果在备注中，当遇到右括号，即意味着一个作者的条目。
+                            //如果不在备注中，遇到分隔符，即意味着一个作者的条目。
+                            if (!isInsideRemark) {
+                                if (char === '(' || char === '（') {
+                                    isInsideRemark = true;
+                                    remarkLeft = i + 1;
+                                    artistRight = i - 1;
+                                    continue;
+                                }
+
+                                if (i + 1 === artistsStringLength){
+                                    artists.push({
+                                        artistId: null,
+                                        name: artistsString.substring(artistLeft, i + 1),
+                                        translateName: "",
+                                        avatarUrl: "",
+                                        birth: ""
+                                    })
+                                    break;
+                                }
+
+
+                                if (char.match(/[・、&\/]+/) !== null) {
+                                    //先判断"ArtistA(cv1)分隔符ArtistB"的情况
+                                    if (i === 0) {
+                                        continue;
+                                    }
+                                    var lastChar = artistsString.charAt(i - 1);
+                                    if (lastChar === ')' || lastChar === '）') {
+                                        continue;
+                                    }
+                                    artists.push({
+                                        artistId: null,
+                                        name: artistsString.substring(artistLeft, i),
+                                        translateName: "",
+                                        avatarUrl: "",
+                                        birth: ""
+                                    })
+                                    artistLeft = i + 1;
+                                }
+
+                            } else {
+                                if (char === ')' || char === '）') {
+                                    isInsideRemark = false;
+                                    artists.push({
+                                        artistId: null,
+                                        name: artistsString.substring(artistLeft, artistRight + 1),
+                                        translateName: artistsString.substring(remarkLeft, i),
+                                        avatarUrl: "",
+                                        birth: ""
+                                    })
+                                    artistLeft = i + 1;
+
+                                    //如果下个字符是分隔符，则artistLeft应当再跳过一个字符
+                                    if (i + 1 !== artistsStringLength) {
+                                        var nextChar = artistsString.charAt(i + 1);
+                                        if (nextChar.match(/[・、&\/]+/) !== null) {
+                                            artistLeft += 1;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
 
                 const music: IMusic = {
                     musicId: null,
                     title: metadata.common.title || '',
-                    artists:  artists,
+                    artists: artists,
                     path: file.path,
                     cover: coverUrl,
                     file: file
                 }
 
 
-                setMusicList(prev=>[...prev, music]);
+                setMusicList(prev => [...prev, music]);
 
                 // const event = new CustomEvent<IMusicControlEventDetail>("music-control-panel::play", {
                 //     detail: {
@@ -141,7 +219,7 @@ function AlbumEdit() {
         }
     }
 
-    
+
 
     const handleSaveAlbum = async () => {
         var albumInfo = await AlbumControllerService.addAlbum(title, "", albumArtists.map(item => item.artistId), { frontCover: cover })
@@ -150,17 +228,17 @@ function AlbumEdit() {
         var musicIds: number[] = []
         for (var i = 0; i < musicList.length; ++i) {
             var item = musicList[i]
-            musicIds.push((await MusicControllerService.addMusic(item.title, "", item.artists.map(artist=>artist.name), { file: item.file })).data.musicId)
+            musicIds.push((await MusicControllerService.addMusic(item.title, "", item.artists.map(artist => artist.name), { file: item.file })).data.musicId)
         }
 
         await AlbumControllerService.addAlbumMusic(albumInfo.data.albumId, musicIds)
         router.push(`/album/${albumInfo.data.albumId}`)
-        
+
     }
 
     return (
         <Box sx={{ padding: "12px 12px", overflowY: 'auto', height: '100%' }}>
-            <input ref={musicFileRef} name="music_file" type="file" accept=".mp3,.flac,.ogg" multiple hidden  />
+            <input ref={musicFileRef} name="music_file" type="file" accept=".mp3,.flac,.ogg" multiple hidden />
             {/* 添加艺术家对话框 */}
             <Dialog open={addArtistDialogOpen} onClose={() => setAddArtistDialogOpen(false)}>
                 <DialogTitle>
@@ -218,8 +296,8 @@ function AlbumEdit() {
                 <DialogContent>
                     <Box sx={{ display: "flex", marginBottom: '12px' }}>
                         <Typography sx={{ width: '30%' }}>音乐标题</Typography>
-                        <TextField size="small" value={musicList[musicDialogContext.musicIndex] && musicList[musicDialogContext.musicIndex].title} onChange={e=>setMusicList(musicList.map((val, index)=>{
-                            if (index === musicDialogContext.musicIndex){
+                        <TextField size="small" value={musicList[musicDialogContext.musicIndex] && musicList[musicDialogContext.musicIndex].title} onChange={e => setMusicList(musicList.map((val, index) => {
+                            if (index === musicDialogContext.musicIndex) {
                                 val.title = e.target.value;
                             }
                             return val;
@@ -244,15 +322,15 @@ function AlbumEdit() {
                 </DialogContent>
             </Dialog>
             {/* 页面标题，操作按钮 */}
-            <Box sx={{display: 'flex' }}>
-                <Typography variant="h5" sx={{width: '30%'}}>新建专辑</Typography>
+            <Box sx={{ display: 'flex' }}>
+                <Typography variant="h5" sx={{ width: '30%' }}>新建专辑</Typography>
 
                 <Button variant="outlined" size='small' sx={{ margin: "auto 12px auto 0px" }} onClick={onPickCue}>读取cue文件</Button>
                 <Button variant="outlined" size='small' sx={{ margin: "auto 12px" }}>读取文件夹</Button>
                 <Button variant="outlined" size='small' color="success" sx={{ margin: "auto 12px" }} onClick={handleSaveAlbum}>保存专辑</Button>
             </Box>
 
-            <Divider sx={{margin:"12px 0px"}}/>
+            <Divider sx={{ margin: "12px 0px" }} />
 
             {/* 专辑信息 */}
             <Box sx={{ display: 'flex', flexDirection: 'column' }}>
@@ -261,7 +339,7 @@ function AlbumEdit() {
                     <Typography sx={{ width: '30%' }}>标题</Typography>
                     <TextField value={title} size="small" sx={{ maxWidth: '60%', }} onChange={event => setTitle(event.target.value)} />
                 </Box>
-                
+
                 {/* 艺术家设定 */}
                 <Box sx={{ display: 'flex', marginBottom: '12px' }}>
                     <Typography sx={{ width: '30%' }}>作者</Typography>
@@ -278,45 +356,45 @@ function AlbumEdit() {
                 {/* 封面设定 */}
                 <Box sx={{ display: 'flex', marginBottom: '12px' }}>
                     <Typography sx={{ width: '30%' }}>封面</Typography>
-                    <CoverInput cover={cover} onCoverChanged={newCover=>setCover(newCover)} />
+                    <CoverInput cover={cover} onCoverChanged={newCover => setCover(newCover)} />
                 </Box>
-                
+
                 {/* 音乐列表 */}
                 <Box sx={{ display: 'flex', marginBottom: '12px' }}>
-                    <Typography  sx={{ width: '30%' }}>音乐列表</Typography>
+                    <Typography sx={{ width: '30%' }}>音乐列表</Typography>
                     <Button variant="outlined" size='small' onClick={onPickMusic}>添加音乐文件</Button>
                 </Box>
 
 
-                <TableContainer  sx={{ width: 'auto'}}>
+                <TableContainer sx={{ width: 'auto' }}>
                     <Table sx={{ tableLayout: 'fixed' }}>
                         <TableHead>
                             <TableRow>
-                                <TableCell width='30%' sx={{padding: "12px 0px"}}>歌曲名称</TableCell>
-                                <TableCell width='40%' sx={{padding: "12px 0px"}}>歌手</TableCell>
-                                <TableCell width='15%' sx={{padding: "12px 0px"}}>音乐文件</TableCell>
-                                <TableCell width='15%' sx={{padding: "12px 0px"}}></TableCell>
+                                <TableCell width='30%' sx={{ padding: "12px 0px" }}>歌曲名称</TableCell>
+                                <TableCell width='40%' sx={{ padding: "12px 0px" }}>歌手</TableCell>
+                                <TableCell width='15%' sx={{ padding: "12px 0px" }}>音乐文件</TableCell>
+                                <TableCell width='15%' sx={{ padding: "12px 0px" }}></TableCell>
                             </TableRow>
                         </TableHead>
                         <TableBody>
                             {
                                 musicList.map((music, index) => {
                                     return (
-                                        <TableRow sx={{  ":hover": { backgroundColor: theme.palette.pannelBackground.main, cursor: 'pointer' } }} key={index}>
+                                        <TableRow sx={{ ":hover": { backgroundColor: theme.palette.pannelBackground.main, cursor: 'pointer' } }} key={index}>
                                             <TableCell sx={{ width: '30%', padding: "12px 0px" }} >
                                                 <Typography variant='body2' noWrap>{music.title}</Typography>
                                             </TableCell>
-                                            <TableCell sx={{padding: "12px 0px"}}>
+                                            <TableCell sx={{ padding: "12px 0px" }}>
                                                 <Typography variant='body2' noWrap>{music.artists.map(item => item.name).join(" / ")}</Typography>
                                             </TableCell>
-                                            <TableCell sx={{padding: "12px 0px"}}>
+                                            <TableCell sx={{ padding: "12px 0px" }}>
                                                 <Typography variant='body2' noWrap>{music.path}</Typography>
                                             </TableCell>
-                                            <TableCell sx={{padding: "12px 0px"}}>
+                                            <TableCell sx={{ padding: "12px 0px" }}>
                                                 <Box sx={{ display: 'flex' }}>
 
                                                     <Button size='small' sx={{ padding: 0, minWidth: 0 }} onClick={() => setMusicDialogContext({ open: true, musicIndex: index })}><EditOutlinedIcon /></Button>
-                                                    <Button size='small' sx={{ padding: 0, minWidth: 0, marginLeft: '2px' }} onClick={()=>setMusicList(musicList.filter((val, itemIndex)=>itemIndex!==index))}><DeleteOutlineOutlinedIcon /></Button>
+                                                    <Button size='small' sx={{ padding: 0, minWidth: 0, marginLeft: '2px' }} onClick={() => setMusicList(musicList.filter((val, itemIndex) => itemIndex !== index))}><DeleteOutlineOutlinedIcon /></Button>
                                                 </Box>
                                             </TableCell>
                                         </TableRow>
@@ -325,7 +403,7 @@ function AlbumEdit() {
                             }
                         </TableBody>
                     </Table>
-                    <Box sx={[musicList.length === 0 && {display:"none"},{ height: "96px", width: "100%", display: "flex" }]}>
+                    <Box sx={[musicList.length === 0 && { display: "none" }, { height: "96px", width: "100%", display: "flex" }]}>
                         <Typography sx={{ margin: "auto auto" }} >暂无音乐，点击上方按钮添加音乐</Typography>
                     </Box>
                 </TableContainer>
