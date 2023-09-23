@@ -31,12 +31,24 @@ function AlbumManagement() {
     }, [])
 
     const handleChangePage = (event: unknown, newPage: number) => {
+        //分页组件的起始页为0，但后端的起始页为1，手动修正
         setPage(newPage);
+        AlbumControllerService.getAlbumList(newPage + 1)
+            .then(res => {
+                setTotal(res.data.total);
+                setAlbumList(res.data.albumList);
+            })
     };
 
     const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
-        setRowsPerPage(+event.target.value);
+        var newPageRange: number = parseInt(event.target.value);
+        setRowsPerPage(newPageRange);
         setPage(0);
+        AlbumControllerService.getAlbumList(1, newPageRange)
+            .then(res => {
+                setTotal(res.data.total);
+                setAlbumList(res.data.albumList);
+            })
     };
 
 
@@ -79,14 +91,16 @@ function AlbumManagement() {
                     <TableBody >
                         {
                             albumList.map((album, index) => (
-                                <TableRow key={album.albumId}>
-                                    <TableCell sx={{ width: "15%", borderBottom: "unset" }}>
+                                <TableRow key={album.albumId} >
+                                    <TableCell sx={{ width: "15%", borderBottom: "unset" }} align="center">
                                         <CardMedia sx={{
-                                            width: '32px', height: '32px', borderRadius: '6%', flex: "0 0 auto", imageRendering: "auto", objectFit: "contain"
+                                            width: '32px', height: '32px', borderRadius: '6%', flex: "0 0 auto", marginLeft:"12px", imageRendering: "auto", objectFit: "contain"
                                         }} src={album.frontCoverUrl || "/images/akari.jpg"} component="img"></CardMedia>
                                     </TableCell>
                                     <TableCell sx={{ width: "35%", borderBottom: "unset" }}>
-                                        <Typography variant="body2" noWrap>{album.title}</Typography>
+                                        <Link href={`/album/${album.albumId}`}>
+                                            <Typography variant="body2" noWrap sx={{ ":hover": { cursor: "pointer", color: theme.palette.primary.main } }}>{album.title}</Typography>
+                                        </Link>
                                     </TableCell>
                                     <TableCell sx={{ width: "30%", borderBottom: "unset" }}>
                                         <Typography variant="body2" noWrap>{album.artistList.map((v, i) => v.name).join('/')}</Typography>
