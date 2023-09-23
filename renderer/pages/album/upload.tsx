@@ -91,22 +91,22 @@ function AlbumEdit() {
                         var remarkLeft = 0;
                         var isInsideRemark = false;
                         var artistsStringLength = artistsString.length;
-                        for (var i = 0; i < artistsStringLength; ++i) {
-                            var char = artistsString.charAt(i);
+                        for (var j = 0; j < artistsStringLength; ++j) {
+                            var char = artistsString.charAt(j);
                             //如果在备注中，当遇到右括号，即意味着一个作者的条目。
                             //如果不在备注中，遇到分隔符，即意味着一个作者的条目。
                             if (!isInsideRemark) {
                                 if (char === '(' || char === '（') {
                                     isInsideRemark = true;
-                                    remarkLeft = i + 1;
-                                    artistRight = i - 1;
+                                    remarkLeft = j + 1;
+                                    artistRight = j - 1;
                                     continue;
                                 }
 
-                                if (i + 1 === artistsStringLength){
+                                if (j + 1 === artistsStringLength) {
                                     artists.push({
                                         artistId: null,
-                                        name: artistsString.substring(artistLeft, i + 1),
+                                        name: artistsString.substring(artistLeft, j + 1),
                                         translateName: "",
                                         avatarUrl: "",
                                         birth: ""
@@ -117,21 +117,21 @@ function AlbumEdit() {
 
                                 if (char.match(/[・、&\/]+/) !== null) {
                                     //先判断"ArtistA(cv1)分隔符ArtistB"的情况
-                                    if (i === 0) {
+                                    if (j === 0) {
                                         continue;
                                     }
-                                    var lastChar = artistsString.charAt(i - 1);
+                                    var lastChar = artistsString.charAt(j - 1);
                                     if (lastChar === ')' || lastChar === '）') {
                                         continue;
                                     }
                                     artists.push({
                                         artistId: null,
-                                        name: artistsString.substring(artistLeft, i),
+                                        name: artistsString.substring(artistLeft, j),
                                         translateName: "",
                                         avatarUrl: "",
                                         birth: ""
                                     })
-                                    artistLeft = i + 1;
+                                    artistLeft = j + 1;
                                 }
 
                             } else {
@@ -140,15 +140,15 @@ function AlbumEdit() {
                                     artists.push({
                                         artistId: null,
                                         name: artistsString.substring(artistLeft, artistRight + 1),
-                                        translateName: artistsString.substring(remarkLeft, i),
+                                        translateName: artistsString.substring(remarkLeft, j),
                                         avatarUrl: "",
                                         birth: ""
                                     })
-                                    artistLeft = i + 1;
+                                    artistLeft = j + 1;
 
                                     //如果下个字符是分隔符，则artistLeft应当再跳过一个字符
-                                    if (i + 1 !== artistsStringLength) {
-                                        var nextChar = artistsString.charAt(i + 1);
+                                    if (j + 1 !== artistsStringLength) {
+                                        var nextChar = artistsString.charAt(j + 1);
                                         if (nextChar.match(/[・、&\/]+/) !== null) {
                                             artistLeft += 1;
                                         }
@@ -385,7 +385,18 @@ function AlbumEdit() {
                                                 <Typography variant='body2' noWrap>{music.title}</Typography>
                                             </TableCell>
                                             <TableCell sx={{ padding: "12px 0px" }}>
-                                                <Typography variant='body2' noWrap>{music.artists.map(item => item.name).join(" / ")}</Typography>
+                                                <Typography variant='body2' noWrap>
+                                                    {
+                                                        music.artists.map(item => {
+                                                            console.log(item)
+                                                            if (item.translateName !== null && item.translateName.length !== 0) {
+                                                                return `${item.name}(${item.translateName})`;
+                                                            }
+                                                            return item.name;
+                                                        }
+                                                        ).join(" / ")
+                                                    }
+                                                </Typography>
                                             </TableCell>
                                             <TableCell sx={{ padding: "12px 0px" }}>
                                                 <Typography variant='body2' noWrap>{music.path}</Typography>
