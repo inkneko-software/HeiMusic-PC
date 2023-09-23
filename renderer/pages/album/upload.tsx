@@ -15,7 +15,6 @@ interface IMusic {
     title: string,
     path: string,
     artists: ArtistVo[]
-    cover: string,
     file: File
 }
 
@@ -62,12 +61,12 @@ function AlbumEdit() {
                 console.log(file.path)
 
 
-                var coverUrl = null;
-                if (metadata.common.picture !== undefined) {
-                    const b = new Blob([metadata.common.picture[0].data])
-
-                    coverUrl = URL.createObjectURL(b);
+                if (metadata.common.picture !== undefined && cover === null) {
+                    const coverBlob = new Blob([metadata.common.picture[0].data])
+                    console.log(coverBlob)
+                    setCover(coverBlob)
                 }
+
                 var artists: ArtistVo[] = []
                 if (metadata.common.artists !== undefined) {
                     artists = metadata.common.artists.map((name: string, index) => {
@@ -164,7 +163,6 @@ function AlbumEdit() {
                     title: metadata.common.title || '',
                     artists: artists,
                     path: file.path,
-                    cover: coverUrl,
                     file: file
                 }
 
@@ -388,7 +386,6 @@ function AlbumEdit() {
                                                 <Typography variant='body2' noWrap>
                                                     {
                                                         music.artists.map(item => {
-                                                            console.log(item)
                                                             if (item.translateName !== null && item.translateName.length !== 0) {
                                                                 return `${item.name}(${item.translateName})`;
                                                             }
