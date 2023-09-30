@@ -411,7 +411,7 @@ function AlbumEdit() {
                             }
                         </TableBody>
                     </Table>
-                    <Box sx={[musicList.length === 0 && { display: "none" }, { height: "96px", width: "100%", display: "flex" }]}>
+                    <Box sx={[{ height: "96px", width: "100%", display: "flex" }, musicList.length !== 0 && { display: "none" } ]}>
                         <Typography sx={{ margin: "auto auto" }} >暂无音乐，点击上方按钮添加音乐</Typography>
                     </Box>
                 </TableContainer>
