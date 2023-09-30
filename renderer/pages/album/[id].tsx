@@ -87,8 +87,8 @@ function MusicAlbum(props: MusicAlbumProps) {
 
     }, [viewAtTopState])
 
-    const handlePlayAll = ()=>{
-        if (playlist.length !== 0){
+    const handlePlayAll = () => {
+        if (playlist.length !== 0) {
             const event = new CustomEvent<IChangePlayListEvent>("music-control-panel::changePlayList", {
                 detail: {
                     playlist: playlist,
@@ -164,11 +164,6 @@ function MusicAlbum(props: MusicAlbumProps) {
         )
     }
 
-    React.useEffect(() => {
-        console.log("dick1")
-    }, [])
-
-
     // const VirtuosoTableComponents: TableComponents<IMusicInfo> = {
     //     Scroller: React.forwardRef<HTMLDivElement>((props, ref) => (
     //         <TableContainer component={Paper} {...props} ref={ref} sx={{ borderRadius: "0px", boxShadow: "unset", background: "rgba(0,0,0,0)" }} />
@@ -214,10 +209,10 @@ function MusicAlbum(props: MusicAlbumProps) {
     // }
 
     return (
-        <Box sx={{ height: '100%', width: '100%', display: "flex", flexDirection: "column", overflowY: "" }}>
+        <Box sx={{ height: '100%', width: '100%', overflowY: "auto" }}>
             <AlbumInfo />
-            <TableContainer sx={{ flex: '0 1 auto' }}>
-                <Table stickyHeader >
+            <TableContainer sx={{ width: "auto" }}>
+                <Table sx={{ tableLayout: "fixed", padding: "0px 6px", ".MuiTableCell-root": { padding: "16px 6px" } }}>
                     <TableHead>
                         <TableRow >
                             <TableCell style={{ width: "45%" }} sx={{ borderBottom: "unset" }}>歌曲</TableCell>
