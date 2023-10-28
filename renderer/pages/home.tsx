@@ -46,7 +46,7 @@ function AlbumCard(props: IAlbumCard) {
 
             new Promise<void>((resolve, reject) => {
                 imgRef.current.onload = () => resolve()
-                imgRef.current.src = props.album.frontCoverUrl;
+                imgRef.current.src = props.album.frontCoverUrl + "?s=@w256h256";
                 imgRef.current.onerror = reject;
             }).then(() => {
                 setLoaded(true);
@@ -102,7 +102,7 @@ function Home() {
                 <Grid container spacing={3} sx={{ display: 'flex', justifyContent: "space-between", }} columns={{ xs: 12, lg: 15, xl: 18 }} >
                     {
                         [1, 2, 3, 4, 5, 6, 7, 8, 9].map((val, index) => {
-                            return <AlbumCard key={index} album={{albumId: 0, title: "dick"}} />
+                            return <AlbumCard key={index} album={{albumId: 0}} />
                         })
                     }
                 </Grid>

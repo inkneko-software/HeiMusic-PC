@@ -369,9 +369,10 @@ function AlbumEdit() {
                         <TableHead>
                             <TableRow>
                                 <TableCell width='30%' sx={{ padding: "12px 0px" }}>歌曲名称</TableCell>
-                                <TableCell width='40%' sx={{ padding: "12px 0px" }}>歌手</TableCell>
+                                <TableCell width='30%' sx={{ padding: "12px 0px" }}>歌手</TableCell>
                                 <TableCell width='15%' sx={{ padding: "12px 0px" }}>音乐文件</TableCell>
-                                <TableCell width='15%' sx={{ padding: "12px 0px" }}></TableCell>
+                                <TableCell width='15%' sx={{ padding: "12px 0px" }}>进度</TableCell>
+                                <TableCell width='10%' sx={{ padding: "12px 0px" }}>选项</TableCell>
                             </TableRow>
                         </TableHead>
                         <TableBody>
@@ -379,10 +380,10 @@ function AlbumEdit() {
                                 musicList.map((music, index) => {
                                     return (
                                         <TableRow sx={{ ":hover": { backgroundColor: theme.palette.pannelBackground.main, cursor: 'pointer' } }} key={index}>
-                                            <TableCell sx={{ width: '30%', padding: "12px 0px" }} >
+                                            <TableCell sx={{ width: '30%', padding: "12px 0px", paddingRight: "12px" }} >
                                                 <Typography variant='body2' noWrap>{music.title}</Typography>
                                             </TableCell>
-                                            <TableCell sx={{ padding: "12px 0px" }}>
+                                            <TableCell sx={{ padding: "12px 0px", paddingRight: "12px" }}>
                                                 <Typography variant='body2' noWrap>
                                                     {
                                                         music.artists.map(item => {
@@ -395,16 +396,20 @@ function AlbumEdit() {
                                                     }
                                                 </Typography>
                                             </TableCell>
-                                            <TableCell sx={{ padding: "12px 0px" }}>
+                                            <TableCell sx={{ padding: "12px 0px", paddingRight: "12px" }}>
                                                 <Typography variant='body2' noWrap>{music.path}</Typography>
                                             </TableCell>
-                                            <TableCell sx={{ padding: "12px 0px" }}>
+                                            <TableCell sx={{ padding: "12px 0px", paddingRight: "12px" }}>
+                                                <Typography noWrap variant='body2'>10% / 256KB</Typography>
+                                            </TableCell>
+                                            <TableCell sx={{ padding: "12px 0px", paddingRight: "12px" }}>
                                                 <Box sx={{ display: 'flex' }}>
 
                                                     <Button size='small' sx={{ padding: 0, minWidth: 0 }} onClick={() => setMusicDialogContext({ open: true, musicIndex: index })}><EditOutlinedIcon /></Button>
                                                     <Button size='small' sx={{ padding: 0, minWidth: 0, marginLeft: '2px' }} onClick={() => setMusicList(musicList.filter((val, itemIndex) => itemIndex !== index))}><DeleteOutlineOutlinedIcon /></Button>
                                                 </Box>
                                             </TableCell>
+                                            
                                         </TableRow>
                                     )
                                 })

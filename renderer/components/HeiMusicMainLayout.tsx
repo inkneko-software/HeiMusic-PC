@@ -40,6 +40,11 @@ import InputBase from '@mui/material/InputBase'
 import Paper from '@mui/material/Paper'
 import { ApiError, AuthControllerService, UserControllerService } from '../api/codegen'
 import { useRouter } from 'next/router'
+import ChevronRightOutlinedIcon from '@mui/icons-material/ChevronRightOutlined';
+import ChevronLeftOutlinedIcon from '@mui/icons-material/ChevronLeftOutlined';
+
+import ArrowForwardIosOutlinedIcon from '@mui/icons-material/ArrowForwardIosOutlined';
+import ArrowBackIosOutlinedIcon from '@mui/icons-material/ArrowBackIosOutlined';
 
 function HeiMusicMainLayout({ children }) {
     const theme = useTheme()
@@ -108,13 +113,18 @@ function HeiMusicMainLayout({ children }) {
             <OnCloseDialog open={dialogOpen} onClose={() => { setDialogOpen(false) }} />
             {/* Logo 与 系统标题栏 */}
             <Box sx={{ height: "64px", flex: '0 0 auto', width: '100%', display: 'flex', WebkitAppRegion: 'drag', userSelect: 'none' }}>
+                {/* 左侧logo */}
                 <Box sx={{ width: '196px', height: '100%', background: theme.palette.pannelBackground.main, display: 'flex' }} >
                     <Box sx={{ margin: 'auto auto auto 12px', display: 'flex' }}>
                         <Avatar src='/images/logo.jpg'></Avatar>
                         <Typography sx={{ margin: 'auto 0 auto 6px' }} variant="h6">HeiMusic!</Typography>
                     </Box>
                 </Box>
+                {/* 右侧状态栏 */}
                 <Box sx={{ flexGrow: 1, display: 'flex', background: theme.palette.pannelBackground.light }}>
+                    {/* 导航前进与后退 */}
+                    <IconButton size="small" onClick={()=>{router.back()}} sx={{ margin: "auto 0px",  WebkitAppRegion: 'no-drag' }}><ChevronLeftOutlinedIcon/></IconButton>
+                    <IconButton size="small" onClick={()=>{window.history.forward()}} sx={{ margin: "auto 0px",  WebkitAppRegion: 'no-drag' }}><ChevronRightOutlinedIcon/></IconButton>
                     <Box sx={{ margin: "auto 12px", WebkitAppRegion: 'no-drag' }}>
                         <InputBase startAdornment={<SearchOutlinedIcon />} size='small' placeholder='搜索音乐' sx={{ borderRadius: '12px', border: '1px grey solid', padding: '2px 12px', fontSize: '14px', "input": { padding: 0 } }} />
                     </Box>
