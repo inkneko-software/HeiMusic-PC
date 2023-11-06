@@ -1,6 +1,7 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
+import type { CreateRootAccountDto } from '../models/CreateRootAccountDto';
 import type { LoginDto } from '../models/LoginDto';
 import type { Response } from '../models/Response';
 import type { ResponseIsExistsRootAccountVo } from '../models/ResponseIsExistsRootAccountVo';
@@ -149,6 +150,23 @@ email: string,
             query: {
                 'email': email,
             },
+        });
+    }
+
+    /**
+     * 创建唯一管理账户
+     * @param requestBody 
+     * @returns ResponseObject OK
+     * @throws ApiError
+     */
+    public static createRootAccount(
+requestBody: CreateRootAccountDto,
+): CancelablePromise<ResponseObject> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/auth/createRootAccount',
+            body: requestBody,
+            mediaType: 'application/json',
         });
     }
 

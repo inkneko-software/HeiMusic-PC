@@ -32,6 +32,24 @@ requestBody: UpdateAlbumInfoDto,
     }
 
     /**
+     * 删除专辑
+     * @param albumId 
+     * @returns ResponseObject OK
+     * @throws ApiError
+     */
+    public static removeAlbum(
+albumId: number,
+): CancelablePromise<ResponseObject> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/album/removeAlbum',
+            query: {
+                'albumId': albumId,
+            },
+        });
+    }
+
+    /**
      * 添加专辑
      * @param title 
      * @param translateTitle 

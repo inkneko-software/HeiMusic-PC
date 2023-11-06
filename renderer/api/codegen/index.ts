@@ -9,6 +9,7 @@ export type { OpenAPIConfig } from './core/OpenAPI';
 export type { AlbumListVo } from './models/AlbumListVo';
 export type { AlbumVo } from './models/AlbumVo';
 export type { ArtistVo } from './models/ArtistVo';
+export type { CreateRootAccountDto } from './models/CreateRootAccountDto';
 export type { IsExistsRootAccountVo } from './models/IsExistsRootAccountVo';
 export type { LoginDto } from './models/LoginDto';
 export type { Music } from './models/Music';
