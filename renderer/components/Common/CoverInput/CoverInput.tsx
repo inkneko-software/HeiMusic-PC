@@ -5,7 +5,7 @@ interface ICoverInput {
     width?: string,
     height?: string,
     radius?: string,
-    cover: Blob,
+    cover: Blob | string,
     onCoverChanged: (cover: Blob) => void
 }
 
@@ -33,8 +33,10 @@ const CoverInput = (({ width = "128px", height = "128px", radius = "6%", cover, 
     }
 
     React.useEffect(() => {
-        if (cover !== null){
+        if (cover instanceof Blob){
             setCoverPreviewLink(URL.createObjectURL(cover))
+        }else if (typeof(cover) === 'string'){
+            setCoverPreviewLink(cover)
         }
     }, [cover])
 
