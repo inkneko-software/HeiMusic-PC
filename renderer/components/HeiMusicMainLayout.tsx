@@ -22,7 +22,7 @@ import Crop75OutlinedIcon from '@mui/icons-material/Crop75Outlined'
 import Close from '@mui/icons-material/Close'
 import Maximize from '@mui/icons-material/Maximize'
 import MenuIcon from '@mui/icons-material/Menu'
-import Poper from '@mui/material/Popper'
+import Popover from '@mui/material/Popover'
 
 import LoginDialog from './Auth/LoginDialog'
 import Avatar from '@mui/material/Avatar'
@@ -123,8 +123,9 @@ function HeiMusicMainLayout({ children }) {
                 {/* 右侧状态栏 */}
                 <Box sx={{ flexGrow: 1, display: 'flex', background: theme.palette.pannelBackground.light }}>
                     {/* 导航前进与后退 */}
-                    <IconButton size="small" onClick={()=>{router.back()}} sx={{ margin: "auto 0px",  WebkitAppRegion: 'no-drag' }}><ChevronLeftOutlinedIcon/></IconButton>
-                    <IconButton size="small" onClick={()=>{window.history.forward()}} sx={{ margin: "auto 0px",  WebkitAppRegion: 'no-drag' }}><ChevronRightOutlinedIcon/></IconButton>
+                    <IconButton size="small" onClick={() => { router.back() }} sx={{ margin: "auto 0px", WebkitAppRegion: 'no-drag' }}><ChevronLeftOutlinedIcon /></IconButton>
+                    <IconButton size="small" onClick={() => { window.history.forward() }} sx={{ margin: "auto 0px", WebkitAppRegion: 'no-drag' }}><ChevronRightOutlinedIcon /></IconButton>
+                    {/* 搜索框 */}
                     <Box sx={{ margin: "auto 12px", WebkitAppRegion: 'no-drag' }}>
                         <InputBase startAdornment={<SearchOutlinedIcon />} size='small' placeholder='搜索音乐' sx={{ borderRadius: '12px', border: '1px grey solid', padding: '2px 12px', fontSize: '14px', "input": { padding: 0 } }} />
                     </Box>
@@ -145,15 +146,24 @@ function HeiMusicMainLayout({ children }) {
                         </HeiMusicThemeContext.Consumer>
 
                         <IconButton title='设置' ref={settingButtonRef} onClick={() => { setSettingMenuOpen(!settingMenuOpen) }} sx={{ color: theme.palette.text.primary }}><MenuIcon fontSize='small' /></IconButton>
-                        <Poper anchorEl={settingButtonRef.current} open={settingMenuOpen}>
+                        <Popover
+                            anchorEl={settingButtonRef.current}
+                            open={settingMenuOpen}
+                            onClose={() => setSettingMenuOpen(false)}
+                            anchorOrigin={{
+                                vertical: 'bottom',
+                                horizontal: 'left',
+                              }} >
                             <Paper sx={{ display: 'flex', flexDirection: 'column' }}>
                                 <Link href="/userDetail">
-                                    <Button>用户设置</Button>
+                                    <Button onClick={() => setSettingMenuOpen(false)}>用户设置</Button>
                                 </Link>
-                                <Button>播放器设置</Button>
+                                <Link href="/settings/player/home">
+                                    <Button onClick={() => setSettingMenuOpen(false)}>播放器设置</Button>
+                                </Link>
                                 <Button onClick={handleLogout}>退出登录</Button>
                             </Paper>
-                        </Poper>
+                        </Popover>
                     </Box>
                     {
                         typeof (window) !== 'undefined' && typeof (window.electronAPI) !== 'undefined' &&
