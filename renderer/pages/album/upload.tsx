@@ -9,6 +9,8 @@ import { ArtistVo, ArtistControllerService, AlbumControllerService, MusicControl
 import CoverInput from "@components/Common/CoverInput/CoverInput";
 import { useRouter } from "next/router";
 
+import { addMusic } from "@api/upload/music";
+
 
 interface IMusic {
     musicId: number,
@@ -16,6 +18,8 @@ interface IMusic {
     path: string,
     artists: ArtistVo[]
     file: File
+    loaded?: number,
+    total?: number
 }
 
 interface IMusicDialog {
@@ -40,6 +44,7 @@ function AlbumEdit() {
     const [musicList, setMusicList] = React.useState<IMusic[]>([])
 
     const musicFileRef = React.useRef<HTMLInputElement>(null)
+    const [transfering, setTransfering] = React.useState<boolean>(false);
 
     const addArtist = (name: string) => {
 
@@ -163,7 +168,9 @@ function AlbumEdit() {
                     title: metadata.common.title || '',
                     artists: artists,
                     path: file.path,
-                    file: file
+                    file: file,
+                    loaded: 0,
+                    total: file.size
                 }
 
 
@@ -223,15 +230,33 @@ function AlbumEdit() {
         var albumInfo = await AlbumControllerService.addAlbum(title, "", albumArtists.map(item => item.artistId), { frontCover: cover })
         console.log(albumInfo.data.albumId)
 
+        setTransfering(true);
         var musicIds: number[] = []
         for (var i = 0; i < musicList.length; ++i) {
             var item = musicList[i]
-            musicIds.push((await MusicControllerService.addMusic(item.title, "", item.artists.map(artist => artist.name), { file: item.file })).data.musicId)
+            musicIds.push((
+                await addMusic(item.title, item.file, "", item.artists.map(artist => artist.name), (loaded, total)=>{
+                    setMusicList(musicList.map((val, index)=>{
+                        if(index === i){
+                            val.loaded = loaded;
+                            val.total = total;
+                        }
+                        return val;
+                    }))
+                })).data.musicId)
         }
 
         await AlbumControllerService.addAlbumMusic(albumInfo.data.albumId, musicIds)
         router.push(`/album/${albumInfo.data.albumId}`)
 
+    }
+
+    const uploadProgressPretty = (loaded: number, total: number) => {
+        if (transfering){
+            return `${(loaded/total * 100).toFixed(0)} %`
+        }
+
+        return `0% / ${(total / 1024 / 1024).toFixed(2)} MB`
     }
 
     return (
@@ -400,7 +425,7 @@ function AlbumEdit() {
                                                 <Typography variant='body2' noWrap>{music.path}</Typography>
                                             </TableCell>
                                             <TableCell sx={{ padding: "12px 0px", paddingRight: "12px" }}>
-                                                <Typography noWrap variant='body2'>10% / 256KB</Typography>
+                                                <Typography noWrap variant='body2'>{uploadProgressPretty(music.loaded, music.total)}</Typography>
                                             </TableCell>
                                             <TableCell sx={{ padding: "12px 0px", paddingRight: "12px" }}>
                                                 <Box sx={{ display: 'flex' }}>
