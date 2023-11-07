@@ -84,26 +84,27 @@ function HeiMusicMainLayout({ children }) {
             void window.electronAPI.config.get().then((value) => {
                 setHeiMusicConfig(value)
             })
-            // 读取登录状态
-            UserControllerService.nav()
-                .then(res => {
-                    if (res.code === 0) {
-                        setUserDetail({ avatarUrl: res.data.avatarUrl, username: res.data.username === null ? `用户[${res.data.userId}]` : res.data.username })
-                    } else {
-                        makeToast(res.message, "error", "bottom-left")
-                    }
-                })
-                .catch((error: ApiError) => {
-                    if (error.status === 403) {
-
-                    } else {
-                        makeToast('网络连接失败', 'error', "top-right")
-                    }
-                })
-                .catch(() => {
-                    makeToast('网络连接失败', 'error', "top-right")
-                })
         }
+
+        // 读取登录状态
+        UserControllerService.nav()
+        .then(res => {
+            if (res.code === 0) {
+                setUserDetail({ avatarUrl: res.data.avatarUrl, username: res.data.username === null ? `用户[${res.data.userId}]` : res.data.username })
+            } else {
+                makeToast(res.message, "error", "bottom-left")
+            }
+        })
+        .catch((error: ApiError) => {
+            if (error.status === 403) {
+
+            } else {
+                makeToast('网络连接失败', 'error', "top-right")
+            }
+        })
+        .catch(() => {
+            makeToast('网络连接失败', 'error', "top-right")
+        })
     }, [])
 
     return (

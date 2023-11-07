@@ -20,3 +20,18 @@ npm run build
 #开发
 npm run dev
 ```
+
+### 网页端
+
+本项目可直接使用浏览器访问。
+
+非electron环境时，api请求默认使用前端页面的同host。
+
+请确保`renderer/next.config.js`中api服务器指向正确，以使得nodejs server能够正确转发请求
+
+```
+#编译
+npx next build renderer
+#运行
+npx next start renderer
+```
