@@ -109,8 +109,17 @@ function saveConfig() {
      * windowManagement
      */
     ipcMain.on("windowManagement::close", () => { app.quit() })
-    ipcMain.on("windowManagement::minimize", () => { mainWindow.minimize() })
-    ipcMain.on("windowManagement::maximize", () => { mainWindow.maximize() })
+    ipcMain.on("windowManagement::minimize", () => {
+        mainWindow.minimize()
+    })
+
+    ipcMain.on("windowManagement::maximize", () => {
+        if (mainWindow.isMaximized()) {
+            mainWindow.unmaximize()
+        } else {
+            mainWindow.maximize()
+        }
+    })
 
     /**
      * music
@@ -160,14 +169,14 @@ function saveConfig() {
             // }
             // console.log("Electron webhook 已添加跨域头：", details.url, details.method, details.statusCode)
             var cookies: string[] = [];
-            if (typeof (details.responseHeaders["Set-Cookie"]) !== "undefined" ) {
-                 cookies = details.responseHeaders["Set-Cookie"];
-                
+            if (typeof (details.responseHeaders["Set-Cookie"]) !== "undefined") {
+                cookies = details.responseHeaders["Set-Cookie"];
+
             }
-            if (typeof (details.responseHeaders["set-cookie"]) !== "undefined"){
+            if (typeof (details.responseHeaders["set-cookie"]) !== "undefined") {
                 cookies = details.responseHeaders["set-cookie"];
             }
-            if (cookies.length !== 0){
+            if (cookies.length !== 0) {
                 cookies.forEach((value, index) => {
                     if (value.startsWith("sessionId")) {
                         heiMusicConfig.sessionId = value.split(";")[0].split("=")[1];
@@ -187,17 +196,17 @@ function saveConfig() {
         {
             tooltip: '上一曲',
             icon: nativeImage.createFromPath(path.join(__dirname, "images", "thumbar", "prev.png")),
-            click: ()=> { mainWindow.webContents.send("playback::prev") }
+            click: () => { mainWindow.webContents.send("playback::prev") }
         },
         {
             tooltip: '播放',
             icon: nativeImage.createFromPath(path.join(__dirname, "images", "thumbar", "play.png")),
-            click: ()=> { mainWindow.webContents.send("playback::play")  }
+            click: () => { mainWindow.webContents.send("playback::play") }
         },
         {
             tooltip: '下一曲',
             icon: nativeImage.createFromPath(path.join(__dirname, "images", "thumbar", "next.png")),
-            click: ()=> { mainWindow.webContents.send("playback::next")  }
+            click: () => { mainWindow.webContents.send("playback::next") }
         }
     ])
 

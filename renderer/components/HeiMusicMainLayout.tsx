@@ -43,8 +43,10 @@ import { useRouter } from 'next/router'
 import ChevronRightOutlinedIcon from '@mui/icons-material/ChevronRightOutlined';
 import ChevronLeftOutlinedIcon from '@mui/icons-material/ChevronLeftOutlined';
 
-import ArrowForwardIosOutlinedIcon from '@mui/icons-material/ArrowForwardIosOutlined';
-import ArrowBackIosOutlinedIcon from '@mui/icons-material/ArrowBackIosOutlined';
+import FilterNoneOutlinedIcon from '@mui/icons-material/FilterNoneOutlined';
+import ZoomInMapOutlinedIcon from '@mui/icons-material/ZoomInMapOutlined';
+import WebAssetOutlinedIcon from '@mui/icons-material/WebAssetOutlined';
+
 
 function HeiMusicMainLayout({ children }) {
     const theme = useTheme()
@@ -56,6 +58,14 @@ function HeiMusicMainLayout({ children }) {
     const [heiMusicConfig, setHeiMusicConfig] = React.useState<HeiMusicConfig>(null)
     const settingButtonRef = React.useRef(null)
     const [settingMenuOpen, setSettingMenuOpen] = React.useState(false)
+
+    const onMinimizedClicked = () => {
+        window.electronAPI.windowManagement.minimize()
+    }
+
+    const onWindowedModeClicked = () =>{
+        window.electronAPI.windowManagement.maximize()
+    }
 
     const onCloseClicked = () => {
         if (heiMusicConfig.closeWindowMinimized === null) {
@@ -170,8 +180,8 @@ function HeiMusicMainLayout({ children }) {
                         typeof (window) !== 'undefined' && typeof (window.electronAPI) !== 'undefined' &&
                         <Box sx={{ margin: 'auto 0 auto 0', WebkitAppRegion: 'no-drag', display: 'flex' }}>
                             <Box sx={{ width: 2, height: 18, background: 'gray', margin: 'auto 6px auto 6px' }}></Box>
-                            <IconButton sx={{ color: theme.palette.text.primary }}><Remove /> </IconButton>
-                            <IconButton sx={{ color: theme.palette.text.primary }} ><Crop75OutlinedIcon /> </IconButton>
+                            <IconButton sx={{ color: theme.palette.text.primary }} onClick={onMinimizedClicked}><Remove /> </IconButton>
+                            <IconButton sx={{ color: theme.palette.text.primary }} onClick={onWindowedModeClicked} >{<WebAssetOutlinedIcon /> } </IconButton>
                             <IconButton sx={{ color: theme.palette.text.primary }} onClick={onCloseClicked}><Close /></IconButton>
                         </Box>
                     }
