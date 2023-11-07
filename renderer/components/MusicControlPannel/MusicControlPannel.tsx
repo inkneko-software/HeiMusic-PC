@@ -141,8 +141,22 @@ function MusicControlPannel(props: IMusicControlPannel) {
                 setTimeLabel(`${currentMinutes}:${currentSeconds} / ${durationMinutes}:${durationSeconds}`)
             }
 
-            audio.onpause = () => {
+            if ("mediaSession" in navigator){
+                navigator.mediaSession.setActionHandler("play", ()=>{
+                    handlePlayButtonClick()
+                })
 
+                navigator.mediaSession.setActionHandler("pause", ()=>{
+                    handlePlayButtonClick();
+                })
+            }
+
+            audio.onplay = () => {
+                setPlayBtnIcon(<PauseCircleFilled style={{ fontSize: 42 }} />)
+            }
+
+            audio.onpause = () => {
+                setPlayBtnIcon(<PlayCircleFilled style={{ fontSize: 42 }} />)
             }
 
             audio.onended = () => {
@@ -176,18 +190,18 @@ function MusicControlPannel(props: IMusicControlPannel) {
             }
             document.addEventListener("music-control-panel::changePlayList", changePlayList);
             document.addEventListener("music-control-panel::changeMusic", changeMusic);
-            if(window.electronAPI !== undefined){
+            if (window.electronAPI !== undefined) {
                 window.electronAPI.playback.next(handleNextClick);
                 window.electronAPI.playback.prev(handlePrevClick);
                 window.electronAPI.playback.play(handlePlayButtonClick);
             }
-            
+
 
             return () => {
                 audio.ontimeupdate = null;
                 document.removeEventListener("music-control-panel::changePlayList", changePlayList);
                 document.removeEventListener("music-control-panel::changeMusic", changeMusic);
-                if (window.electronAPI !== undefined){
+                if (window.electronAPI !== undefined) {
                     window.electronAPI.playback.cleanup();
                 }
 
@@ -236,7 +250,6 @@ function MusicControlPannel(props: IMusicControlPannel) {
                     handle = null;
                 }
             }, 100)
-            setPlayBtnIcon(<PauseCircleFilled style={{ fontSize: 42 }} />)
 
         } else {
             var counter = 0;
@@ -257,7 +270,6 @@ function MusicControlPannel(props: IMusicControlPannel) {
                     handle = null;
                 }
             }, 100)
-            setPlayBtnIcon(<PlayCircleFilled style={{ fontSize: 42 }} />)
 
         }
     }
