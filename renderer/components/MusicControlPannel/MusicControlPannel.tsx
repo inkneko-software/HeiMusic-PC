@@ -74,7 +74,8 @@ export interface IMusicInfo {
     qualityOption: IMusicQuality[],
     albumId: number,
     albumTitle: string,
-    cover: string
+    cover: string,
+    duration?: number,
 }
 
 interface IPlayingMusicInfo extends IMusicInfo {

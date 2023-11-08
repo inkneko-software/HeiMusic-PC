@@ -1,5 +1,5 @@
 import Box from '@mui/material/Box'
-import { BoxProps, CardMedia, Typography } from "@mui/material"
+import { BoxProps, CardMedia, IconButton, Stack, Typography, useTheme } from "@mui/material"
 
 import * as React from 'react';
 import Table from '@mui/material/Table';
@@ -15,6 +15,9 @@ import Button from '@mui/material/Button';
 import { TableVirtuoso, TableComponents } from 'react-virtuoso';
 import { useRouter } from 'next/router';
 
+import FavoriteBorderOutlinedIcon from '@mui/icons-material/FavoriteBorderOutlined';
+import FavoriteOutlinedIcon from '@mui/icons-material/FavoriteOutlined';
+
 import { IChangePlayListEvent, IMusicInfo, IMusicQuality } from '../../components/MusicControlPannel/MusicControlPannel';
 import { AlbumControllerService, ArtistVo } from '../../api/codegen';
 
@@ -24,6 +27,7 @@ interface MusicAlbumProps extends BoxProps {
 
 function MusicAlbum(props: MusicAlbumProps) {
     const router = useRouter()
+    const theme = useTheme()
     const { id } = router.query
     const [albumInfo, setAlbumInfo] = React.useState({
         albumId: 0,
@@ -34,7 +38,10 @@ function MusicAlbum(props: MusicAlbumProps) {
         listenedCount: 0,
     })
     const [playlist, setPlayList] = React.useState<IMusicInfo[]>([])
-    const [viewAtTopState, setViewAtTopState] = React.useState(true)
+    const [showLargeAlbumInfo, setShowLargeAlbumInfo] = React.useState(true)
+
+    const containerRef = React.useRef<HTMLElement>();
+    const albumInfoRef = React.useRef<HTMLElement>();
 
     React.useEffect(() => {
         if (typeof (id) !== "string") {
@@ -76,7 +83,8 @@ function MusicAlbum(props: MusicAlbumProps) {
                     }],
                     albumId: albumInfo.albumId,
                     albumTitle: albumInfo.title,
-                    cover: albumInfo.frontCoverUrl
+                    cover: albumInfo.frontCoverUrl,
+                    duration: music.duration
                 }
             }))
         })()
@@ -84,8 +92,24 @@ function MusicAlbum(props: MusicAlbumProps) {
     }, [id])
 
     React.useEffect(() => {
+        if (containerRef.current !== null && albumInfoRef.current !== null) {
+            var container = containerRef.current;
+            var albumInfo = albumInfoRef.current;
+            container.onscroll = () => {
+                console.log(container.scrollTop, albumInfo.clientHeight, albumInfo.offsetTop, albumInfo.clientHeight + albumInfo.offsetTop)
+                console.log(albumInfo)
+                if (container.scrollTop > albumInfo.clientHeight + albumInfo.offsetTop) {
+                    setShowLargeAlbumInfo(false)
+                } else {
+                    setShowLargeAlbumInfo(true)
+                }
+            }
 
-    }, [viewAtTopState])
+            return () => {
+                container.onscroll = null;
+            }
+        }
+    }, [containerRef, albumInfoRef])
 
     const handlePlayAll = () => {
         if (playlist.length !== 0) {
@@ -98,16 +122,23 @@ function MusicAlbum(props: MusicAlbumProps) {
             document.dispatchEvent(event)
         }
     }
-    const AlbumInfo = () => {
-        return (
+
+    const timePretty = (time: number) => {
+        return `${(time / 60).toFixed(0).padStart(2, "0")}:${(time % 60).toString().padStart(2, "0")}`
+    }
+
+    return (
+        <Box sx={{ height: '100%', width: '100%', overflowY: "auto" }} ref={containerRef}>
             <Box sx={{
                 marginTop: '20px',
                 width: "auto",
                 padding: "0px 12px 10px 12px",
                 display: 'flex',
-            }}>
+            }}
+                ref={albumInfoRef}
+            >
                 <CardMedia sx={{
-                    width: '180px', height: '180px', borderRadius: '6%', flex: "0 0 auto", imageRendering: "auto", border: "1px solid #e3e3e3", objectFit: "contain"
+                    width: '160px', height: '160px', borderRadius: '6%', flex: "0 0 auto", imageRendering: "auto", border: "1px solid #e3e3e3", objectFit: "contain"
                 }} src={albumInfo.cover || "/images/akari.jpg"} component="img"></CardMedia>
                 {/* <MusicNote sx={{
                     width: '180px', height: '180px', borderRadius: '6%', flex: "0 0 auto",  border: "1px solid #e3e3e3", fontSize: 72 
@@ -131,116 +162,100 @@ function MusicAlbum(props: MusicAlbumProps) {
                     </Box>
                 </Box>
             </Box>
-        )
-    }
-
-    const AlbumInfoLite = () => {
-        return (
-            <Box sx={{
-                marginTop: '20px',
-                display: 'flex',
-                padding: "0px 12px 10px 12px"
-            }}>
-                <Avatar sx={{
-                    width: '90px', height: '90px', borderRadius: '3%'
-                }} variant="square" src={albumInfo.cover}><MusicNote style={{ fontSize: 72 }} /></Avatar>
-                <Box sx={{
-                    marginLeft: '20px',
-                    width: "auto",
-                    overflow: "hidden",
-                    flex: '1',
+            <Box sx={[
+                {
+                    marginTop: '20px',
                     display: 'flex',
-                    flexFlow: 'column',
-                }}>
-                    <Typography fontWeight={600} variant='h5' noWrap >{albumInfo.title}</Typography>
+                    height:"fit-content",
+                    flexDirection: "column",
+                    position: "sticky",
+                    overflow:"hidden",
+                    background: theme.palette.pannelBackground.light,
+                    top: "0px",
+                    zIndex: 10,
+                    transition:"height .3s cubic-bezier(0.42, 1.0, 1.0, 1.0) 0s;"
+                },
+                showLargeAlbumInfo && {
+                    visibility:"hidden",
+                    height:"0px",
+                }
+            ]}>
+                <Box sx={{ display: "flex", padding: "0px 12px 10px 12px",}}>
+                    <CardMedia sx={{
+                        width: '90px', height: '90px', borderRadius: '6%', flex: "0 0 auto", imageRendering: "auto", border: "1px solid #e3e3e3", objectFit: "contain"
+                    }} src={albumInfo.cover || "/images/akari.jpg"} component="img"></CardMedia>
+                    <Box sx={{
+                        marginLeft: '20px',
+                        width: "auto",
+                        overflow: "hidden",
+                        flex: '1',
+                        display: 'flex',
+                        flexFlow: 'column',
+                    }}>
+                        <Typography fontWeight={600} variant='h5' noWrap >{albumInfo.title}</Typography>
 
-                    <Box sx={{ margin: "14px 0px", fontSize: "14px", color: "gray" }}>{"播放量 " + albumInfo.listenedCount}</Box>
+                        <Box sx={{ margin: "14px 0px", fontSize: "14px", color: "gray" }}>{"播放量 " + albumInfo.listenedCount}</Box>
+                    </Box>
+                    <Box sx={{ marginTop: "auto" }}>
+                        <Button sx={{ width: "90px", height: "32px", marginRight: "30px" }} variant='contained'>播放全部</Button>
+                        <Button className="album-brief-tool-bar-btn" variant='outlined'>下载</Button>
+                    </Box>
                 </Box>
-                <Box sx={{ marginTop: "auto" }}>
-                    <Button sx={{ width: "90px", height: "32px", marginRight: "30px" }} variant='contained'>播放全部</Button>
-                    <Button className="album-brief-tool-bar-btn" variant='outlined'>下载</Button>
-                </Box>
+
+                <TableContainer sx={{ width: "auto", padding: "0px 12px", }}>
+                    <Table sx={{ tableLayout: "fixed", ".MuiTableCell-root": { padding: "0px 6px" } }}>
+                        <TableHead>
+                            <TableRow >
+                                <TableCell style={{ width: "5%" }} sx={{ borderBottom: "unset" }}></TableCell>
+                                <TableCell style={{ width: "45%" }} sx={{ borderBottom: "unset" }}>歌曲</TableCell>
+                                <TableCell style={{ width: "40%" }} sx={{ borderBottom: "unset" }}>歌手</TableCell>
+                                <TableCell style={{ width: "10%" }} sx={{ borderBottom: "unset" }}>时长</TableCell>
+                            </TableRow>
+                        </TableHead>
+                    </Table>
+                </TableContainer>
             </Box>
-        )
-    }
-
-    // const VirtuosoTableComponents: TableComponents<IMusicInfo> = {
-    //     Scroller: React.forwardRef<HTMLDivElement>((props, ref) => (
-    //         <TableContainer component={Paper} {...props} ref={ref} sx={{ borderRadius: "0px", boxShadow: "unset", background: "rgba(0,0,0,0)" }} />
-    //     )),
-    //     Table: (props) => (
-    //         <Table {...props} sx={{ borderCollapse: 'separate', tableLayout: 'fixed' }} />
-    //     ),
-    //     TableHead,
-    //     TableRow: ({ item: _item, "data-item-index": _index,  ...props }) => <TableRow {...props} onDoubleClick={() => {
-    //         const event = new CustomEvent<IChangePlayListEvent>("music-control-panel::changePlayList", {
-    //             detail: {
-    //                 playlist: playlist,
-    //                 startIndex: _index
-    //             }
-    //         });
-    //         document.dispatchEvent(event)
-    //     }} />,
-    //     TableBody: React.forwardRef<HTMLTableSectionElement>((props, ref) => (
-    //         <TableBody {...props} ref={ref} />
-    //     )),
-    // };
-
-    // const fixedHeaderContent = () => {
-    //     return (
-    //         <TableRow>
-    //             <TableCell key="title" variant="head" style={{ width: 300 }} sx={{ backgroundColor: 'background.paper', borderBottom: "unset" }}>歌曲</TableCell>
-    //             <TableCell key="artists" variant="head" style={{ width: 300 }} sx={{ backgroundColor: 'background.paper', borderBottom: "unset" }}>歌手</TableCell>
-    //             <TableCell key="duration" variant="head" style={{ width: 100 }} sx={{ backgroundColor: 'background.paper', borderBottom: "unset" }}>时长</TableCell>
-    //         </TableRow>
-    //     )
-    // }
-
-
-    // const rowContent = (_index: number, row: IMusicInfo) => {
-    //     return (
-    //         <React.Fragment >
-    //             <TableCell key="title" sx={{ borderBottom: "unset", textOverflow: "ellipsis", whiteSpace: "nowrap", overflowX: "hidden" }}>{row.title}</TableCell>
-    //             <TableCell key="artists"  sx={{ borderBottom: "unset", textOverflow: "ellipsis", whiteSpace: "nowrap", overflowX: "hidden" }}>{row.artists.join(" / ")}</TableCell>
-    //             <TableCell key="duration" sx={{ borderBottom: "unset", textOverflow: "ellipsis", whiteSpace: "nowrap", overflowX: "hidden" }}>{0}</TableCell>
-
-    //         </React.Fragment>
-    //     );
-    // }
-
-    return (
-        <Box sx={{ height: '100%', width: '100%', overflowY: "auto" }}>
-            <AlbumInfo />
-            <TableContainer sx={{ width: "auto" }}>
-                <Table sx={{ tableLayout: "fixed", padding: "0px 6px", ".MuiTableCell-root": { padding: "16px 6px" } }}>
+            <TableContainer sx={{ width: "auto", padding: "0px 12px", }}>
+                <Table sx={{ tableLayout: "fixed", ".MuiTableCell-root": { padding: "14px 6px" } }}>
                     <TableHead>
                         <TableRow >
+                            <TableCell style={{ width: "5%" }} sx={{ borderBottom: "unset" }}></TableCell>
                             <TableCell style={{ width: "45%" }} sx={{ borderBottom: "unset" }}>歌曲</TableCell>
-                            <TableCell style={{ width: "45%" }} sx={{ borderBottom: "unset" }}>歌手</TableCell>
+                            <TableCell style={{ width: "40%" }} sx={{ borderBottom: "unset" }}>歌手</TableCell>
                             <TableCell style={{ width: "10%" }} sx={{ borderBottom: "unset" }}>时长</TableCell>
                         </TableRow>
                     </TableHead>
                     {
                         playlist.map((row, index) => (
-                            <TableRow onDoubleClick={() => {
-                                const event = new CustomEvent<IChangePlayListEvent>("music-control-panel::changePlayList", {
-                                    detail: {
-                                        playlist: playlist,
-                                        startIndex: index
-                                    }
-                                });
-                                document.dispatchEvent(event)
-                            }}>
+                            <TableRow
+                                sx={{ userSelect: "none", ":hover": { background: "rgba(0,0,0,0.1)", color: theme.palette.primary.main,  } }}
+                                onDoubleClick={() => {
+                                    const event = new CustomEvent<IChangePlayListEvent>("music-control-panel::changePlayList", {
+                                        detail: {
+                                            playlist: playlist,
+                                            startIndex: index
+                                        }
+                                    });
+                                    document.dispatchEvent(event)
+                                }}>
+                                <TableCell style={{ width: "5%" }} sx={{ borderBottom: "unset", textOverflow: "ellipsis", whiteSpace: "nowrap", overflowX: "hidden" }} onDoubleClick={e => e.stopPropagation()}>
+                                    <Button size="small" sx={{ padding: "0px 0px", width: "20px", height: "20px", minWidth: "unset" }} color="error" ><FavoriteBorderOutlinedIcon sx={{ width: "18px", height: "18px" }} /></Button>
+                                </TableCell>
                                 <TableCell style={{ width: "45%" }} sx={{ borderBottom: "unset", textOverflow: "ellipsis", whiteSpace: "nowrap", overflowX: "hidden" }} title={row.title}>{row.title}</TableCell>
                                 <TableCell style={{ width: "45%" }} sx={{ borderBottom: "unset", textOverflow: "ellipsis", whiteSpace: "nowrap", overflowX: "hidden" }} title={row.artists.join(" / ")}>{row.artists.join(" / ")}</TableCell>
-                                <TableCell style={{ width: "10%" }} sx={{ borderBottom: "unset", textOverflow: "ellipsis", whiteSpace: "nowrap", overflowX: "hidden" }}>{0}</TableCell>
+                                <TableCell style={{ width: "10%" }} sx={{ borderBottom: "unset", textOverflow: "ellipsis", whiteSpace: "nowrap", overflowX: "hidden" }}>{timePretty(row.duration)}</TableCell>
 
                             </TableRow>
                         ))
+
                     }
+
 
                 </Table>
             </TableContainer>
+            <Box sx={[{ height: "96px", width: "100%", display: "flex" }, playlist.length !== 0 && { display: "none" }]}>
+                <Typography sx={{ margin: "auto auto" }} >当前专辑暂无音乐</Typography>
+            </Box>
         </Box >
     );
 }
