@@ -67,8 +67,8 @@ export const darkMode = createTheme({
         mode: "dark",
         
         pannelBackground: {
-            main: "rgba(255,255,255,0.1)",
-            light: "rgba(255,255,255,0.05)",
+            main: "#2A2A2A",
+            light: "#1E1E1E",
         },
         blueButton: {
             main: "#2196f3",
