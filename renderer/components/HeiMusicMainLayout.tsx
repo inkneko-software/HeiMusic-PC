@@ -181,7 +181,7 @@ function HeiMusicMainLayout({ children }) {
                         <Box sx={{ margin: 'auto 0 auto 0', WebkitAppRegion: 'no-drag', display: 'flex' }}>
                             <Box sx={{ width: 2, height: 18, background: 'gray', margin: 'auto 6px auto 6px' }}></Box>
                             <IconButton sx={{ color: theme.palette.text.primary }} onClick={onMinimizedClicked}><Remove /> </IconButton>
-                            <IconButton sx={{ color: theme.palette.text.primary }} onClick={onWindowedModeClicked} >{<WebAssetOutlinedIcon /> } </IconButton>
+                            <IconButton sx={{ color: theme.palette.text.primary }} onClick={onWindowedModeClicked} >{<Crop75OutlinedIcon /> } </IconButton>
                             <IconButton sx={{ color: theme.palette.text.primary }} onClick={onCloseClicked}><Close /></IconButton>
                         </Box>
                     }
