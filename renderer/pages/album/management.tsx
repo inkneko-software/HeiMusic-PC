@@ -77,25 +77,23 @@ function AlbumManagement() {
                 </Stack>
 
             </Box>
+            <TableRow sx={{ display: "table" }}>
+                <TableCell width="15%" >专辑封面</TableCell>
+                <TableCell width="35%" >专辑标题</TableCell>
+                <TableCell width="30%">艺术家</TableCell>
+                <TableCell width="10%" >歌曲数</TableCell>
+                <TableCell width="10%" >操作</TableCell>
+            </TableRow>
             <TableContainer sx={{ overflowY: "auto", overflowX: "hidden", width: "auto" }}>
-                <Table stickyHeader sx={{ tableLayout: 'fixed', margin: "0px 6px", ".MuiTableCell-root": { padding: "12px 6px" } }} >
-                    <TableHead >
-                        <TableRow>
-                            <TableCell width="15%" >专辑封面</TableCell>
-                            <TableCell width="35%" >专辑标题</TableCell>
-                            <TableCell width="30%">艺术家</TableCell>
-                            <TableCell width="10%" >歌曲数</TableCell>
-                            <TableCell width="10%" >操作</TableCell>
-                        </TableRow>
-                    </TableHead>
+                <Table sx={{ tableLayout: 'fixed', margin: "0px 6px", ".MuiTableCell-root": { padding: "12px 6px" } }} >
                     <TableBody >
                         {
                             albumList.map((album, index) => (
                                 <TableRow key={album.albumId} >
                                     <TableCell sx={{ width: "15%", borderBottom: "unset" }} align="center">
                                         <CardMedia sx={{
-                                            width: '32px', height: '32px', borderRadius: '6%', flex: "0 0 auto", marginLeft:"12px", imageRendering: "auto", objectFit: "contain"
-                                        }} src={album.frontCoverUrl || "/images/akari.jpg"} component="img"></CardMedia>
+                                            width: '32px', height: '32px', borderRadius: '6%', flex: "0 0 auto", marginLeft: "12px", imageRendering: "auto", objectFit: "contain"
+                                        }} src={album.frontCoverUrl + "?s=@w32h32" || "/images/akari.jpg"} component="img"></CardMedia>
                                     </TableCell>
                                     <TableCell sx={{ width: "35%", borderBottom: "unset" }}>
                                         <Link href={`/album/${album.albumId}`}>
@@ -107,7 +105,7 @@ function AlbumManagement() {
                                     </TableCell>
                                     <TableCell sx={{ width: "10%", borderBottom: "unset" }}>{album.musicNum}</TableCell>
                                     <TableCell sx={{ width: "10%", borderBottom: "unset" }}>
-                                        <Link href="/album/edit/0"><Button variant="outlined" size="small">编辑</Button></Link>
+                                        <Link href={`/album/edit/${album.albumId}`}><Button variant="outlined" size="small">编辑</Button></Link>
                                     </TableCell>
                                 </TableRow>
                             ))
