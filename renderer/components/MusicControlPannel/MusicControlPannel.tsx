@@ -126,6 +126,7 @@ function MusicControlPannel(props: IMusicControlPannel) {
             const audio = audioRef.current;
             audio.volume = volume / 100;
             audio.ontimeupdate = () => {
+                document.title = `${currentMusicInfo.title} - HeiMusic!`;
 
                 var durationMinutes = '00';
                 var durationSeconds = '00';
@@ -197,6 +198,7 @@ function MusicControlPannel(props: IMusicControlPannel) {
                 window.electronAPI.playback.play(handlePlayButtonClick);
             }
 
+            
 
             return () => {
                 audio.ontimeupdate = null;
