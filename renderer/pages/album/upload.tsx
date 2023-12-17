@@ -31,7 +31,9 @@ interface IMusicDialog {
 interface ICueMusicFile {
     file: File,
     fileName: string,
-    musicList: MusicDto[]
+    musicList: MusicDto[],
+    loaded?: number,
+    total?: number
 }
 
 interface ICue {
@@ -39,7 +41,7 @@ interface ICue {
 }
 
 function parsePeformers(artistsString: string): ArtistVo[] {
-    if (artistsString === null){
+    if (artistsString === null) {
         return [];
     }
     var artists = [];
@@ -284,8 +286,8 @@ function AlbumEdit() {
                             startTime: startTime,
                             endTime: null
                         }
-                        if (musicInfo.artists.length === 0){
-                            musicInfo.artists = parsePeformers(data.performer).map(artist=>artist.name);
+                        if (musicInfo.artists.length === 0) {
+                            musicInfo.artists = parsePeformers(data.performer).map(artist => artist.name);
                         }
                         tracks.push(musicInfo)
                     })
@@ -317,9 +319,23 @@ function AlbumEdit() {
         var musicIds: number[] = []
         if (usingCue === true) {
             console.log(fileList)
-            for (var i = 0; i < fileList.length; ++i){
+            for (var i = 0; i < fileList.length; ++i) {
                 var cueMusicfile = fileList[i];
-                musicIds = musicIds.concat(musicIds, (await addMusicFromCue(cueMusicfile.musicList, cueMusicfile.file)).data.map(music=>music.musicId));
+                musicIds = musicIds.concat(
+                    musicIds,
+                    (await addMusicFromCue(
+                        cueMusicfile.musicList,
+                        cueMusicfile.file,
+                        (loaded, total) => {
+                            setFileList(fileList.map((val, index)=>{
+                                if (index === i){
+                                    val.loaded = loaded;
+                                    val.total = total;
+                                }
+                                return val;
+                            }))
+                        })).data.map(music => music.musicId)
+                );
             }
             await AlbumControllerService.addAlbumMusic(albumInfo.data.albumId, musicIds)
             router.push(`/album/${albumInfo.data.albumId}`)
@@ -348,7 +364,7 @@ function AlbumEdit() {
 
     const uploadProgressPretty = (loaded: number, total: number) => {
         if (transfering) {
-            return `${(loaded / total * 100).toFixed(0)} %`
+            return `${(loaded / total * 100).toFixed(0)}% | ${((total - loaded) / 1024 / 1024).toFixed(2)} MB`
         }
 
         return `0% / ${(total / 1024 / 1024).toFixed(2)} MB`
@@ -446,7 +462,7 @@ function AlbumEdit() {
                 <Typography variant="h5" sx={{ width: '30%' }}>新建专辑</Typography>
 
                 <Button variant="outlined" size='small' sx={{ margin: "auto 12px auto 0px" }} onClick={onPickCue}>读取cue文件</Button>
-                <Button variant="outlined" size='small' color="success" sx={{ margin: "auto 12px" }} onClick={handleSaveAlbum}>保存专辑</Button>
+                <Button variant="outlined" size='small' color="success" sx={{ margin: "auto 12px" }} disabled={transfering} onClick={handleSaveAlbum}>保存专辑</Button>
             </Box>
 
             <Divider sx={{ margin: "12px 0px" }} />
@@ -561,10 +577,13 @@ function AlbumEdit() {
                                                 (event: React.MouseEvent<HTMLButtonElement>) => {
                                                     var fileInput = document.createElement("input");
                                                     fileInput.type = "file";
+                                                    fileInput.accept = ".flac,.wav,.mp3,.tak"
                                                     fileInput.onchange = () => {
                                                         setFileList(prev => prev.map(prevFile => {
                                                             if (prevFile.fileName === file.fileName) {
                                                                 prevFile.file = fileInput.files[0];
+                                                                prevFile.loaded = 0;
+                                                                prevFile.total = fileInput.files[0].size;
                                                             }
                                                             return prevFile;
                                                         }))
@@ -575,6 +594,8 @@ function AlbumEdit() {
                                                     fileInput.click();
                                                 }
                                             }>选择音乐文件</Button>
+                                            <Typography noWrap variant='body2' sx={[{ margin: "auto 12px" }, file.file === null && { display: 'none' }]} >{uploadProgressPretty(file.loaded, file.total)}</Typography>
+
                                         </Box>
                                         <TableContainer sx={{ width: 'auto' }}>
                                             <Table sx={{ tableLayout: 'fixed' }}>
