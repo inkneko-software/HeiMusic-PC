@@ -12,6 +12,7 @@ import type { ApiResult } from '@api/codegen/core/ApiResult';
 import { CancelablePromise } from '@api/codegen/core/CancelablePromise';
 import type { OnCancel } from '@api/codegen/core/CancelablePromise';
 import type { OpenAPIConfig } from '@api/codegen/core/OpenAPI';
+import { pushToast } from '@components/HeiMusicMainLayout';
 
 const isDefined = <T>(value: T | null | undefined): value is Exclude<T, null | undefined> => {
     return value !== undefined && value !== null;
@@ -318,15 +319,22 @@ export const request = <T>(config: OpenAPIConfig, options: ApiRequestOptions): C
                     ok: response.ok,
                     status: response.status,
                     statusText: response.statusText,
-                    body: responseHeader ?? responseBody,
+                    body: responseBody,
                 };
 
                 catchErrorCodes(options, result);
 
+                //处理后端抛出的业务错误信息
+                if (responseBody !== undefined && responseBody.code !== undefined && responseBody.code !== 0){
+                    reject(new ApiError(options, result, responseBody.message))
+                }
+
                 resolve(result.body);
             }
         } catch (error) {
-            reject(error);
+            //网络错误
+            pushToast("服务错误，请稍后尝试", "error", "bottom-left")
+            //reject(error);
         }
     });
 };

@@ -47,6 +47,33 @@ import FilterNoneOutlinedIcon from '@mui/icons-material/FilterNoneOutlined';
 import ZoomInMapOutlinedIcon from '@mui/icons-material/ZoomInMapOutlined';
 import WebAssetOutlinedIcon from '@mui/icons-material/WebAssetOutlined';
 
+/**
+ * 发送Toast信息
+ * 
+ * 通过以下方式调用
+ * 
+ * const event = new CustomEvent<IHeimusicToastEvent>("main::makeToast", {detail: {...}});
+ * 
+ * window.dispatchEvent(event)
+ */
+export interface IHeimusicToastEvent {
+    message: string,
+    variant?: "success" | "info" | "warning" | "error",
+    position?: "top-left" | "top-right" | "top-center" | "bottom-left" | "bottom-right" | "bottom-center" | "center",
+}
+
+/**
+ * 发送Toast信息
+ * 
+ * @param message 消息
+ * @param variant 类型
+ * @param position 位置
+ */
+export function pushToast(message: string, variant?: "success" | "info" | "warning" | "error", position?: "top-left" | "top-right" | "top-center" | "bottom-left" | "bottom-right" | "bottom-center" | "center") {
+    const event = new CustomEvent<IHeimusicToastEvent>("main::pushToast", { detail: { message: message, variant: variant, position: position } });
+    window.dispatchEvent(event)
+}
+
 
 function HeiMusicMainLayout({ children }) {
     const theme = useTheme()
@@ -58,12 +85,43 @@ function HeiMusicMainLayout({ children }) {
     const [heiMusicConfig, setHeiMusicConfig] = React.useState<HeiMusicConfig>(null)
     const settingButtonRef = React.useRef(null)
     const [settingMenuOpen, setSettingMenuOpen] = React.useState(false)
+    //当前登录用户的信息
+    const [userDetail, setUserDetail] = React.useState(null)
+
+
+    React.useEffect(() => {
+        if (window.electronAPI !== undefined) {
+            void window.electronAPI.config.get().then((value) => {
+                setHeiMusicConfig(value)
+            })
+        }
+
+        const handleToast = (event: CustomEvent<IHeimusicToastEvent>) => {
+            makeToast(event.detail.message, event.detail.variant || "error", event.detail.position || "bottom-left");
+        }
+
+        window.addEventListener("main::pushToast", handleToast)
+
+        // 读取登录状态
+        UserControllerService.nav()
+            .then(res => {
+                setUserDetail({ avatarUrl: res.data.avatarUrl, username: res.data.username === null ? `用户[${res.data.userId}]` : res.data.username })
+            })
+            .catch((error: ApiError) => {
+                console.log(error)
+                if (error.body.code === 403) {
+
+                } else {
+                    makeToast(error.message, 'error', "bottom-left")
+                }
+            })
+    }, [])
 
     const onMinimizedClicked = () => {
         window.electronAPI.windowManagement.minimize()
     }
 
-    const onWindowedModeClicked = () =>{
+    const onWindowedModeClicked = () => {
         window.electronAPI.windowManagement.maximize()
     }
 
@@ -80,42 +138,12 @@ function HeiMusicMainLayout({ children }) {
         }
     }
 
-    const [userDetail, setUserDetail] = React.useState(null)
-
     const handleLogout = () => {
         AuthControllerService.logout()
             .then(res => {
                 router.reload();
             });
     }
-
-    React.useEffect(() => {
-        if (window.electronAPI !== undefined) {
-            void window.electronAPI.config.get().then((value) => {
-                setHeiMusicConfig(value)
-            })
-        }
-
-        // 读取登录状态
-        UserControllerService.nav()
-        .then(res => {
-            if (res.code === 0) {
-                setUserDetail({ avatarUrl: res.data.avatarUrl, username: res.data.username === null ? `用户[${res.data.userId}]` : res.data.username })
-            } else {
-                makeToast(res.message, "error", "bottom-left")
-            }
-        })
-        .catch((error: ApiError) => {
-            if (error.status === 403) {
-
-            } else {
-                makeToast('网络连接失败', 'error', "top-right")
-            }
-        })
-        .catch(() => {
-            makeToast('网络连接失败', 'error', "top-right")
-        })
-    }, [])
 
     return (
         <Box sx={{ width: 'calc(100vw)', height: 'calc(100vh)', display: 'flex', flexDirection: 'column', background: `url(${heimusicThemeContext.backgroundUrl})`, backgroundRepeat: 'no-repeat', backgroundSize: 'cover' }}>
@@ -164,7 +192,7 @@ function HeiMusicMainLayout({ children }) {
                             anchorOrigin={{
                                 vertical: 'bottom',
                                 horizontal: 'left',
-                              }} >
+                            }} >
                             <Paper sx={{ display: 'flex', flexDirection: 'column' }}>
                                 <Link href="/userDetail">
                                     <Button onClick={() => setSettingMenuOpen(false)}>用户设置</Button>
@@ -181,7 +209,7 @@ function HeiMusicMainLayout({ children }) {
                         <Box sx={{ margin: 'auto 0 auto 0', WebkitAppRegion: 'no-drag', display: 'flex' }}>
                             <Box sx={{ width: 2, height: 18, background: 'gray', margin: 'auto 6px auto 6px' }}></Box>
                             <IconButton sx={{ color: theme.palette.text.primary }} onClick={onMinimizedClicked}><Remove /> </IconButton>
-                            <IconButton sx={{ color: theme.palette.text.primary }} onClick={onWindowedModeClicked} >{<Crop75OutlinedIcon /> } </IconButton>
+                            <IconButton sx={{ color: theme.palette.text.primary }} onClick={onWindowedModeClicked} >{<Crop75OutlinedIcon />} </IconButton>
                             <IconButton sx={{ color: theme.palette.text.primary }} onClick={onCloseClicked}><Close /></IconButton>
                         </Box>
                     }

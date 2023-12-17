@@ -16,18 +16,18 @@ export class AlbumControllerService {
 
     /**
      * 更改专辑基础信息
-     * @param requestBody 
+     * @param formData 
      * @returns ResponseObject OK
      * @throws ApiError
      */
     public static updateAlbumInfo(
-requestBody: UpdateAlbumInfoDto,
+formData?: UpdateAlbumInfoDto,
 ): CancelablePromise<ResponseObject> {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/api/v1/album/updateAlbumInfo',
-            body: requestBody,
-            mediaType: 'application/json',
+            formData: formData,
+            mediaType: 'multipart/form-data',
         });
     }
 

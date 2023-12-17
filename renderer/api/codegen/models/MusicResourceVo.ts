@@ -2,4 +2,10 @@
 /* tslint:disable */
 /* eslint-disable */
 
-export type MusicResourceVo = Record<string, any>;
+export type MusicResourceVo = {
+    musicResourceId?: number;
+    musicId?: number;
+    codec?: string;
+    bitrate?: string;
+    url?: string;
+};

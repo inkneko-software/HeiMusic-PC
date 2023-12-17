@@ -15,4 +15,12 @@ export type UpdateAlbumInfoDto = {
      */
     title?: string;
     cover?: Blob;
+    /**
+     * 欲设置的专辑艺术家列表
+     */
+    artistList?: Array<number>;
+    /**
+     * 是否删除封面
+     */
+    deleteCover?: boolean;
 };

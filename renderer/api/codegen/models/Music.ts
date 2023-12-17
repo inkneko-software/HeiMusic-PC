@@ -6,10 +6,12 @@ export type Music = {
     musicId?: number;
     title?: string;
     translateTitle?: string;
-    resourceUrl?: string;
-    bitrate?: number;
+    bucket?: string;
+    objectKey?: string;
+    bitrate?: string;
     codec?: string;
     duration?: number;
+    size?: string;
     createdAt?: string;
     updatedAt?: string;
 };

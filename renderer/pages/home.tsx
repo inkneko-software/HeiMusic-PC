@@ -92,6 +92,9 @@ function Home() {
                     setFirstLaunch(true);
                 }
             })
+            .catch(error=>{
+                makeToast("网络连接失败", "error", "bottom-right")
+            })
     }, [])
 
     return (
@@ -109,7 +112,7 @@ function Home() {
             </Box> */}
             <Box sx={[{ display: "none" }, firstLaunch && { display: "flex", flexDirection: "column" }]}>
                 <Typography sx={{marginBottom: "24px", userSelect: "none"}}>欢迎使用HeiMusic!</Typography>
-                <Typography sx={{marginBottom: "24px", userSelect: "none"}}>第一次使用请设置<Link href="/home"><MuiLink>管理账户</MuiLink></Link></Typography>
+                <Typography sx={{marginBottom: "24px", userSelect: "none"}}>第一次使用请设置<Link href="/init"><MuiLink>管理账户</MuiLink></Link></Typography>
                 <Typography sx={{marginBottom: "24px", userSelect: "none"}}>设置完成后，可通过左侧专辑管理按钮进行音乐导入</Typography>
             </Box>
             <Box sx={[firstLaunch && { display: "none" }]}>

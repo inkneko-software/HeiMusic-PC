@@ -5,11 +5,13 @@ import DeleteOutlineOutlinedIcon from '@mui/icons-material/DeleteOutlineOutlined
 
 import AddCircleOutlineOutlinedIcon from '@mui/icons-material/AddCircleOutlineOutlined';
 import BackspaceOutlinedIcon from '@mui/icons-material/BackspaceOutlined';
-import { ArtistVo, ArtistControllerService, AlbumControllerService, MusicControllerService } from "@api/codegen";
+import { ArtistVo, ArtistControllerService, AlbumControllerService, MusicControllerService, ApiError } from "@api/codegen";
 import CoverInput from "@components/Common/CoverInput/CoverInput";
 import { useRouter } from "next/router";
 
 import { addMusic } from "@api/upload/music";
+import useToast from "@components/Common/Toast";
+import { pushToast } from "@components/HeiMusicMainLayout";
 
 
 interface IMusic {
@@ -28,9 +30,10 @@ interface IMusicDialog {
 }
 
 function AlbumEdit() {
+    const [Toast, makeToast] = useToast()
     const theme = useTheme();
     const router = useRouter();
-        //专辑ID
+    //专辑ID
     const [albumId, setAlbumId] = React.useState(0)
     //专辑标题
     const [title, setTitle] = React.useState("")
@@ -51,13 +54,13 @@ function AlbumEdit() {
     const [transfering, setTransfering] = React.useState<boolean>(false);
 
     React.useEffect(() => {
-        if (typeof(router.query.albumId) === 'string'){
+        if (typeof (router.query.albumId) === 'string') {
             setAlbumId(Number.parseInt(router.query.albumId))
         }
     }, [router])
 
-    React.useEffect(()=>{
-        if (albumId === 0){
+    React.useEffect(() => {
+        if (albumId === 0) {
             return;
         }
 
@@ -68,7 +71,7 @@ function AlbumEdit() {
                 setAlbumArtists(res.data.artistList)
 
                 AlbumControllerService.getAlbumMusicList(albumId).then(res => {
-                    setMusicList(res.data.map((musicVo, index)=>{
+                    setMusicList(res.data.map((musicVo, index) => {
                         return {
                             musicId: musicVo.musicId,
                             title: musicVo.title,
@@ -263,36 +266,42 @@ function AlbumEdit() {
 
 
     const handleSaveAlbum = async () => {
-        // var albumInfo = await AlbumControllerService.addAlbum(title, "", albumArtists.map(item => item.artistId), { frontCover: cover })
-        // console.log(albumInfo.data.albumId)
-
-        // setTransfering(true);
-        // var musicIds: number[] = []
-        // for (var i = 0; i < musicList.length; ++i) {
-        //     var item = musicList[i]
-        //     musicIds.push((
-        //         await addMusic(item.title, item.file, "", item.artists.map(artist => artist.name), (loaded, total) => {
-        //             setMusicList(musicList.map((val, index) => {
-        //                 if (index === i) {
-        //                     val.loaded = loaded;
-        //                     val.total = total;
-        //                 }
-        //                 return val;
-        //             }))
-        //         })).data.musicId)
-        // }
-
-        // await AlbumControllerService.addAlbumMusic(albumInfo.data.albumId, musicIds)
-        // router.push(`/album/${albumInfo.data.albumId}`)
+        // const albumAPI = new AlbumControllerApi(new Configuration({ credentials: 'include' }))
+        // albumAPI.updateAlbumInfo({
+        //     albumId: albumId,
+        //     title: title,
+        //     artistIdList: albumArtists.map(artist => artist.artistId),
+        //     cover: cover instanceof Blob ? cover as Blob : null,
+        //     isDeleteCover: cover === null
+        // }).then(res => {
+        //     makeToast("已更新专辑信息");
+        // })
+        console.log(albumArtists.map(artist => artist.artistId))
+        AlbumControllerService.updateAlbumInfo({
+            albumId: albumId,
+            title: title,
+            artistList: albumArtists.map(artist => artist.artistId),
+            cover: cover instanceof Blob ? cover as Blob : null,
+            deleteCover: cover === null
+        })
+            .then(res => {
+                makeToast("已更新专辑信息");
+            })
+            .catch((e: ApiError) => {
+                pushToast(e.message)
+            })
 
     }
 
-    const handleDeleteAlbum = function() {
-        AlbumControllerService.removeAlbum(albumId).then(res=>{
-            if(res.code === 0){
-                router.back()
-            }
-        })
+    const handleDeleteAlbum = async function () {
+        try {
+            await AlbumControllerService.removeAlbum(albumId)
+            router.back()
+
+        } catch (e) {
+            pushToast(e.message)
+        }
+
     }
 
     const uploadProgressPretty = (loaded: number, total: number) => {
@@ -305,6 +314,7 @@ function AlbumEdit() {
 
     return (
         <Box sx={{ padding: "12px 12px", overflowY: 'auto', height: '100%' }}>
+            {Toast}
             <input ref={musicFileRef} name="music_file" type="file" accept=".mp3,.flac,.ogg" multiple hidden />
             {/* 添加艺术家对话框 */}
             <Dialog open={addArtistDialogOpen} onClose={() => setAddArtistDialogOpen(false)}>
@@ -388,18 +398,18 @@ function AlbumEdit() {
                     </Box>
                 </DialogContent>
             </Dialog>
-            <Dialog open={deleteAlbumConfirmDialogOpen} onClose={()=>setDeleteAlbumConfirmDialogOpen(false)}>
+            <Dialog open={deleteAlbumConfirmDialogOpen} onClose={() => setDeleteAlbumConfirmDialogOpen(false)}>
                 <DialogTitle>确认删除当前专辑？</DialogTitle>
                 <DialogActions>
                     <Button onClick={handleDeleteAlbum}>确认</Button>
-                    <Button onClick={()=>setDeleteAlbumConfirmDialogOpen(false)}>取消</Button>
+                    <Button onClick={() => setDeleteAlbumConfirmDialogOpen(false)}>取消</Button>
                 </DialogActions>
             </Dialog>
             {/* 页面标题，操作按钮 */}
             <Box sx={{ display: 'flex' }}>
                 <Typography variant="h5" sx={{ width: '30%' }}>修改专辑</Typography>
 
-                <Button variant="outlined" size='small' color="error" sx={{ margin: "auto 0px" }} onClick={()=>setDeleteAlbumConfirmDialogOpen(true)}>删除专辑</Button>
+                <Button variant="outlined" size='small' color="error" sx={{ margin: "auto 0px" }} onClick={() => setDeleteAlbumConfirmDialogOpen(true)}>删除专辑</Button>
                 <Button variant="outlined" size='small' color="success" sx={{ margin: "auto 12px" }} onClick={handleSaveAlbum}>保存专辑</Button>
                 <Typography variant="subtitle2" sx={{ margin: "auto 12px auto auto" }} color="GrayText">专辑ID: {albumId}</Typography>
             </Box>
@@ -411,7 +421,7 @@ function AlbumEdit() {
                 {/* 专辑标题设定 */}
                 <Box sx={{ display: 'flex', marginBottom: '12px' }}>
                     <Typography sx={{ width: '30%' }}>标题</Typography>
-                    <TextField value={title} size="small" sx={{width:"100%", maxWidth: '60%', }} onChange={event => setTitle(event.target.value)} />
+                    <TextField value={title} size="small" sx={{ width: "100%", maxWidth: '60%', }} onChange={event => setTitle(event.target.value)} />
                 </Box>
 
                 {/* 艺术家设定 */}

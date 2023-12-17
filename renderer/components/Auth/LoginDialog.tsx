@@ -67,15 +67,11 @@ function PasswordLogin(props) {
     function Login() {
         AuthControllerService.login({email: accountInput,password: password})
             .then((json) => {
-                if (json.code !== 0) {
-                    notifyMessage(`${json.message}`, "warning")
-                } else {
                     notifyMessage("登录成功", "success")
                     setInterval(() => { location.reload() }, 2000)
-                }
             })
             .catch((error) => {
-                console.log(error)
+                notifyMessage(`${error.message}`, "warning")
             })
         
     }
@@ -146,22 +142,18 @@ function AuthCodeLogin(props) {
                 }
             })
             .catch((error) => {
-                console.log(error)
+                notifyMessage(`${error.message}`, "warning")
             })
     }
 
     function AuthLogin() {
         AuthControllerService.login({email: email, code: code})
             .then((json) => {
-                if (json.code !== 0) {
-                    notifyMessage(`${json.message}`, "warning")
-                } else {
                     notifyMessage("登录成功", "success")
                     setInterval(() => { location.reload() }, 2000)
-                }
             })
             .catch((error) => {
-                console.log(error)
+                notifyMessage(`${error.message}`, "warning")
             })
     }
 

@@ -10,7 +10,7 @@ export type MusicVo = {
     title?: string;
     translateTitle?: string;
     resourceUrl?: string;
-    bitrate?: number;
+    bitrate?: string;
     codec?: string;
     duration?: number;
     artistList?: Array<ArtistVo>;
