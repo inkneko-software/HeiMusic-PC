@@ -14,33 +14,44 @@ import TablePagination from '@mui/material/TablePagination';
 import AddBoxRoundedIcon from '@mui/icons-material/AddBoxRounded';
 import CardMedia from "@mui/material/CardMedia";
 import { useTheme } from '@mui/styles'
-import { AlbumControllerService, AlbumVo } from "@api/codegen";
+import { AlbumControllerService, AlbumVo, ApiError } from "@api/codegen";
+import { pushToast } from "@components/HeiMusicMainLayout";
 
 function AlbumManagement() {
     const theme = useTheme()
     const [total, setTotal] = React.useState(0);
     const [page, setPage] = React.useState(0);
-    const [rowsPerPage, setRowsPerPage] = React.useState(10);
+    const [rowsPerPage, setRowsPerPage] = React.useState(25);
     const [albumList, setAlbumList] = React.useState<AlbumVo[]>([]);
+
+    const tableRef = React.useRef<HTMLDivElement>(null);
     React.useEffect(() => {
-        AlbumControllerService.getAlbumList()
+        AlbumControllerService.getAlbumList(page, rowsPerPage)
             .then(res => {
                 setTotal(res.data.total);
                 setAlbumList(res.data.albumList);
+            })
+            .catch((error: ApiError)=>{
+                pushToast(error.message)
             })
     }, [])
 
     const handleChangePage = (event: unknown, newPage: number) => {
         //分页组件的起始页为0，但后端的起始页为1，手动修正
+        tableRef.current.scrollTo({left:0, top: 0});
         setPage(newPage);
-        AlbumControllerService.getAlbumList(newPage + 1)
+        AlbumControllerService.getAlbumList(newPage + 1, rowsPerPage)
             .then(res => {
                 setTotal(res.data.total);
                 setAlbumList(res.data.albumList);
             })
+            .catch((error: ApiError)=>{
+                pushToast(error.message)
+            })
     };
 
     const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
+        tableRef.current.scrollTo({left:0, top: 0});
         var newPageRange: number = parseInt(event.target.value);
         setRowsPerPage(newPageRange);
         setPage(0);
@@ -49,12 +60,15 @@ function AlbumManagement() {
                 setTotal(res.data.total);
                 setAlbumList(res.data.albumList);
             })
+            .catch((error: ApiError)=>{
+                pushToast(error.message)
+            })
     };
 
 
 
     return (
-        <Box sx={{ display: "flex", flexDirection: "column", height: "100%" }} >
+        <Box sx={{ display: "flex", flexDirection: "column", height: "100%" }}  >
             <Box sx={{ position: "sticky", top: '0' }}>
                 <Stack direction="row" sx={{ flex: "0 0 auto" }}>
                     <Typography variant='h5' sx={{ margin: "auto 0px auto 12px" }}>专辑管理</Typography>
@@ -84,7 +98,7 @@ function AlbumManagement() {
                 <TableCell width="10%" >歌曲数</TableCell>
                 <TableCell width="10%" >操作</TableCell>
             </TableRow>
-            <TableContainer sx={{ overflowY: "auto", overflowX: "hidden", width: "auto" }}>
+            <TableContainer sx={{ overflowY: "auto", overflowX: "hidden", width: "auto" }} ref={tableRef}>
                 <Table sx={{ tableLayout: 'fixed', margin: "0px 6px", ".MuiTableCell-root": { padding: "12px 6px" } }} >
                     <TableBody >
                         {
@@ -93,11 +107,11 @@ function AlbumManagement() {
                                     <TableCell sx={{ width: "15%", borderBottom: "unset" }} align="center">
                                         <CardMedia sx={{
                                             width: '32px', height: '32px', borderRadius: '6%', flex: "0 0 auto", marginLeft: "12px", imageRendering: "auto", objectFit: "contain"
-                                        }} src={album.frontCoverUrl + "?s=@w32h32" || "/images/akari.jpg"} component="img"></CardMedia>
+                                        }} src={album.frontCoverUrl !== null ? album.frontCoverUrl + "?s=@w32h32" : "/images/akari.jpg"} component="img"></CardMedia>
                                     </TableCell>
                                     <TableCell sx={{ width: "35%", borderBottom: "unset" }}>
                                         <Link href={`/album/${album.albumId}`}>
-                                            <Typography variant="body2" noWrap sx={{ ":hover": { cursor: "pointer", color: theme.palette.primary.main } }}>{album.title}</Typography>
+                                            <Typography variant="body2" noWrap sx={{ ":hover": { cursor: "pointer", color: theme.palette.primary.main } }} title={album.title} >{album.title}</Typography>
                                         </Link>
                                     </TableCell>
                                     <TableCell sx={{ width: "30%", borderBottom: "unset" }}>
