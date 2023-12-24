@@ -229,6 +229,11 @@ function MusicControlPannel(props: IMusicControlPannel) {
 
 
         if (audioRef.current.paused) {
+            //设置主进程小窗口按钮
+            if (typeof (window) !== "undefined" && typeof (window.electronAPI) !== "undefined") {
+                window.electronAPI.thumbnail.playing();
+            }
+
             if (audioRef.current.src === '') {
                 const nextMusic = musicList[0];
                 setCurrentMusicInfo({ ...nextMusic, currentIndex: 0, currentQuality: nextMusic.qualityOption[0] });
@@ -255,6 +260,10 @@ function MusicControlPannel(props: IMusicControlPannel) {
             }, 100)
 
         } else {
+            if (typeof (window) !== "undefined" && typeof (window.electronAPI) !== "undefined") {
+                window.electronAPI.thumbnail.paused();
+            }
+
             var counter = 0;
             sourceVolume = audioRef.current.volume;
             handle = setInterval(() => {

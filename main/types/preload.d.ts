@@ -16,6 +16,8 @@ declare global {
                 set: (key: any, value: any) => void,
                 //保存当前内存中的配置至文件
                 save: () => Promise<null>,
+                //保存当前内存中的配置至文件，并重启应用
+                saveAndReload: () => Promise<null>,
                 //订阅配置更新
                 onChange: (callback: (event: Electron.IpcRendererEvent, config: HeiMusicConfig) => void) => void
             },
@@ -28,6 +30,12 @@ declare global {
                 next: (callback: () => void) => void,
                 prev: (callback: () => void) => void,
                 cleanup: () => void,
+            },
+            thumbnail: {
+                //通知主进程当前正在播放
+                playing: () => void,
+                //通知主进程当前已暂停
+                paused: () => void,
             }
         }
     }

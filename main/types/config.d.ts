@@ -14,6 +14,11 @@ interface HeiMusicConfig {
         quality: string,
         songUrl: string
     },
+    hotkeys:{
+        playback: string,
+        next: string,
+        prev: string,
+    }
     lastPannel: string,
     closeWindowMinimized?: boolean
 }

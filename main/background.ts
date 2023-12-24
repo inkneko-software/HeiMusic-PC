@@ -36,6 +36,11 @@ function getDefaultConfig(): HeiMusicConfig {
             quality: null,
             songUrl: null
         },
+        hotkeys: {
+            playback: "Control+Alt+P",
+            next: "Control+Alt+Next",
+            prev: "Control+Alt+Prev"
+        },
         lastPannel: null,
         closeWindowMinimized: null
     }
@@ -44,14 +49,14 @@ function getDefaultConfig(): HeiMusicConfig {
 function readConfig(): HeiMusicConfig {
     //1aa0e861f28fe67eb8dfebed8a2dd4155a2e85a7
     console.log("读取配置，配置文件路径：", configPath)
+    var defaultConfig = getDefaultConfig();
     if (fs.existsSync(configPath) === false) {
-        var defaultConfig = getDefaultConfig()
         //heiMusicConfig = structuredClone(defaultConfig); // avaliable in nodejs 17
         heiMusicConfig = { ...defaultConfig, lastStatus: { ...defaultConfig.lastStatus } }
         fs.writeFileSync(configPath, JSON.stringify(heiMusicConfig))
         return heiMusicConfig;
     }
-    heiMusicConfig = JSON.parse(fs.readFileSync(configPath).toString())
+    heiMusicConfig = { ...defaultConfig, ...JSON.parse(fs.readFileSync(configPath).toString()) }
     return heiMusicConfig;
 }
 
@@ -104,6 +109,12 @@ function saveConfig() {
         mainWindow.webContents.send("config::onChange", heiMusicConfig);
     })
     ipcMain.handle("config::save", saveConfig)
+    ipcMain.handle("config::saveAndReload", () => {
+        saveConfig();
+        app.relaunch();
+        app.exit();
+    })
+
 
     /**
      * windowManagement
@@ -210,7 +221,45 @@ function saveConfig() {
         }
     ])
 
-    console.log("创建托盘图标： ", ret)
+    ipcMain.handle("thumbnail::playing", ()=>{
+        mainWindow.setThumbarButtons([
+            {
+                tooltip: '上一曲',
+                icon: nativeImage.createFromPath(path.join(__dirname, "images", "thumbar", "prev.png")),
+                click: () => { mainWindow.webContents.send("playback::prev") }
+            },
+            {
+                tooltip: '暂停',
+                icon: nativeImage.createFromPath(path.join(__dirname, "images", "thumbar", "pause.png")),
+                click: () => { mainWindow.webContents.send("playback::play") }
+            },
+            {
+                tooltip: '下一曲',
+                icon: nativeImage.createFromPath(path.join(__dirname, "images", "thumbar", "next.png")),
+                click: () => { mainWindow.webContents.send("playback::next") }
+            }
+        ])
+    })
+
+    ipcMain.handle("thumbnail::paused", ()=>{
+        mainWindow.setThumbarButtons([
+            {
+                tooltip: '上一曲',
+                icon: nativeImage.createFromPath(path.join(__dirname, "images", "thumbar", "prev.png")),
+                click: () => { mainWindow.webContents.send("playback::prev") }
+            },
+            {
+                tooltip: '播放',
+                icon: nativeImage.createFromPath(path.join(__dirname, "images", "thumbar", "play.png")),
+                click: () => { mainWindow.webContents.send("playback::play") }
+            },
+            {
+                tooltip: '下一曲',
+                icon: nativeImage.createFromPath(path.join(__dirname, "images", "thumbar", "next.png")),
+                click: () => { mainWindow.webContents.send("playback::next") }
+            }
+        ])
+    });
 })();
 
 app.on('window-all-closed', () => {
