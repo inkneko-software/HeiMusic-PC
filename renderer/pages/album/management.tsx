@@ -16,6 +16,7 @@ import CardMedia from "@mui/material/CardMedia";
 import { useTheme } from '@mui/styles'
 import { AlbumControllerService, AlbumVo, ApiError } from "@api/codegen";
 import { pushToast } from "@components/HeiMusicMainLayout";
+import ImageSkeleton from "@components/Common/ImageSkeleton";
 
 function AlbumManagement() {
     const theme = useTheme()
@@ -105,9 +106,13 @@ function AlbumManagement() {
                             albumList.map((album, index) => (
                                 <TableRow key={album.albumId} >
                                     <TableCell sx={{ width: "15%", borderBottom: "unset" }} align="center">
-                                        <CardMedia sx={{
+                                        <ImageSkeleton sx={{
                                             width: '32px', height: '32px', borderRadius: '6%', flex: "0 0 auto", marginLeft: "12px", imageRendering: "auto", objectFit: "contain"
-                                        }} src={album.frontCoverUrl !== null ? album.frontCoverUrl + "?s=@w32h32" : "/images/akari.jpg"} component="img"></CardMedia>
+                                        }} src={album.frontCoverUrl !== null ? album.frontCoverUrl + "?s=@w32h32" : "/images/akari.jpg"} />
+                                            
+                                        {/* <CardMedia sx={{
+                                            width: '32px', height: '32px', borderRadius: '6%', flex: "0 0 auto", marginLeft: "12px", imageRendering: "auto", objectFit: "contain"
+                                        }} src={album.frontCoverUrl !== null ? album.frontCoverUrl + "?s=@w32h32" : "/images/akari.jpg"} component="img"></CardMedia> */}
                                     </TableCell>
                                     <TableCell sx={{ width: "35%", borderBottom: "unset" }}>
                                         <Link href={`/album/${album.albumId}`}>
