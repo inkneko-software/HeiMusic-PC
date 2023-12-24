@@ -96,8 +96,6 @@ function MusicAlbum(props: MusicAlbumProps) {
             var container = containerRef.current;
             var albumInfo = albumInfoRef.current;
             container.onscroll = () => {
-                console.log(container.scrollTop, albumInfo.clientHeight, albumInfo.offsetTop, albumInfo.clientHeight + albumInfo.offsetTop)
-                console.log(albumInfo)
                 if (container.scrollTop > albumInfo.clientHeight + albumInfo.offsetTop) {
                     setShowLargeAlbumInfo(false)
                 } else {
