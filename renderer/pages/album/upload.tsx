@@ -219,6 +219,10 @@ function AlbumEdit() {
         }
     }
 
+    const parseMinutesToHoursMinutes = (minutes: number): string => {
+        return `${Math.floor(minutes / 60).toString().padStart(2, '0')}:${(minutes % 60).toString().padStart(2, '0')}`
+    }
+
     const onPickCue = async () => {
         cueFileRef.current.click();
         cueFileRef.current.onchange = async () => {
@@ -273,7 +277,7 @@ function AlbumEdit() {
                             index01 = track.indexes[0];
                         }
 
-                        var startTime = `${index01.time.min.toString().padStart(2, '0')}:${index01.time.sec.toString().padStart(2, '0')}.${index01.time.frame.toString().padStart(2, '0')}`;
+                        var startTime = `${parseMinutesToHoursMinutes(index01.time.min)}:${index01.time.sec.toString().padStart(2, '0')}.${index01.time.frame.toString().padStart(2, '0')}`;
 
                         if (tracks.length !== 0) {
                             tracks[tracks.length - 1].endTime = startTime;
@@ -327,8 +331,8 @@ function AlbumEdit() {
                         cueMusicfile.musicList,
                         cueMusicfile.file,
                         (loaded, total) => {
-                            setFileList(fileList.map((val, index)=>{
-                                if (index === i){
+                            setFileList(fileList.map((val, index) => {
+                                if (index === i) {
                                     val.loaded = loaded;
                                     val.total = total;
                                 }
