@@ -316,10 +316,8 @@ function AlbumEdit() {
 
 
     const handleSaveAlbum = async () => {
-        var albumInfo = await AlbumControllerService.addAlbum(title, "", albumArtists.map(item => item.artistId), { frontCover: cover })
-        console.log(albumInfo.data.albumId)
-
         setTransfering(true);
+        var albumInfo = await AlbumControllerService.addAlbum(title, "", albumArtists.map(item => item.artistId), { frontCover: cover })
         var musicIds: number[] = []
         if (usingCue === true) {
             console.log(fileList)
