@@ -17,53 +17,69 @@ import { useTheme } from '@mui/styles'
 import { AlbumControllerService, AlbumVo, ApiError } from "@api/codegen";
 import { pushToast } from "@components/HeiMusicMainLayout";
 import ImageSkeleton from "@components/Common/ImageSkeleton";
+import { useRouter } from "next/router";
 
 function AlbumManagement() {
+    const router = useRouter();
     const theme = useTheme()
     const [total, setTotal] = React.useState(0);
-    const [page, setPage] = React.useState(0);
+    const [page, setPage] = React.useState(1);
     const [rowsPerPage, setRowsPerPage] = React.useState(25);
     const [albumList, setAlbumList] = React.useState<AlbumVo[]>([]);
 
     const tableRef = React.useRef<HTMLDivElement>(null);
     React.useEffect(() => {
-        AlbumControllerService.getAlbumList(page, rowsPerPage)
-            .then(res => {
-                setTotal(res.data.total);
-                setAlbumList(res.data.albumList);
-            })
-            .catch((error: ApiError)=>{
-                pushToast(error.message)
-            })
-    }, [])
+        const { p, s } = router.query;
+        if (p !== undefined && s !== undefined) {
+            console.log(p, s)
+            var page: number = parseInt(p as string);
+            var size: number = parseInt(s as string)
+
+            setPage(page);
+            setRowsPerPage(size);
+
+            AlbumControllerService.getAlbumList(page, size)
+                .then(res => {
+                    setTotal(res.data.total);
+                    setAlbumList(res.data.albumList);
+                })
+                .catch((error: ApiError) => {
+                    pushToast(error.message)
+                })
+        }
+
+    }, [router.query])
 
     const handleChangePage = (event: unknown, newPage: number) => {
         //分页组件的起始页为0，但后端的起始页为1，手动修正
-        tableRef.current.scrollTo({left:0, top: 0});
-        setPage(newPage);
-        AlbumControllerService.getAlbumList(newPage + 1, rowsPerPage)
-            .then(res => {
-                setTotal(res.data.total);
-                setAlbumList(res.data.albumList);
-            })
-            .catch((error: ApiError)=>{
-                pushToast(error.message)
-            })
+        router.push(`/album/management?p=${newPage + 1}&s=${rowsPerPage}`)
+        //tableRef.current.scrollTo({left:0, top: 0});
+        //setPage(newPage);
+        // AlbumControllerService.getAlbumList(newPage + 1, rowsPerPage)
+        //     .then(res => {
+        //         setTotal(res.data.total);
+        //         setAlbumList(res.data.albumList);
+        //     })
+        //     .catch((error: ApiError)=>{
+        //         pushToast(error.message)
+        //     })
     };
 
     const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
-        tableRef.current.scrollTo({left:0, top: 0});
+        //tableRef.current.scrollTo({left:0, top: 0});
         var newPageRange: number = parseInt(event.target.value);
-        setRowsPerPage(newPageRange);
-        setPage(0);
-        AlbumControllerService.getAlbumList(1, newPageRange)
-            .then(res => {
-                setTotal(res.data.total);
-                setAlbumList(res.data.albumList);
-            })
-            .catch((error: ApiError)=>{
-                pushToast(error.message)
-            })
+        router.push(`/album/management?p=${1}&s=${newPageRange}`)
+
+        // setRowsPerPage(newPageRange);
+        // setPage(0);
+        // AlbumControllerService.getAlbumList(1, newPageRange)
+        //     .then(res => {
+        //         setTotal(res.data.total);
+        //         setAlbumList(res.data.albumList);
+        //     })
+        //     .catch((error: ApiError)=>{
+        //         pushToast(error.message)
+        //     })
     };
 
 
@@ -83,11 +99,11 @@ function AlbumManagement() {
                         component="div"
                         count={total}
                         rowsPerPage={rowsPerPage}
-                        page={page}
+                        page={page - 1} //组件起始页数为0
                         onPageChange={handleChangePage}
                         onRowsPerPageChange={handleChangeRowsPerPage}
                         labelRowsPerPage="每页行数"
-                        labelDisplayedRows={({ from, to, count }) => `${from}-${to} 共 ${count !== -1 ? count : `超过 ${to}`} 个`}
+                        labelDisplayedRows={({ from, to, count }) => `第${page}页 ${from}-${to} 共 ${count !== -1 ? count : `超过 ${to}`} 个`}
                     />
                 </Stack>
 
@@ -109,7 +125,7 @@ function AlbumManagement() {
                                         <ImageSkeleton sx={{
                                             width: '32px', height: '32px', borderRadius: '6%', flex: "0 0 auto", marginLeft: "12px", imageRendering: "auto", objectFit: "contain"
                                         }} src={album.frontCoverUrl !== null ? album.frontCoverUrl + "?s=@w32h32" : "/images/akari.jpg"} />
-                                            
+
                                         {/* <CardMedia sx={{
                                             width: '32px', height: '32px', borderRadius: '6%', flex: "0 0 auto", marginLeft: "12px", imageRendering: "auto", objectFit: "contain"
                                         }} src={album.frontCoverUrl !== null ? album.frontCoverUrl + "?s=@w32h32" : "/images/akari.jpg"} component="img"></CardMedia> */}
