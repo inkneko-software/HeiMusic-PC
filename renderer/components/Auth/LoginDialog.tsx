@@ -229,9 +229,10 @@ export default function LoginDialog(props) {
 
             <DialogContent sx={{ margin: '40px 60px 20px 60px' }}>
                 <Stack sx={{ margin: 'auto', justifyContent: 'center', marginBottom: 3 }} direction='row' spacing={2}>
-                    <Tab tabIndex={0} currentIndex={tabIndex} text="密码登录" onClick={() => { changePanel(0) }} />
-                    <Divider flexItem orientation='vertical' sx={{ borderColor: "#e3e3e3" }} />
                     <Tab tabIndex={1} currentIndex={tabIndex} text="验证登录" onClick={() => { changePanel(1) }} />
+                    <Divider flexItem orientation='vertical' sx={{ borderColor: "#e3e3e3" }} />
+                    <Tab tabIndex={0} currentIndex={tabIndex} text="密码登录" onClick={() => { changePanel(0) }} />
+
                 </Stack>
                 <TabPanel tabIndex={0} currentIndex={tabIndex}>
                     <PasswordLogin switchToAuthLogin={() => { changePanel(1) }} />
