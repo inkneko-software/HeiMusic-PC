@@ -30,23 +30,30 @@ function AlbumManagement() {
     const tableRef = React.useRef<HTMLDivElement>(null);
     React.useEffect(() => {
         const { p, s } = router.query;
+        var page: number;
+        var size: number;
         if (p !== undefined && s !== undefined) {
             console.log(p, s)
-            var page: number = parseInt(p as string);
-            var size: number = parseInt(s as string)
+            page = parseInt(p as string);
+            size = parseInt(s as string)
 
             setPage(page);
             setRowsPerPage(size);
 
-            AlbumControllerService.getAlbumList(page, size)
-                .then(res => {
-                    setTotal(res.data.total);
-                    setAlbumList(res.data.albumList);
-                })
-                .catch((error: ApiError) => {
-                    pushToast(error.message)
-                })
+
+        } else {
+            page = 1;
+            size = 25;
         }
+
+        AlbumControllerService.getAlbumList(page, size)
+            .then(res => {
+                setTotal(res.data.total);
+                setAlbumList(res.data.albumList);
+            })
+            .catch((error: ApiError) => {
+                pushToast(error.message)
+            })
 
     }, [router.query])
 
