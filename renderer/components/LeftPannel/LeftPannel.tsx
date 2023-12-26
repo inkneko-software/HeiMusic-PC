@@ -37,7 +37,7 @@ function LeftPannel(props: LeftPannelProps) {
 
         if (path.startsWith("/home")) {
             //default state
-        } else if (path == "/album/management") {
+        } else if (path.startsWith("/album/management")) {
             setActiveList("在线音乐");
             setActiveIndex(2);
         } else if (path.startsWith("/songlist")) {
