@@ -4,32 +4,12 @@
 import type { MusicDto } from '../models/MusicDto';
 import type { ResponseListMusic } from '../models/ResponseListMusic';
 import type { ResponseMusic } from '../models/ResponseMusic';
-import type { ResponseObject } from '../models/ResponseObject';
-import type { TestDto } from '../models/TestDto';
 
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
 
 export class MusicControllerService {
-
-    /**
-     * @param formData 
-     * @returns ResponseObject OK
-     * @throws ApiError
-     */
-    public static testPost(
-formData?: {
-albumId: TestDto;
-},
-): CancelablePromise<ResponseObject> {
-        return __request(OpenAPI, {
-            method: 'POST',
-            url: '/api/v1/music/testPost',
-            formData: formData,
-            mediaType: 'multipart/form-data',
-        });
-    }
 
     /**
      * 新建音乐

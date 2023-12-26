@@ -13,6 +13,10 @@ export type MusicVo = {
     bitrate?: string;
     codec?: string;
     duration?: number;
+    albumId?: number;
+    albumTitle?: string;
+    albumCoverUrl?: string;
     artistList?: Array<ArtistVo>;
     resourceList?: Array<MusicResourceVo>;
+    isFavorite?: boolean;
 };

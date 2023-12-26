@@ -29,7 +29,6 @@ export type { ResponseMusic } from './models/ResponseMusic';
 export type { ResponseObject } from './models/ResponseObject';
 export type { ResponseString } from './models/ResponseString';
 export type { ResponseUserDetail } from './models/ResponseUserDetail';
-export type { TestDto } from './models/TestDto';
 export type { UpdateAlbumInfoDto } from './models/UpdateAlbumInfoDto';
 export type { UserDetail } from './models/UserDetail';
 
@@ -38,4 +37,5 @@ export { ArtistControllerService } from './services/ArtistControllerService';
 export { AuthControllerService } from './services/AuthControllerService';
 export { MinIoControllerService } from './services/MinIoControllerService';
 export { MusicControllerService } from './services/MusicControllerService';
+export { PlaylistControllerService } from './services/PlaylistControllerService';
 export { UserControllerService } from './services/UserControllerService';
