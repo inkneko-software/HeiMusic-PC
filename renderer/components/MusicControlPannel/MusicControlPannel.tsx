@@ -68,13 +68,14 @@ export interface IMusicQuality {
 }
 
 export interface IMusicInfo {
-    songId: number,
+    musicId: number,
     title: string,
     artists: string[],
     qualityOption: IMusicQuality[],
     albumId: number,
     albumTitle: string,
     cover: string,
+    isFavorite?: boolean,
     duration?: number,
 }
 
@@ -99,7 +100,7 @@ function MusicControlPannel(props: IMusicControlPannel) {
     const [currentTime, setCurrentTime] = React.useState(0);
     const [timeLabel, setTimeLabel] = React.useState("--:-- / --:--");
     const [currentMusicInfo, setCurrentMusicInfo] = React.useState<IPlayingMusicInfo>({
-        songId: 0,
+        musicId: 0,
         title: "HeiMusic!",
         artists: ["author: inkneko."],
         qualityOption: [{

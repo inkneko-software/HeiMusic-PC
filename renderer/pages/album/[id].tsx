@@ -19,7 +19,8 @@ import FavoriteBorderOutlinedIcon from '@mui/icons-material/FavoriteBorderOutlin
 import FavoriteOutlinedIcon from '@mui/icons-material/FavoriteOutlined';
 
 import { IChangePlayListEvent, IMusicInfo, IMusicQuality } from '../../components/MusicControlPannel/MusicControlPannel';
-import { AlbumControllerService, ArtistVo } from '../../api/codegen';
+import { AlbumControllerService, ArtistVo, PlaylistControllerService } from '../../api/codegen';
+import { pushToast } from '@components/HeiMusicMainLayout';
 
 interface MusicAlbumProps extends BoxProps {
 
@@ -73,7 +74,7 @@ function MusicAlbum(props: MusicAlbumProps) {
 
             setPlayList(playlist.map((music, index) => {
                 return {
-                    songId: music.musicId,
+                    musicId: music.musicId,
                     title: music.title,
                     artists: music.artistList.map(val => val.name),
                     qualityOption: [{
@@ -84,7 +85,8 @@ function MusicAlbum(props: MusicAlbumProps) {
                     albumId: albumInfo.albumId,
                     albumTitle: albumInfo.title,
                     cover: albumInfo.frontCoverUrl,
-                    duration: music.duration
+                    duration: music.duration,
+                    isFavorite: music.isFavorite
                 }
             }))
         })()
@@ -123,6 +125,36 @@ function MusicAlbum(props: MusicAlbumProps) {
 
     const timePretty = (time: number) => {
         return `${Math.floor(time / 60).toString().padStart(2, "0")}:${(time % 60).toString().padStart(2, "0")}`
+    }
+
+    const handleAddFavoriteMusic = (musicId: number) => {
+        PlaylistControllerService.addMusicFavorite(musicId)
+            .then(res => {
+                setPlayList(prev => prev.map(music => {
+                    if (music.musicId === musicId) {
+                        music.isFavorite = true;
+                    }
+                    return music;
+                }))
+            })
+            .catch((error) => {
+                pushToast(error.message)
+            })
+    }
+
+    const handleRemoveFavoriteMusic = (musicId: number) => {
+        PlaylistControllerService.removeMusicFavorite(musicId)
+            .then(res => {
+                setPlayList(prev => prev.map(music => {
+                    if (music.musicId === musicId) {
+                        music.isFavorite = false;
+                    }
+                    return music;
+                }))
+            })
+            .catch((error) => {
+                pushToast(error.message)
+            })
     }
 
     return (
@@ -164,21 +196,21 @@ function MusicAlbum(props: MusicAlbumProps) {
                 {
                     marginTop: '20px',
                     display: 'flex',
-                    height:"fit-content",
+                    height: "fit-content",
                     flexDirection: "column",
                     position: "sticky",
-                    overflow:"hidden",
+                    overflow: "hidden",
                     background: theme.palette.pannelBackground.light,
                     top: "0px",
                     zIndex: 10,
-                    transition:"height .3s cubic-bezier(0.42, 1.0, 1.0, 1.0) 0s;"
+                    transition: "height .3s cubic-bezier(0.42, 1.0, 1.0, 1.0) 0s;"
                 },
                 showLargeAlbumInfo && {
-                    visibility:"hidden",
-                    height:"0px",
+                    visibility: "hidden",
+                    height: "0px",
                 }
             ]}>
-                <Box sx={{ display: "flex", padding: "0px 12px 10px 12px",}}>
+                <Box sx={{ display: "flex", padding: "0px 12px 10px 12px", }}>
                     <CardMedia sx={{
                         width: '90px', height: '90px', borderRadius: '6%', flex: "0 0 auto", imageRendering: "auto", border: "1px solid #e3e3e3", objectFit: "contain"
                     }} src={albumInfo.cover || "/images/akari.jpg"} component="img"></CardMedia>
@@ -226,7 +258,7 @@ function MusicAlbum(props: MusicAlbumProps) {
                     {
                         playlist.map((row, index) => (
                             <TableRow
-                                sx={{ userSelect: "none", ":hover": { background: "rgba(0,0,0,0.1)", color: theme.palette.primary.main,  } }}
+                                sx={{ userSelect: "none", ":hover": { background: "rgba(0,0,0,0.1)", color: theme.palette.primary.main, } }}
                                 onDoubleClick={() => {
                                     const event = new CustomEvent<IChangePlayListEvent>("music-control-panel::changePlayList", {
                                         detail: {
@@ -237,7 +269,12 @@ function MusicAlbum(props: MusicAlbumProps) {
                                     document.dispatchEvent(event)
                                 }}>
                                 <TableCell style={{ width: "5%" }} sx={{ borderBottom: "unset", textOverflow: "ellipsis", whiteSpace: "nowrap", overflowX: "hidden" }} onDoubleClick={e => e.stopPropagation()}>
-                                    <Button size="small" sx={{ padding: "0px 0px", width: "20px", height: "20px", minWidth: "unset" }} color="error" ><FavoriteBorderOutlinedIcon sx={{ width: "18px", height: "18px" }} /></Button>
+                                    {
+                                        row.isFavorite && <Button size="small" sx={{ padding: "0px 0px", width: "20px", height: "20px", minWidth: "unset" }} color="error" onClick={() => handleRemoveFavoriteMusic(row.musicId)} ><FavoriteOutlinedIcon sx={{ width: "18px", height: "18px" }} /></Button>
+                                    }
+                                    {
+                                        !row.isFavorite && <Button size="small" sx={{ padding: "0px 0px", width: "20px", height: "20px", minWidth: "unset" }} color="error" onClick={() => handleAddFavoriteMusic(row.musicId)}><FavoriteBorderOutlinedIcon sx={{ width: "18px", height: "18px" }} /></Button>
+                                    }
                                 </TableCell>
                                 <TableCell style={{ width: "45%" }} sx={{ borderBottom: "unset", textOverflow: "ellipsis", whiteSpace: "nowrap", overflowX: "hidden" }} title={row.title}>{row.title}</TableCell>
                                 <TableCell style={{ width: "45%" }} sx={{ borderBottom: "unset", textOverflow: "ellipsis", whiteSpace: "nowrap", overflowX: "hidden" }} title={row.artists.join(" / ")}>{row.artists.join(" / ")}</TableCell>
