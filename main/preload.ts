@@ -17,6 +17,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
         save: () => ipcRenderer.invoke("config::save"),
         saveAndReload: () => ipcRenderer.invoke("config::saveAndReload"),
         onChange: (callback: (event: Electron.IpcRendererEvent, config: HeiMusicConfig) => void) => ipcRenderer.on("config::onChange", callback),
+        setHotKey: (target: "playback" | "prev" | "next", accelerator: string) => ipcRenderer.invoke("config::setHotKey", [target, accelerator]),
     },
     music: {
         parse: (filepath: string) => ipcRenderer.invoke("music::parse", filepath),

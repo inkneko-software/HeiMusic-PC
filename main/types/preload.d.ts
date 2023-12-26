@@ -19,7 +19,9 @@ declare global {
                 //保存当前内存中的配置至文件，并重启应用
                 saveAndReload: () => Promise<null>,
                 //订阅配置更新
-                onChange: (callback: (event: Electron.IpcRendererEvent, config: HeiMusicConfig) => void) => void
+                onChange: (callback: (event: Electron.IpcRendererEvent, config: HeiMusicConfig) => void) => void,
+                //设置某功能的热键。会自动注销已注册的热键
+                setHotKey: (target: "playback" | "prev" | "next", accelerator: string) => void,
             },
             music: {
                 parse: (filepath: string) => Promise<IAudioMetadata>,

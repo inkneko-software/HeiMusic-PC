@@ -1,4 +1,4 @@
-import { app, ipcMain, session, protocol, nativeImage, ipcRenderer } from 'electron';
+import { app, ipcMain, session, protocol, nativeImage, globalShortcut } from 'electron';
 import serve from 'electron-serve';
 import { createWindow } from './helpers';
 import path from 'path';
@@ -38,8 +38,8 @@ function getDefaultConfig(): HeiMusicConfig {
         },
         hotkeys: {
             playback: "Control+Alt+P",
-            next: "Control+Alt+Next",
-            prev: "Control+Alt+Prev"
+            next: "Control+Alt+Right",
+            prev: "Control+Alt+Left"
         },
         lastPannel: null,
         closeWindowMinimized: null
@@ -113,6 +113,43 @@ function saveConfig() {
         saveConfig();
         app.relaunch();
         app.exit();
+    })
+
+    /**
+     * 热键注册
+     */
+
+    globalShortcut.register(heiMusicConfig.hotkeys.next, () => {
+        mainWindow.webContents.send("playback::next")
+    })
+    globalShortcut.register(heiMusicConfig.hotkeys.prev, () => {
+        mainWindow.webContents.send("playback::prev")
+    })
+    globalShortcut.register(heiMusicConfig.hotkeys.playback, () => {
+        mainWindow.webContents.send("playback::play")
+    })
+
+    ipcMain.handle("config::setHotKey", (event, args) => {
+        var target: "prev" | "next" | "playback" = args[0];
+        var accelerator: string = args[1];
+        switch (target) {
+            case 'prev':
+                globalShortcut.unregister(heiMusicConfig.hotkeys.prev);
+                globalShortcut.register(accelerator, () => mainWindow.webContents.send("playback::prev"))
+                heiMusicConfig.hotkeys.prev = accelerator;
+                break;
+            case 'next':
+                globalShortcut.unregister(heiMusicConfig.hotkeys.next);
+                globalShortcut.register(accelerator, () => mainWindow.webContents.send("playback::next"))
+                heiMusicConfig.hotkeys.next = accelerator;
+                break;
+            case 'playback':
+                globalShortcut.unregister(heiMusicConfig.hotkeys.playback);
+                globalShortcut.register(accelerator, () => mainWindow.webContents.send("playback::play"))
+                heiMusicConfig.hotkeys.playback = accelerator;
+                break;
+        }
+        saveConfig()
     })
 
 
@@ -221,7 +258,7 @@ function saveConfig() {
         }
     ])
 
-    ipcMain.handle("thumbnail::playing", ()=>{
+    ipcMain.handle("thumbnail::playing", () => {
         mainWindow.setThumbarButtons([
             {
                 tooltip: '上一曲',
@@ -241,7 +278,7 @@ function saveConfig() {
         ])
     })
 
-    ipcMain.handle("thumbnail::paused", ()=>{
+    ipcMain.handle("thumbnail::paused", () => {
         mainWindow.setThumbarButtons([
             {
                 tooltip: '上一曲',
