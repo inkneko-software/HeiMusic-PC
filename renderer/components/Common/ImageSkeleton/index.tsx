@@ -5,6 +5,7 @@ export default function ImageSkeleton(props: CardMediaProps<'img'>) {
     const [loaded, setLoaded] = useState(false)
     const imageRef = useRef(null)
     useEffect(() => {
+        console.log(1)
         if (imageRef.current !== null) {
             if (props.src === null) {
                 imageRef.current.src = "/images/akari.jpg";
@@ -20,7 +21,7 @@ export default function ImageSkeleton(props: CardMediaProps<'img'>) {
                 setLoaded(true);
             })
         }
-    }, [imageRef.current]);
+    }, []);
 
     return (
         <>
