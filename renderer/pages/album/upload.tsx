@@ -166,7 +166,7 @@ function AlbumEdit() {
 
 
                 if (metadata.common.picture !== undefined && cover === null) {
-                    const coverBlob = new Blob([metadata.common.picture[0].data])
+                    const coverBlob = new Blob([metadata.common.picture[0].data], {type: metadata.common.picture[0].format})
                     console.log(coverBlob)
                     setCover(coverBlob)
                 }
