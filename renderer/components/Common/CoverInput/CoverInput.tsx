@@ -54,7 +54,7 @@ const CoverInput = (({ width = "128px", height = "128px", radius = "6%", cover, 
                     <Box sx={{ minWidth: "1px", margin: "9% auto", background: "white" }} />
                     <Button sx={{ margin: "auto auto", color: "red" }} onClick={onRemoveCover}>删除</Button>
                 </Box>
-                <CardMedia src={coverPreviewLink} sx={{ height: "100%", borderRadius: radius, objectFit: "unset" }} component='img' />
+                <CardMedia src={coverPreviewLink} sx={{ height: "100%", borderRadius: radius, border: "1px solid #e3e3e3", objectFit: "contain" }} component='img' />
             </Box>
             {/* 选择文件按钮 */}
             <Button variant="outlined" size='small' onClick={onPickCover} sx={[cover != null && { display: "none" }]}>选择文件</Button>
