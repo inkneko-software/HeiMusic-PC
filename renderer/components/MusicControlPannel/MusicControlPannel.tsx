@@ -144,12 +144,12 @@ function MusicControlPannel(props: IMusicControlPannel) {
                 setTimeLabel(`${currentMinutes}:${currentSeconds} / ${durationMinutes}:${durationSeconds}`)
             }
 
-            if ("mediaSession" in navigator){
-                navigator.mediaSession.setActionHandler("play", ()=>{
+            if ("mediaSession" in navigator) {
+                navigator.mediaSession.setActionHandler("play", () => {
                     handlePlayButtonClick()
                 })
 
-                navigator.mediaSession.setActionHandler("pause", ()=>{
+                navigator.mediaSession.setActionHandler("pause", () => {
                     handlePlayButtonClick();
                 })
             }
@@ -199,7 +199,7 @@ function MusicControlPannel(props: IMusicControlPannel) {
                 window.electronAPI.playback.play(handlePlayButtonClick);
             }
 
-            
+
 
             return () => {
                 audio.ontimeupdate = null;
@@ -324,18 +324,18 @@ function MusicControlPannel(props: IMusicControlPannel) {
     }
 
     return (
-        <Box sx={{ display: "flex", flexDirection: "column" }} {...props}>
+        <Box {...props} sx={{ ...(props.sx), display: "flex", flexDirection: "column" }}>
             <audio ref={audioRef} />
             <MusicSlider size="small" max={duration} value={currentTime} onChangeCommitted={(event, value: number) => { audioRef.current.currentTime = value; audioRef.current.play(); setCurrentTime(value) }} />
-            <Box sx={{ display: "flex", margin: "auto 0px", flexGrow: "1" }}>
-                <Box sx={{ display: "flex", marginLeft: "20px", width: "30%", textAlign: "left" }}>
+            <Box sx={{ display: "flex", margin: "auto 0px", flexGrow: "1", paddingBottom: '4px' }}>
+                <Box sx={{ display: "flex", marginLeft: "20px", width: "30%", textAlign: "left", '@media(max-width:600px)': { flexGrow: '1' } }}>
                     <Avatar sx={{ margin: "auto 0", borderRadius: "2px" }} variant="square" src={currentMusicInfo.cover}><MusicNote /></Avatar>
                     <Box sx={{ margin: "auto 0 auto 15px", display: "flex", flexDirection: "column", textAlign: "left", width: '30%', flexGrow: 1 }}>
                         <ScrollableTypography>{currentMusicInfo.title}</ScrollableTypography>
                         <ScrollableTypography sx={{ fontSize: "12px", color: "#a1a1a1" }} noWrap>{currentMusicInfo.artists.join(' / ')}</ScrollableTypography>
                     </Box>
                 </Box>
-                <Box sx={{ flexGrow: "1", margin: "auto auto", textAlign: "center" }} >
+                <Box sx={{ flexGrow: "1", margin: "auto auto", textAlign: "center", '@media(max-width:600px)': { display: 'none' } }} >
                     <IconButton sx={{ color: theme.palette.text.primary }} onClick={handleLoopOptionClick}><Repeat style={{ fontSize: 24 }} /></IconButton>
                     <IconButton sx={{ color: theme.palette.text.primary }} onClick={handlePrevClick} ><SkipPrevious style={{ fontSize: 34 }} /></IconButton>
                     <IconButton color="primary" onClick={() => { handlePlayButtonClick() }} >{playBtnIcon}</IconButton>
@@ -358,7 +358,11 @@ function MusicControlPannel(props: IMusicControlPannel) {
                     </IconButton>
 
                 </Box>
-                <Box sx={{ margin: "auto 0", width: "30%", textAlign: "right", display: "flex" }}>
+                <Box sx={{ margin: "auto 12px auto auto", textAlign: "center", '@media(min-width:600px)': { display: 'none' } }}>
+                    <IconButton color="primary" onClick={() => { handlePlayButtonClick() }} >{playBtnIcon}</IconButton>
+                    <IconButton sx={{ margin: "auto 8px auto 0px" }} onClick={() => setPlaylistOpen(true)}><QueueMusic /></IconButton>
+                </Box>
+                <Box sx={{ margin: "auto 0", width: "30%", textAlign: "right", display: "flex", '@media(max-width:600px)': { display: 'none' } }}>
                     <Typography sx={{ margin: "auto 12px auto 0px", flexGrow: "1", userSelect: "none", color: theme.palette.text.secondary }} variant="subtitle2">{timeLabel}</Typography>
                     <Button sx={[currentMusicInfo.currentQuality.name === null && { display: 'none' }, { color: currentMusicInfo.currentQuality.color, border: `1px solid ${currentMusicInfo.currentQuality.color}`, padding: '0px 0px', margin: 'auto 8px auto 0px', minWidth: '32px', minHeight: '0px', lineHeight: 'normal' }]} size='small' >{currentMusicInfo.currentQuality.name}</Button>
                     <IconButton sx={{ margin: "auto 8px auto 0px" }} onClick={() => setPlaylistOpen(true)}><QueueMusic /></IconButton>
