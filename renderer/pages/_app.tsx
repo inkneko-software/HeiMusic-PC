@@ -49,6 +49,29 @@ export default function (props: AppProps) {
               ::-webkit-scrollbar-track {
               }
               
+              @media(max-width: 600px) {
+                ::-webkit-scrollbar {
+                  width: 6px;
+                  height: 8px;
+                  background-color: #e3e3e3; /* or add it to the track */
+                  border-radius: 4px;
+  
+                }
+              }
+              body, html {
+                margin: 0;
+                height: 100%;
+              }
+    
+              body {
+                display: flex;
+                flex-direction: column;
+              }
+
+              #__next {
+                margin: 0;
+                height: 100%;
+              }
               `
           }
 
