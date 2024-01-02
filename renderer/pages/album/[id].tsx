@@ -168,7 +168,8 @@ function MusicAlbum(props: MusicAlbumProps) {
                 ref={albumInfoRef}
             >
                 <CardMedia sx={{
-                    width: '160px', height: '160px', borderRadius: '6%', flex: "0 0 auto", imageRendering: "auto", border: "1px solid #e3e3e3", objectFit: "contain"
+                    width: '160px', height: '160px', borderRadius: '6%', flex: "0 0 auto", imageRendering: "auto", border: "1px solid #e3e3e3", objectFit: "contain",
+                    '@media(max-width: 600px)': { width: '80px', height: '80px' }
                 }} src={albumInfo.cover || "/images/akari.jpg"} component="img"></CardMedia>
                 {/* <MusicNote sx={{
                     width: '180px', height: '180px', borderRadius: '6%', flex: "0 0 auto",  border: "1px solid #e3e3e3", fontSize: 72 
@@ -181,14 +182,15 @@ function MusicAlbum(props: MusicAlbumProps) {
                     flex: "1 1 auto",
                     display: 'flex',
                     flexDirection: 'column',
+
                 }}>
-                    <Typography fontWeight={600} variant='h5' noWrap title={albumInfo.title} >{albumInfo.title}</Typography>
+                    <Typography fontWeight={600} variant='h5' sx={{ '@media(max-width: 600px)': { fontSize: "1em" } }} noWrap title={albumInfo.title} >{albumInfo.title}</Typography>
                     <Typography variant='body2' noWrap >{albumInfo.artist}</Typography>
                     {albumInfo.date ? <Typography variant='caption' noWrap >{albumInfo.date}</Typography> : null}
                     <Typography variant='caption' sx={{ marginTop: "12px" }} >{"播放量 " + albumInfo.listenedCount}</Typography>
-                    <Box sx={{ marginTop: "auto" }}>
-                        <Button sx={{ width: "90px", height: "32px", marginRight: "30px" }} variant="contained" onClick={handlePlayAll} >播放全部</Button>
-                        <Button sx={{ width: "90px", height: "32px", marginRight: "30px" }} variant="outlined">下载</Button>
+                    <Box sx={{ marginTop: "auto", display: 'flex' }}>
+                        <Button sx={{  marginRight: "30px" }} size='small' variant="contained" onClick={handlePlayAll} >播放全部</Button>
+                        <Button sx={{  marginRight: "30px" }} size='small' variant="outlined">下载</Button>
                     </Box>
                 </Box>
             </Box>
