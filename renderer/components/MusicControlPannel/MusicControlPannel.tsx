@@ -1,6 +1,6 @@
 import React from "react"
 import Slider from "@mui/material/Slider"
-import { Avatar, Box, BoxProps, Button, SwipeableDrawer, Typography } from "@mui/material"
+import { Avatar, Box, BoxProps, Button, Drawer, SwipeableDrawer, Typography } from "@mui/material"
 import MusicNote from "@mui/icons-material/MusicNote"
 import SkipPrevious from "@mui/icons-material/SkipPrevious"
 import SkipNext from "@mui/icons-material/SkipNext"
@@ -19,6 +19,7 @@ import MusicSlider from "./MusicSlider"
 import VolumePannel from "./VolumePannel"
 import ScrollableTypography from "@components/Common/ScrollableTypography"
 import PlayList from "./PlayList"
+import FullScreenMusicPannel from "./FullScreenMusicPannel"
 
 
 /**
@@ -120,7 +121,9 @@ function MusicControlPannel(props: IMusicControlPannel) {
     });
     const [playbackMethod, setPlaybackMethod] = React.useState<'loop' | 'sequence' | 'random' | 'repeate'>("loop")
     const [musicList, setMusicList] = React.useState<IMusicInfo[]>([]);
-    const [playlistOpen, setPlaylistOpen] = React.useState(false)
+    const [playlistOpen, setPlaylistOpen] = React.useState(false);
+
+    const [fullScreenMusicPannelOpen, setFullScreenMusicPannelOpen] = React.useState(false);
 
     React.useEffect(() => {
         if (audioRef.current !== null) {
@@ -329,7 +332,14 @@ function MusicControlPannel(props: IMusicControlPannel) {
             <MusicSlider size="small" max={duration} value={currentTime} onChangeCommitted={(event, value: number) => { audioRef.current.currentTime = value; audioRef.current.play(); setCurrentTime(value) }} />
             <Box sx={{ display: "flex", margin: "auto 0px", flexGrow: "1", paddingBottom: '4px' }}>
                 <Box sx={{ display: "flex", marginLeft: "20px", width: "30%", textAlign: "left", '@media(max-width:600px)': { flexGrow: '1' } }}>
-                    <Avatar sx={{ margin: "auto 0", borderRadius: "2px" }} variant="square" src={currentMusicInfo.cover}><MusicNote /></Avatar>
+                    <Avatar
+                        variant="square"
+                        src={currentMusicInfo.cover}
+                        sx={{ margin: "auto 0", borderRadius: "2px", objectFit: 'contain' }}
+                        onClick={()=>setFullScreenMusicPannelOpen(true)}
+                    >
+                        <MusicNote />
+                    </Avatar>
                     <Box sx={{ margin: "auto 0 auto 15px", display: "flex", flexDirection: "column", textAlign: "left", width: '30%', flexGrow: 1 }}>
                         <ScrollableTypography>{currentMusicInfo.title}</ScrollableTypography>
                         <ScrollableTypography sx={{ fontSize: "12px", color: "#a1a1a1" }} noWrap>{currentMusicInfo.artists.join(' / ')}</ScrollableTypography>
@@ -369,14 +379,14 @@ function MusicControlPannel(props: IMusicControlPannel) {
                 </Box>
             </Box>
             {/* 右侧边音乐列表 */}
-            <SwipeableDrawer
+            <Drawer
                 anchor="right"
                 open={playlistOpen}
                 onClose={() => setPlaylistOpen(false)}
-                onOpen={() => setPlaylistOpen(true)}
             >
                 <PlayList musicList={musicList} currentIndex={currentMusicInfo.currentIndex} onClose={() => setPlaylistOpen(false)} />
-            </SwipeableDrawer>
+            </Drawer>
+            <FullScreenMusicPannel open={fullScreenMusicPannelOpen} onClose={() => setFullScreenMusicPannelOpen(false)} />
         </Box>
     )
 }
