@@ -3,6 +3,7 @@
 /* eslint-disable */
 import type { ResponseListMusicVo } from '../models/ResponseListMusicVo';
 import type { ResponseObject } from '../models/ResponseObject';
+import type { ResponsePlaylist } from '../models/ResponsePlaylist';
 
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
@@ -25,6 +26,18 @@ musicId: number,
             query: {
                 'musicId': musicId,
             },
+        });
+    }
+
+    /**
+     * 创建歌单
+     * @returns ResponsePlaylist OK
+     * @throws ApiError
+     */
+    public static addPlaylist(): CancelablePromise<ResponsePlaylist> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/playlist/addPlaylist',
         });
     }
 

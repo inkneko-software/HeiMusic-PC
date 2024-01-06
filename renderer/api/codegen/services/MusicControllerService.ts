@@ -4,12 +4,34 @@
 import type { MusicDto } from '../models/MusicDto';
 import type { ResponseListMusic } from '../models/ResponseListMusic';
 import type { ResponseMusic } from '../models/ResponseMusic';
+import type { ResponseObject } from '../models/ResponseObject';
 
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
 
 export class MusicControllerService {
+
+    /**
+     * 更新音乐的艺术家信息
+     * @param musicId 
+     * @param artistIds 
+     * @returns ResponseObject OK
+     * @throws ApiError
+     */
+    public static updateMusicArtists(
+musicId: number,
+artistIds: Array<number>,
+): CancelablePromise<ResponseObject> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/music/updateMusicArtists',
+            query: {
+                'musicId': musicId,
+                'artistIds': artistIds,
+            },
+        });
+    }
 
     /**
      * 新建音乐
