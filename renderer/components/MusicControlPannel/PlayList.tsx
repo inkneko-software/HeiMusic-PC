@@ -28,7 +28,7 @@ export default function PlayList(props: IPlayList) {
                 {
                     props.musicList.map((music, index) => {
                         return (
-                            <Box sx={[{ padding: "6px 16px", ":hover": { background: "rgba(0,0,0,0.1)", color: theme.palette.primary.main, cursor:"pointer"} }, (index === props.currentIndex) && { background: "rgba(0,0,0,0.1)" }]} onDoubleClick={()=>changeMusic(index)} key={index}>
+                            <Box sx={[{ padding: "6px 16px", ":hover": { background: theme.palette.pannelBackground.main, color: theme.palette.primary.main, cursor: "pointer" } }, (index === props.currentIndex) && { background: theme.palette.pannelBackground.main, color: theme.palette.primary.main }]} onDoubleClick={() => changeMusic(index)} key={index}>
                                 <Typography noWrap>{music.title} </Typography>
                                 <Typography noWrap sx={{ fontSize: "12px", color: "#a1a1a1", minHeight: "12px" }}>{music.artists.join(" / ")}</Typography>
                             </Box>
