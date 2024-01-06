@@ -26,7 +26,12 @@ interface IMusic {
 
 interface IMusicDialog {
     open: boolean,
-    musicIndex: number
+    music: IMusic,
+}
+
+interface IArtistDialog {
+    open: boolean,
+    callback: (artist: ArtistVo) => void,
 }
 
 function AlbumEdit() {
@@ -43,8 +48,8 @@ function AlbumEdit() {
     //艺术家对话框相关
     const [artistSearchInput, setArtistSearchInput] = React.useState<string>("")
     const [artistSearchCandidate, setArtistSearchCandidate] = React.useState<ArtistVo[]>([])
-    const [addArtistDialogOpen, setAddArtistDialogOpen] = React.useState(false)
-    const [musicDialogContext, setMusicDialogContext] = React.useState<IMusicDialog>({ open: false, musicIndex: null })
+    const [addArtistDialog, setAddArtistDialog] = React.useState<IArtistDialog>({ open: false, callback: () => { } })
+    const [musicDialog, setMusicDialog] = React.useState<IMusicDialog>({ open: false, music: null })
     //删除专辑确认对话框
     const [deleteAlbumConfirmDialogOpen, setDeleteAlbumConfirmDialogOpen] = React.useState(false)
     //音乐列表
@@ -89,9 +94,7 @@ function AlbumEdit() {
 
     }
 
-    const removeArtist = (name: string) => {
-        setAlbumArtists(albumArtists.filter((item, index) => { return name === item.name }))
-    }
+
 
     const onPickMusic = async () => {
         musicFileRef.current.click();
@@ -285,7 +288,7 @@ function AlbumEdit() {
             deleteCover: cover === null
         })
             .then(res => {
-                makeToast("已更新专辑信息");
+                pushToast("已更新专辑信息", 'success');
             })
             .catch((e: ApiError) => {
                 pushToast(e.message)
@@ -317,7 +320,7 @@ function AlbumEdit() {
             {Toast}
             <input ref={musicFileRef} name="music_file" type="file" accept=".mp3,.flac,.ogg" multiple hidden />
             {/* 添加艺术家对话框 */}
-            <Dialog open={addArtistDialogOpen} onClose={() => setAddArtistDialogOpen(false)}>
+            <Dialog open={addArtistDialog.open} onClose={() => setAddArtistDialog({ open: false, callback: () => { } })}>
                 <DialogTitle>
                     <Typography>添加艺术家</Typography>
                 </DialogTitle>
@@ -353,51 +356,100 @@ function AlbumEdit() {
                                 .then(res => {
                                     if (res.code === 0) {
                                         selectedArtist = res.data
-                                        setAlbumArtists([...albumArtists, selectedArtist])
-                                        setAddArtistDialogOpen(false);
+                                        if (addArtistDialog.callback !== null) {
+                                            addArtistDialog.callback(selectedArtist);
+                                        }
+                                        setAddArtistDialog({ open: false, callback: null });
                                     }
                                 })
                         } else {
-                            setAlbumArtists([...albumArtists, selectedArtist])
-                            setAddArtistDialogOpen(false);
+                            if (addArtistDialog.callback !== null) {
+                                addArtistDialog.callback(selectedArtist);
+                            }
+                            setAddArtistDialog({ open: false, callback: null });
                         }
                     }}>添加</Button>
                 </DialogContent>
             </Dialog>
-
             {/* 音乐信息对话框 */}
-            <Dialog open={musicDialogContext.open} onClose={() => setMusicDialogContext({ ...musicDialogContext, open: false })}>
-                <DialogTitle>
+            <Dialog open={musicDialog.open} >
+                <DialogTitle >
                     <Typography>音乐信息</Typography>
                 </DialogTitle>
                 <DialogContent>
-                    <Box sx={{ display: "flex", marginBottom: '12px' }}>
+                    <Box sx={{ marginTop: "12px", display: "flex", marginBottom: '12px' }}>
                         <Typography sx={{ width: '30%' }}>音乐标题</Typography>
-                        <TextField size="small" value={musicList[musicDialogContext.musicIndex] && musicList[musicDialogContext.musicIndex].title} onChange={e => setMusicList(musicList.map((val, index) => {
-                            if (index === musicDialogContext.musicIndex) {
-                                val.title = e.target.value;
-                            }
-                            return val;
-                        }))} />
+                        <TextField size="small" value={musicDialog.music && musicDialog.music.title} onChange={e => {
+                            var music = musicDialog.music;
+                            music.title = e.target.value;
+                            setMusicDialog({ open: true, music: music });
+                        }} />
                     </Box>
                     <Box sx={{ display: "flex", marginBottom: '12px' }}>
                         <Typography sx={{ width: '30%' }}>艺术家</Typography>
-                        <Grid sx={{ flex: "1 0 0" }}  >
+                        <Grid sx={{ flex: "1 0 0" }} >
                             {
-                                musicList[musicDialogContext.musicIndex] && musicList[musicDialogContext.musicIndex].artists.map((value, index) => {
-                                    return <Chip label={value.name} sx={{ margin: "0px 2px 2px 0px" }} avatar={<Avatar>{value.name.charAt(0)}</Avatar>} color="primary" onDelete={removeArtist} />
+                                musicDialog.music && musicDialog.music.artists.map((artist, index) => {
+                                    return <Chip
+                                        label={artist.name}
+                                        sx={{ margin: "0px 2px 2px 0px" }}
+                                        avatar={<Avatar>{artist.name.charAt(0)}</Avatar>}
+                                        color="primary"
+                                        onDelete={() => {
+                                            var music = musicDialog.music;
+                                            music.artists = music.artists.filter((oldArtist) => oldArtist.name !== artist.name);
+                                            setMusicDialog({ open: true, music: music });
+                                        }}
+                                    />
                                 })
                             }
-                            <Chip sx={{ margin: "0px 2px 2px 0px" }} label="添加" icon={<AddCircleOutlineOutlinedIcon />} onClick={() => { setAddArtistDialogOpen(true) }} />
+                            <Chip
+                                sx={{ margin: "0px 2px 2px 0px" }}
+                                label="添加" icon={<AddCircleOutlineOutlinedIcon />}
+                                onClick={() => {
+                                    setAddArtistDialog({
+                                        open: true,
+                                        callback: addedArtist => {
+                                            var music = musicDialog.music;
+                                            music.artists = [...music.artists, addedArtist]
+                                            setMusicDialog({open: true, music:music })
+                                            
+                                        }
+                                    })
+                                }} />
                         </Grid>
                     </Box>
                     <Box sx={{ display: "flex", marginBottom: '12px' }}>
                         <Typography sx={{ width: '30%', flex: "0 0 auto" }}>文件</Typography>
-                        <Typography variant="caption" sx={{ margin: "auto auto auto 0" }}>{musicList[musicDialogContext.musicIndex] && musicList[musicDialogContext.musicIndex].path}</Typography>
+                        <Button variant='outlined' size='small' disabled>上传音乐</Button>
 
                     </Box>
+                    <Typography variant="caption" sx={{ margin: "auto auto auto 0", flex: "1 0 0" }}>{musicDialog.music && musicDialog.music.path}</Typography>
+
                 </DialogContent>
+                <DialogActions>
+                    <Button variant="contained" size='small' onClick={() => {
+
+                        MusicControllerService.updateMusicArtists(musicDialog.music.musicId, musicDialog.music.artists.map(artist => artist.artistId))
+                            .then(res => {
+                                setMusicList(prev=>prev.map(oldMusic=>{
+                                    if (oldMusic.musicId === musicDialog.music.musicId){
+                                        oldMusic.artists = musicDialog.music.artists;
+                                    }
+                                    return oldMusic;
+                                }))
+                                pushToast("更新艺术家信息成功", 'success');
+                                setMusicDialog({open: false, music: musicDialog.music});
+                            })
+                            .catch((error: ApiError) => {
+                                pushToast(error.message, 'error', "bottom-left")
+                            })
+                    }}>保存</Button>
+                    <Button variant='outlined' size='small' onClick={() => setMusicDialog({ ...musicDialog, open: false })}>取消</Button>
+
+                </DialogActions>
             </Dialog>
+            {/* 删除专辑确认对话框 */}
             <Dialog open={deleteAlbumConfirmDialogOpen} onClose={() => setDeleteAlbumConfirmDialogOpen(false)}>
                 <DialogTitle>确认删除当前专辑？</DialogTitle>
                 <DialogActions>
@@ -431,10 +483,24 @@ function AlbumEdit() {
                     <Grid sx={{ flex: "1 0 0" }}  >
                         {
                             albumArtists.map((value, index) => {
-                                return <Chip label={value.name} sx={{ margin: "0px 2px 2px 0px" }} avatar={<Avatar>{value.name.charAt(0)}</Avatar>} color="primary" onDelete={removeArtist} />
+                                return <Chip 
+                                label={value.name} 
+                                sx={{ margin: "0px 2px 2px 0px" }} 
+                                avatar={<Avatar>{value.name.charAt(0)}</Avatar>} 
+                                color="primary" 
+                                onDelete={()=>{
+                                    setAlbumArtists(prev=>prev.filter((item, index) => { return item.name !== value.name }))
+                                }} />
                             })
                         }
-                        <Chip sx={{ margin: "0px 2px 2px 0px" }} variant="outlined" label="添加" icon={<AddCircleOutlineOutlinedIcon />} onClick={() => { setAddArtistDialogOpen(true) }} />
+                        <Chip sx={{ margin: "0px 2px 2px 0px" }} variant="outlined" label="添加" icon={<AddCircleOutlineOutlinedIcon />} onClick={() => {
+                            setAddArtistDialog({
+                                open: true,
+                                callback: addedArtist => {
+                                    setAlbumArtists([...albumArtists, addedArtist])
+                                }
+                            })
+                        }} />
                     </Grid>
                 </Box>
                 {/* 封面设定 */}
@@ -491,7 +557,7 @@ function AlbumEdit() {
                                             <TableCell sx={{ padding: "12px 0px", paddingRight: "12px" }}>
                                                 <Box sx={{ display: 'flex' }}>
 
-                                                    <Button size='small' sx={{ padding: 0, minWidth: 0 }} onClick={() => setMusicDialogContext({ open: true, musicIndex: index })}><EditOutlinedIcon /></Button>
+                                                    <Button size='small' sx={{ padding: 0, minWidth: 0 }} onClick={() => setMusicDialog({ open: true, music: structuredClone(music) })}><EditOutlinedIcon /></Button>
                                                     <Button size='small' sx={{ padding: 0, minWidth: 0, marginLeft: '2px' }} onClick={() => setMusicList(musicList.filter((val, itemIndex) => itemIndex !== index))}><DeleteOutlineOutlinedIcon /></Button>
                                                 </Box>
                                             </TableCell>
