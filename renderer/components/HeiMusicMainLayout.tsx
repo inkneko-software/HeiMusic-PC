@@ -236,7 +236,7 @@ function HeiMusicMainLayout({ children }) {
                     <LeftPannel sx={[{ width: '196px', height: "calc(100%)", maxHeight: "calc(100%)", flex: '0 0 auto', overflowY: 'auto', display: 'flex', flexDirection: 'column', background: theme.palette.pannelBackground.main }]} />
                 </Drawer>
                 {/* 上部视窗 与 下部播放器 */}
-                <Box sx={{ width: "calc(100% - 196px)", display: 'flex', flexDirection: 'column', background: theme.palette.pannelBackground.light }}>
+                <Box sx={[{ width: "calc(100% - 196px)", display: 'flex', flexDirection: 'column', background: theme.palette.pannelBackground.light }, matcheMobile && {width: "calc(100%)"}]}>
                     {/* <MusicAlbum sx={{ flexGrow: 1 }} /> */}
                     <Box sx={{ flexGrow: 1, flexShrink: 1, height: 'calc(100% - 64px - 76px)' }}>{children}</Box>
                     <MusicControlPannel sx={{ height: '76px', flexShrink: 0 }} />
