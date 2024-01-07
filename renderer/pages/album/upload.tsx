@@ -5,33 +5,39 @@ import DeleteOutlineOutlinedIcon from '@mui/icons-material/DeleteOutlineOutlined
 
 import AddCircleOutlineOutlinedIcon from '@mui/icons-material/AddCircleOutlineOutlined';
 import BackspaceOutlinedIcon from '@mui/icons-material/BackspaceOutlined';
-import { ArtistVo, ArtistControllerService, AlbumControllerService, MusicControllerService, MusicDto } from "../../api/codegen";
+import { ArtistVo, ArtistControllerService, AlbumControllerService, MusicControllerService, MusicDto, ApiError } from "../../api/codegen";
 import CoverInput from "@components/Common/CoverInput/CoverInput";
 import { useRouter } from "next/router";
 
 import { addMusic, addMusicFromCue } from "@api/upload/music";
 import { Index } from "cue-parser/lib/cuesheet";
+import { pushToast } from "@components/HeiMusicMainLayout";
 
 
 interface IMusic {
     musicId: number,
     title: string,
+    translatedTitle?: string,
     path: string,
     artists: ArtistVo[]
     file: File
+    sourceArtistTag?: string,
     loaded?: number,
-    total?: number
+    total?: number,
+    startTime?: string,
+    endTime?: string,
 }
 
 interface IMusicDialog {
     open: boolean,
-    musicIndex: number
+    music: IMusic,
+    musicIndex: number,
 }
 
 interface ICueMusicFile {
     file: File,
     fileName: string,
-    musicList: MusicDto[],
+    musicList: IMusic[],
     loaded?: number,
     total?: number
 }
@@ -39,6 +45,7 @@ interface ICueMusicFile {
 interface ICue {
     fileList: ICueMusicFile
 }
+
 
 function parsePeformers(artistsString: string): ArtistVo[] {
     if (artistsString === null) {
@@ -120,6 +127,182 @@ function parsePeformers(artistsString: string): ArtistVo[] {
 }
 
 
+interface IAddArtistDialogProps {
+    open: boolean,
+    onClose: () => void,
+    onAddSuccessful: (artist: ArtistVo) => void
+}
+
+function AddArtistDialog(props: IAddArtistDialogProps) {
+    const [artistSearchInput, setArtistSearchInput] = React.useState<string>("")
+    const [artistSearchCandidate, setArtistSearchCandidate] = React.useState<ArtistVo[]>([])
+    return (
+        <Dialog open={props.open} onClose={() => props.onClose()}>
+            <DialogTitle>
+                <Typography>添加艺术家</Typography>
+            </DialogTitle>
+            <DialogContent sx={{ display: "flex" }}>
+                <Autocomplete
+                    sx={{ width: "200px" }}
+                    filterOptions={(x) => x}
+                    options={artistSearchCandidate.map(value => value.name)}
+                    autoComplete
+                    freeSolo
+                    includeInputInList
+                    value={artistSearchInput}
+                    noOptionsText="无结果，点击添加以创建"
+                    onChange={(event: any, selectedArtist: string) => {
+                        setArtistSearchInput(selectedArtist)
+                    }}
+                    onInputChange={(event, newInputValue) => {
+                        setArtistSearchInput(newInputValue)
+                        ArtistControllerService.searchArtist(newInputValue)
+                            .then(res => {
+                                setArtistSearchCandidate(res.data)
+                            })
+                    }}
+                    renderInput={(params) => (
+                        <TextField   {...params} size="small" />
+                    )}
+                />
+                <Button size="small" onClick={() => {
+                    //判断是否为候选结果。候选结果为已创建的艺术家，拥有艺术家ID。
+                    //如果不是则尝试创建
+                    var selectedArtist = artistSearchCandidate.find(value => value.name === artistSearchInput)
+                    if (selectedArtist === undefined) {
+                        ArtistControllerService.addArtist(artistSearchInput)
+                            .then(res => {
+                                //添加成功，执行callback
+                                selectedArtist = res.data
+                                props.onAddSuccessful(selectedArtist);
+                                props.onClose();
+                            })
+                            .catch((e: ApiError) => {
+                                //若已存在则查询指定艺术家
+                                ArtistControllerService.getArtistByName(artistSearchInput)
+                                    .then(res => {
+                                        selectedArtist = res.data
+                                        props.onAddSuccessful(selectedArtist);
+                                        props.onClose();
+                                    })
+                                    .catch((e: ApiError) => {
+                                        pushToast(e.message, 'error')
+                                    })
+                            })
+                    } else {
+                        props.onAddSuccessful(selectedArtist);
+                        props.onClose();
+                    }
+                }}>添加</Button>
+            </DialogContent>
+        </Dialog>
+    )
+}
+
+interface IMusicInfoDialogProps {
+    open: boolean,
+    music: IMusic,
+    onClose: () => void,
+    onUpdate: (music: IMusic) => void,
+    usingCue?: boolean
+}
+
+function MusicInfoDialog(props: IMusicInfoDialogProps) {
+    const [music, setMusic] = React.useState({ ...props.music })
+    const [addArtistDialogOpen, setAddArtistDialogOpen] = React.useState(false)
+
+    React.useEffect(() => {
+        setMusic({ ...props.music })
+    }, [props.open])
+
+    return (
+        <Dialog open={props.open}>
+            <AddArtistDialog
+                open={addArtistDialogOpen}
+                onClose={() => setAddArtistDialogOpen(false)}
+                onAddSuccessful={
+                    addedArtist => setMusic(prev => {
+                        var music = { ...prev };
+                        music.artists = [...prev.artists, addedArtist];
+                        return music;
+                    })
+                }
+            />
+            <DialogTitle >
+                <Typography>音乐信息</Typography>
+            </DialogTitle>
+            <DialogContent>
+                <Box sx={{ marginTop: "12px", display: "flex", marginBottom: '12px' }}>
+                    <Typography sx={{ width: '30%' }}>音乐标题</Typography>
+                    <TextField size="small" value={music.title} onChange={e => {
+                        setMusic(prev => {
+                            var music = { ...prev }
+                            music.title = e.target.value;
+                            return music;
+                        })
+                    }} />
+                </Box>
+                <Box sx={{ display: "flex", marginBottom: '12px' }}>
+                    <Typography sx={{ width: '30%' }}>艺术家</Typography>
+                    <Grid sx={{ flex: "1 0 0" }} >
+                        {
+                            music.artists.map((artist, index) => {
+                                return <Chip
+                                    label={artist.name}
+                                    sx={{ margin: "0px 2px 2px 0px" }}
+                                    avatar={<Avatar>{artist.name.charAt(0)}</Avatar>}
+                                    color="primary"
+                                    onDelete={
+                                        () => setMusic(prev => {
+                                            var music = { ...prev };
+                                            music.artists = music.artists.filter((oldArtist) => oldArtist.name !== artist.name);
+                                            return music;
+                                        })
+                                    }
+                                />
+                            })
+                        }
+
+                        <Chip
+                            sx={{ margin: "0px 2px 2px 0px" }}
+                            label="添加" icon={<AddCircleOutlineOutlinedIcon />}
+                            onClick={() => setAddArtistDialogOpen(true)} />
+                    </Grid>
+                </Box>
+                <Box sx={{ display: "flex", marginBottom: '12px' }}>
+                    <Typography sx={{ width: '30%', flex: "0 0 auto" }}>文件</Typography>
+                    <Button variant='outlined' size='small' disabled>上传音乐</Button>
+
+                </Box>
+                <Box sx={{ display: "flex", marginTop: '6px', marginBottom: '6px' }}>
+                    <Typography variant="caption" sx={{ marginBottom: '12px' }} >{`原始艺术家信息：${props.music.sourceArtistTag}`}</Typography>
+
+                </Box>
+
+                {
+                    !props.usingCue &&
+                    <Box sx={{ display: "flex", marginBottom: '12px' }}>
+                        <Typography variant="caption" >{`文件路径：${music.path}`}</Typography>
+                    </Box>
+                }
+
+
+
+
+            </DialogContent>
+            <DialogActions>
+                <Button variant="contained" size='small' onClick={() => {
+                    props.onUpdate(music)
+                    props.onClose()
+                }}>保存</Button>
+                <Button variant='outlined' size='small' onClick={() => props.onClose()}>取消</Button>
+
+            </DialogActions>
+        </Dialog>
+
+    )
+}
+
 function AlbumEdit() {
     const theme = useTheme();
     const router = useRouter();
@@ -128,11 +311,15 @@ function AlbumEdit() {
     const [cover, setCover] = React.useState<Blob>(null)
     //专辑艺术家列表
     const [albumArtists, setAlbumArtists] = React.useState<ArtistVo[]>([]);
+    const [albumArtistTag, setAlbumArtistTag] = React.useState("")
     //艺术家对话框相关
-    const [artistSearchInput, setArtistSearchInput] = React.useState<string>("")
-    const [artistSearchCandidate, setArtistSearchCandidate] = React.useState<ArtistVo[]>([])
     const [addArtistDialogOpen, setAddArtistDialogOpen] = React.useState(false)
-    const [musicDialogContext, setMusicDialogContext] = React.useState<IMusicDialog>({ open: false, musicIndex: null })
+    //音乐信息编辑对话框相关
+    const [musicDialogOpen, setMusicDialogOpen] = React.useState(false)
+    const [musicDialogMusic, setMusicDialogMusic] = React.useState<IMusic>(null);
+    const [musicDialogMusicIndex, setMusicDialogMusicIndex] = React.useState(0);
+    const [musicDialogFileIndex, setMusicDialogFileIndex] = React.useState(0);
+
     //音乐列表
     const [musicList, setMusicList] = React.useState<IMusic[]>([])
     //文件input
@@ -144,14 +331,6 @@ function AlbumEdit() {
     //cue模式
     const [usingCue, setUsingCue] = React.useState(false);
     const [fileList, setFileList] = React.useState<ICueMusicFile[]>([]);
-
-    const addArtist = (name: string) => {
-
-    }
-
-    const removeArtist = (name: string) => {
-        setAlbumArtists(albumArtists.filter((item, index) => { return name === item.name }))
-    }
 
     const onPickMusic = async () => {
         musicFileRef.current.click();
@@ -166,13 +345,15 @@ function AlbumEdit() {
 
 
                 if (metadata.common.picture !== undefined && cover === null) {
-                    const coverBlob = new Blob([metadata.common.picture[0].data], {type: metadata.common.picture[0].format})
+                    const coverBlob = new Blob([metadata.common.picture[0].data], { type: metadata.common.picture[0].format })
                     console.log(coverBlob)
                     setCover(coverBlob)
                 }
 
                 var artists: ArtistVo[] = []
+                var sourceArtistTag = ''
                 if (metadata.common.artists !== undefined) {
+                    sourceArtistTag = metadata.common.artists.join(' ')
                     artists = metadata.common.artists.map((name: string, index) => {
                         return {
                             artistId: null,
@@ -198,6 +379,7 @@ function AlbumEdit() {
                     artists: artists,
                     path: file.path,
                     file: file,
+                    sourceArtistTag: sourceArtistTag,
                     loaded: 0,
                     total: file.size
                 }
@@ -258,9 +440,10 @@ function AlbumEdit() {
                 setTitle(data.title)
                 setAlbumArtists(parsePeformers(data.performer))
 
+
                 data.files.forEach(file => {
                     console.log("in file: ", file.name)
-                    var tracks: MusicDto[] = []
+                    var tracks: IMusic[] = []
                     file.tracks.forEach(track => {
                         var index01: Index = null;
                         track.indexes.forEach(index => {
@@ -271,7 +454,8 @@ function AlbumEdit() {
 
                         if (index01 === null) {
                             if (track.indexes.length === 0) {
-                                console.log("无法查找到音乐的起始时间")
+                                pushToast("无法查找到音乐的起始时间", 'error')
+                                console.log(data);
                                 return;
                             }
                             index01 = track.indexes[0];
@@ -283,15 +467,19 @@ function AlbumEdit() {
                             tracks[tracks.length - 1].endTime = startTime;
                         }
 
-                        var musicInfo = {
+                        var musicInfo: IMusic = {
+                            musicId: null,
+                            file: null,
+                            path: null,
                             title: track.title,
                             translatedTitle: "",
-                            artists: parsePeformers(track.performer).map(artistVo => artistVo.name),
+                            artists: parsePeformers(track.performer).map(artistVo => artistVo.name).map((performer => ({ name: performer }))),
+                            sourceArtistTag: track.performer,
                             startTime: startTime,
                             endTime: null
                         }
                         if (musicInfo.artists.length === 0) {
-                            musicInfo.artists = parsePeformers(data.performer).map(artist => artist.name);
+                            musicInfo.artists = parsePeformers(data.performer).map(artist => artist.name).map(performer => ({name: performer}));
                         }
                         tracks.push(musicInfo)
                     })
@@ -326,7 +514,13 @@ function AlbumEdit() {
                 musicIds = musicIds.concat(
                     musicIds,
                     (await addMusicFromCue(
-                        cueMusicfile.musicList,
+                        cueMusicfile.musicList.map(music=>({
+                            title: music.title,
+                            translatedTitl: music.translatedTitle,
+                            artists: music.artists.map(artist=>artist.name),
+                            startTime: music.startTime,
+                            endTime: music.endTime
+                        })),
                         cueMusicfile.file,
                         (loaded, total) => {
                             setFileList(fileList.map((val, index) => {
@@ -378,87 +572,56 @@ function AlbumEdit() {
             <input ref={cueFileRef} name="cue_file" type="file" accept=".cue" hidden />
 
             {/* 添加艺术家对话框 */}
-            <Dialog open={addArtistDialogOpen} onClose={() => setAddArtistDialogOpen(false)}>
-                <DialogTitle>
-                    <Typography>添加艺术家</Typography>
-                </DialogTitle>
-                <DialogContent sx={{ display: "flex" }}>
-                    <Autocomplete
-                        sx={{ width: "200px" }}
-                        filterOptions={(x) => x}
-                        options={artistSearchCandidate.map(value => value.name)}
-                        autoComplete
-                        freeSolo
-                        includeInputInList
-                        value={artistSearchInput}
-                        noOptionsText="无结果，点击添加以创建"
-                        onChange={(event: any, selectedArtist: string) => {
-                            setArtistSearchInput(selectedArtist)
-                        }}
-                        onInputChange={(event, newInputValue) => {
-                            setArtistSearchInput(newInputValue)
-                            ArtistControllerService.searchArtist(newInputValue)
-                                .then(res => {
-                                    setArtistSearchCandidate(res.data)
-                                })
-                        }}
-                        renderInput={(params) => (
-                            <TextField   {...params} size="small" />
-                        )}
-                    />
-                    <Button size="small" onClick={() => {
-                        console.log(artistSearchInput)
-                        var selectedArtist = artistSearchCandidate.find(value => value.name === artistSearchInput)
-                        if (selectedArtist === undefined) {
-                            ArtistControllerService.addArtist(artistSearchInput)
-                                .then(res => {
-                                    if (res.code === 0) {
-                                        selectedArtist = res.data
-                                        setAlbumArtists([...albumArtists, selectedArtist])
-                                        setAddArtistDialogOpen(false);
-                                    }
-                                })
-                        } else {
-                            setAlbumArtists([...albumArtists, selectedArtist])
-                            setAddArtistDialogOpen(false);
-                        }
-                    }}>添加</Button>
-                </DialogContent>
-            </Dialog>
-
+            <AddArtistDialog
+                open={addArtistDialogOpen}
+                onClose={() => setAddArtistDialogOpen(false)}
+                onAddSuccessful={artist => setAlbumArtists(prev => [...prev, artist])}
+            />
             {/* 音乐信息对话框 */}
-            <Dialog open={musicDialogContext.open} onClose={() => setMusicDialogContext({ ...musicDialogContext, open: false })}>
-                <DialogTitle>
-                    <Typography>音乐信息</Typography>
-                </DialogTitle>
-                <DialogContent>
-                    <Box sx={{ display: "flex", marginBottom: '12px' }}>
-                        <Typography sx={{ width: '30%' }}>音乐标题</Typography>
-                        <TextField size="small" value={musicList[musicDialogContext.musicIndex] && musicList[musicDialogContext.musicIndex].title} onChange={e => setMusicList(musicList.map((val, index) => {
-                            if (index === musicDialogContext.musicIndex) {
-                                val.title = e.target.value;
-                            }
-                            return val;
-                        }))} />
-                    </Box>
-                    <Box sx={{ display: "flex", marginBottom: '12px' }}>
-                        <Typography sx={{ width: '30%' }}>艺术家</Typography>
-                        <Grid sx={{ flex: "1 0 0" }}  >
-                            {
-                                musicList[musicDialogContext.musicIndex] && musicList[musicDialogContext.musicIndex].artists.map((value, index) => {
-                                    return <Chip label={value.name} sx={{ margin: "0px 2px 2px 0px" }} avatar={<Avatar>{value.name.charAt(0)}</Avatar>} color="primary" onDelete={removeArtist} />
-                                })
-                            }
-                            <Chip sx={{ margin: "0px 2px 2px 0px" }} label="添加" icon={<AddCircleOutlineOutlinedIcon />} onClick={() => { setAddArtistDialogOpen(true) }} />
-                        </Grid>
-                    </Box>
-                    <Box sx={{ display: "flex", marginBottom: '12px' }}>
-                        <Typography sx={{ width: '30%', flex: "0 0 auto" }}>文件</Typography>
-                        <Typography variant="caption" sx={{ margin: "auto auto auto 0" }}>{musicList[musicDialogContext.musicIndex] && musicList[musicDialogContext.musicIndex].path}</Typography>
+            {
+                musicDialogMusic && !usingCue &&
+                <MusicInfoDialog
+                    open={musicDialogOpen}
+                    music={musicDialogMusic}
+                    onClose={() => setMusicDialogOpen(false)}
+                    onUpdate={updatedMusic => {
+                        setMusicList(prev => {
+                            return prev.map((oldMusic, index) => {
+                                if (index === musicDialogMusicIndex) {
+                                    oldMusic = updatedMusic;
+                                }
+                                return oldMusic;
+                            })
+                        })
+                    }}
+                />
+            }
+            {
+                musicDialogMusic && usingCue &&
+                <MusicInfoDialog
+                    usingCue
+                    open={musicDialogOpen}
+                    music={musicDialogMusic}
+                    onClose={() => setMusicDialogOpen(false)}
+                    onUpdate={updatedMusic => {
+                        setFileList(prev => {
+                            return prev.map((oldFile, index) => {
+                                if (index === musicDialogFileIndex) {
+                                    oldFile.musicList = oldFile.musicList.map((oldMusic, index) => {
+                                        if (index === musicDialogMusicIndex) {
+                                            oldMusic = updatedMusic;
+                                        }
+                                        return oldMusic;
 
-                    </Box>
-                </DialogContent>
-            </Dialog>
+                                    })
+                                }
+                                return oldFile;
+                            })
+                        })
+                    }}
+                />
+            }
+
             {/* 页面标题，操作按钮 */}
             <Box sx={{ display: 'flex' }}>
                 <Typography variant="h5" sx={{ width: '30%' }}>新建专辑</Typography>
@@ -484,10 +647,23 @@ function AlbumEdit() {
                     <Grid sx={{ flex: "1 0 0" }}  >
                         {
                             albumArtists.map((value, index) => {
-                                return <Chip label={value.name} sx={{ margin: "0px 2px 2px 0px" }} avatar={<Avatar>{value.name.charAt(0)}</Avatar>} color="primary" onDelete={removeArtist} />
+                                return <Chip
+                                    label={value.name}
+                                    sx={{ margin: "0px 2px 2px 0px" }}
+                                    avatar={<Avatar>{value.name.charAt(0)}</Avatar>}
+                                    color="primary"
+                                    onDelete={() => {
+                                        setAlbumArtists(prev => prev.filter((item, index) => { return item.name !== value.name }))
+                                    }} />
                             })
                         }
-                        <Chip sx={{ margin: "0px 2px 2px 0px" }} variant="outlined" label="添加" icon={<AddCircleOutlineOutlinedIcon />} onClick={() => { setAddArtistDialogOpen(true) }} />
+                        <Chip
+                            sx={{ margin: "0px 2px 2px 0px" }}
+                            variant="outlined"
+                            label="添加"
+                            icon={<AddCircleOutlineOutlinedIcon />}
+                            onClick={() => setAddArtistDialogOpen(true)}
+                        />
                     </Grid>
                 </Box>
                 {/* 封面设定 */}
@@ -530,7 +706,7 @@ function AlbumEdit() {
                                                     <Typography variant='body2' noWrap>
                                                         {
                                                             music.artists.map(item => {
-                                                                if (item.translateName !== null && item.translateName.length !== 0) {
+                                                                if (item.translateName && item.translateName.length !== 0) {
                                                                     return `${item.name}(${item.translateName})`;
                                                                 }
                                                                 return item.name;
@@ -547,8 +723,17 @@ function AlbumEdit() {
                                                 </TableCell>
                                                 <TableCell sx={{ padding: "12px 0px", paddingRight: "12px" }}>
                                                     <Box sx={{ display: 'flex' }}>
-
-                                                        <Button size='small' sx={{ padding: 0, minWidth: 0 }} onClick={() => setMusicDialogContext({ open: true, musicIndex: index })}><EditOutlinedIcon /></Button>
+                                                        <Button
+                                                            size='small'
+                                                            sx={{ padding: 0, minWidth: 0 }}
+                                                            onClick={() => {
+                                                                setMusicDialogMusic(music);
+                                                                setMusicDialogMusicIndex(index);
+                                                                setMusicDialogOpen(true);
+                                                            }}
+                                                        >
+                                                            <EditOutlinedIcon />
+                                                        </Button>
                                                         <Button size='small' sx={{ padding: 0, minWidth: 0, marginLeft: '2px' }} onClick={() => setMusicList(musicList.filter((val, itemIndex) => itemIndex !== index))}><DeleteOutlineOutlinedIcon /></Button>
                                                     </Box>
                                                 </TableCell>
@@ -619,14 +804,23 @@ function AlbumEdit() {
                                                                     <TableCell sx={{ padding: "12px 0px", paddingRight: "12px" }}>
                                                                         <Typography variant='body2' noWrap>
                                                                             {
-                                                                                music.artists.join(" / ")
+                                                                                music.artists.map(item => {
+                                                                                    if (item.translateName && item.translateName.length !== 0) {
+                                                                                        return `${item.name}(${item.translateName})`;
+                                                                                    }
+                                                                                    return item.name;
+                                                                                }
+                                                                                ).join(" / ")
                                                                             }
                                                                         </Typography>
                                                                     </TableCell>
                                                                     <TableCell sx={{ padding: "12px 0px", paddingRight: "12px" }}>
                                                                         <Box sx={{ display: 'flex' }}>
-
-                                                                            <Button size='small' sx={{ padding: 0, minWidth: 0 }} onClick={() => setMusicDialogContext({ open: true, musicIndex: index })}><EditOutlinedIcon /></Button>
+                                                                            <Button size='small' sx={{ padding: 0, minWidth: 0 }} onClick={()=>{
+                                                                                setMusicDialogMusic(music);
+                                                                                setMusicDialogMusicIndex(index);
+                                                                                setMusicDialogOpen(true);
+                                                                            }} ><EditOutlinedIcon /></Button>
                                                                             <Button size='small' sx={{ padding: 0, minWidth: 0, marginLeft: '2px' }} onClick={() => setMusicList(musicList.filter((val, itemIndex) => itemIndex !== index))}><DeleteOutlineOutlinedIcon /></Button>
                                                                         </Box>
                                                                     </TableCell>
