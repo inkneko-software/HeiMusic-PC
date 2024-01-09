@@ -23,7 +23,8 @@ import { AlbumControllerService, ArtistVo, PlaylistControllerService } from '../
 import { pushToast } from '@components/HeiMusicMainLayout';
 
 interface PlaylistProps extends BoxProps {
-    isUserFavoriteMusicList?: boolean
+    isUserFavoriteMusicList?: boolean,
+    isDaily30MusicList?: boolean
 }
 
 function Playlist(props: PlaylistProps) {
@@ -45,7 +46,7 @@ function Playlist(props: PlaylistProps) {
     const playlistInfoRef = React.useRef<HTMLElement>();
 
     React.useEffect(() => {
-        if (!props.isUserFavoriteMusicList && typeof (id) !== "string") {
+        if (!props.isUserFavoriteMusicList && typeof (id) !== "string" && !props.isDaily30MusicList) {
             return;
         }
 
@@ -80,6 +81,37 @@ function Playlist(props: PlaylistProps) {
                 })
                 return;
             }
+            if (props.isDaily30MusicList) {
+                var res = await AlbumControllerService.daily30();
+                setPlayList(res.data.map(music => {
+                    return {
+                        musicId: music.musicId,
+                        title: music.title,
+                        artists: music.artistList.map(val => val.name),
+                        qualityOption: [{
+                            name: "SQ",
+                            url: music.resourceUrl,
+                            color: "red"
+                        }],
+                        albumId: music.albumId,
+                        albumTitle: music.albumTitle,
+                        cover: music.albumCoverUrl,
+                        duration: music.duration,
+                        isFavorite: music.isFavorite
+                    }
+                }));
+
+                setPlaylistInfo({
+                    playlistId: 0,
+                    title: "每日30首",
+                    author: "",
+                    cover: res.data[0].albumCoverUrl,
+                    date: undefined,
+                    listenedCount: 0,
+                })
+                return;
+            }
+
 
             // var playlist = parseInt(id)
             // var playlistInfo = await AlbumControllerService.getAlbum(albumId)
@@ -197,9 +229,12 @@ function Playlist(props: PlaylistProps) {
             }}
                 ref={playlistInfoRef}
             >
-                <CardMedia sx={{
-                    width: '160px', height: '160px', borderRadius: '6%', flex: "0 0 auto", imageRendering: "auto", border: "1px solid #e3e3e3", objectFit: "contain"
-                }} src={playlistInfo.cover || "/images/akari.jpg"} component="img"></CardMedia>
+                {
+                    playlistInfo.cover &&
+                    <CardMedia sx={{
+                        width: '160px', height: '160px', borderRadius: '6%', flex: "0 0 auto", imageRendering: "auto", border: "1px solid #e3e3e3", objectFit: "contain"
+                    }} src={playlistInfo.cover} component="img" />
+                }
                 {/* <MusicNote sx={{
                     width: '180px', height: '180px', borderRadius: '6%', flex: "0 0 auto",  border: "1px solid #e3e3e3", fontSize: 72 
                 }}  /> */}
@@ -241,9 +276,13 @@ function Playlist(props: PlaylistProps) {
                 }
             ]}>
                 <Box sx={{ display: "flex", padding: "0px 12px 10px 12px", }}>
-                    <CardMedia sx={{
-                        width: '90px', height: '90px', borderRadius: '6%', flex: "0 0 auto", imageRendering: "auto", border: "1px solid #e3e3e3", objectFit: "contain"
-                    }} src={playlistInfo.cover || "/images/akari.jpg"} component="img"></CardMedia>
+                    {
+                        playlistInfo.cover &&
+                        <CardMedia sx={{
+                            width: '90px', height: '90px', borderRadius: '6%', flex: "0 0 auto", imageRendering: "auto", border: "1px solid #e3e3e3", objectFit: "contain"
+                        }} src={playlistInfo.cover || "/images/akari.jpg"} component="img" />
+
+                    }
                     <Box sx={{
                         marginLeft: '20px',
                         width: "auto",
