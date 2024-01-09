@@ -5,6 +5,7 @@ import type { ResponseAlbumListVo } from '../models/ResponseAlbumListVo';
 import type { ResponseAlbumVo } from '../models/ResponseAlbumVo';
 import type { ResponseListAlbumVo } from '../models/ResponseListAlbumVo';
 import type { ResponseListMusicVo } from '../models/ResponseListMusicVo';
+import type { ResponseMusicVo } from '../models/ResponseMusicVo';
 import type { ResponseObject } from '../models/ResponseObject';
 import type { UpdateAlbumInfoDto } from '../models/UpdateAlbumInfoDto';
 
@@ -46,6 +47,31 @@ albumId: number,
             query: {
                 'albumId': albumId,
             },
+        });
+    }
+
+    /**
+     * 随机播放一首音乐
+     * @returns ResponseMusicVo OK
+     * @throws ApiError
+     */
+    public static randomMusic(): CancelablePromise<ResponseMusicVo> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/album/randomMusic',
+        });
+    }
+
+    /**
+     * 用户每日推荐30首（随机30首，无个性推荐功能）
+     * 每日6点更新
+     * @returns ResponseListMusicVo OK
+     * @throws ApiError
+     */
+    public static daily30(): CancelablePromise<ResponseListMusicVo> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/album/daily30',
         });
     }
 

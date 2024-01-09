@@ -27,6 +27,7 @@ export type { ResponseListArtistVo } from './models/ResponseListArtistVo';
 export type { ResponseListMusic } from './models/ResponseListMusic';
 export type { ResponseListMusicVo } from './models/ResponseListMusicVo';
 export type { ResponseMusic } from './models/ResponseMusic';
+export type { ResponseMusicVo } from './models/ResponseMusicVo';
 export type { ResponseObject } from './models/ResponseObject';
 export type { ResponsePlaylist } from './models/ResponsePlaylist';
 export type { ResponseString } from './models/ResponseString';
