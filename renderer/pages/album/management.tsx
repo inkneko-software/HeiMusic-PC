@@ -235,7 +235,7 @@ function AlbumManagement() {
                                     <TableCell sx={{ width: "15%", borderBottom: "unset" }} align="center">
                                         <ImageSkeleton sx={{
                                             width: '32px', height: '32px', borderRadius: '6%', flex: "0 0 auto", marginLeft: "12px", imageRendering: "auto", objectFit: "contain"
-                                        }} src={album.frontCoverUrl !== null ? album.frontCoverUrl + "?s=@w32h32" : "/images/akari.jpg"} />
+                                        }} src={album.frontCoverUrl !== null ? album.frontCoverUrl + "?s=@w32h32" : null} />
 
                                         {/* <CardMedia sx={{
                                             width: '32px', height: '32px', borderRadius: '6%', flex: "0 0 auto", marginLeft: "12px", imageRendering: "auto", objectFit: "contain"
