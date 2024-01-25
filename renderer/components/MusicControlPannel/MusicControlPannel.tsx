@@ -20,6 +20,8 @@ import VolumePannel from "./VolumePannel"
 import ScrollableTypography from "@components/Common/ScrollableTypography"
 import PlayList from "./PlayList"
 import FullScreenMusicPannel from "./FullScreenMusicPannel"
+import ImageSkeleton from "@components/Common/ImageSkeleton"
+import { useRouter } from "next/router"
 
 
 /**
@@ -90,6 +92,7 @@ interface IMusicControlPannel extends BoxProps {
 }
 
 function MusicControlPannel(props: IMusicControlPannel) {
+    const router = useRouter();
     const theme = useTheme();
     const audioRef = React.useRef<HTMLAudioElement>(null)
     const volumeButtonRef = React.useRef()
@@ -111,7 +114,7 @@ function MusicControlPannel(props: IMusicControlPannel) {
         }],
         albumId: 0,
         albumTitle: "",
-        cover: "",
+        cover: null,
         currentIndex: 0,
         currentQuality: {
             name: "SQ",
@@ -332,16 +335,19 @@ function MusicControlPannel(props: IMusicControlPannel) {
             <MusicSlider size="small" max={duration} value={currentTime} onChangeCommitted={(event, value: number) => { audioRef.current.currentTime = value; audioRef.current.play(); setCurrentTime(value) }} />
             <Box sx={{ display: "flex", margin: "auto 0px", flexGrow: "1", paddingBottom: '4px' }}>
                 <Box sx={{ display: "flex", marginLeft: "20px", width: "30%", textAlign: "left", '@media(max-width:600px)': { flexGrow: '1' } }}>
-                    <Avatar
+                    {/* <Avatar
                         variant="square"
                         src={currentMusicInfo.cover}
-                        sx={{ margin: "auto 0", borderRadius: "2px", objectFit: 'contain' }}
+                        sx={{ margin: "auto 0", borderRadius: "6px", objectFit: 'contain' }}
                         onClick={()=>setFullScreenMusicPannelOpen(true)}
                     >
                         <MusicNote />
-                    </Avatar>
+                    </Avatar> */}
+                    <ImageSkeleton sx={{
+                        width: '40px', height: '40px', margin:"auto 0px", borderRadius: '6px', imageRendering: "auto", objectFit: "contain"
+                    }} src={currentMusicInfo.cover !== null ? currentMusicInfo.cover + "?s=@w32h32" : null} />
                     <Box sx={{ margin: "auto 0 auto 15px", display: "flex", flexDirection: "column", textAlign: "left", width: '30%', flexGrow: 1 }}>
-                        <ScrollableTypography>{currentMusicInfo.title}</ScrollableTypography>
+                        <ScrollableTypography sx={{cursor: 'pointer'}} onClick={()=>router.push(`/album/${currentMusicInfo.albumId}`)}>{currentMusicInfo.title}</ScrollableTypography>
                         <ScrollableTypography sx={{ fontSize: "12px", color: "#a1a1a1" }} noWrap>{currentMusicInfo.artists.join(' / ')}</ScrollableTypography>
                     </Box>
                 </Box>
