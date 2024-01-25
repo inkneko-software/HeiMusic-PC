@@ -12,8 +12,6 @@ export default function ImageSkeleton(props: CardMediaProps<'img'>) {
             return;
         }
         if (imageRef.current !== null) {
-            
-
             new Promise<void>((resolve, reject) => {
                 imageRef.current.onload = () => resolve()
                 imageRef.current.src = props.src;
@@ -28,7 +26,7 @@ export default function ImageSkeleton(props: CardMediaProps<'img'>) {
         <>
             <CardMedia {...props} component='img' ref={imageRef} sx={{ ...(props.sx), display: props.src !== null && loaded ? 'block' : 'none' }} />
             {
-                !props.src &&
+                !props.src && loaded &&
                 <Avatar sx={props.sx}>
                     <MusicNote/>
                 </Avatar>
