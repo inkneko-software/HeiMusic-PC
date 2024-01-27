@@ -1,7 +1,7 @@
 import { createTheme } from '@mui/material/styles';
 import { red, grey } from '@mui/material/colors';
 
-export const theme = createTheme({
+export const lightMode = createTheme({
     palette: {
         primary: {
             main: '#556cd6',
@@ -136,5 +136,28 @@ declare module '@mui/material/Button' {
     interface ButtonPropsColorOverrides {
         blueButton: true;
         pannelButton: true;
+    }
+}
+
+export const preset = {
+    light:{
+        theme: lightMode,
+        name: "light",
+        backgroundUrl: ""
+    },
+    dark:{
+        theme: darkMode,
+        name: "darkMode",
+        backgroundUrl:""
+    },
+    customizedDarkMode: {
+        theme: darkModeNeptune,
+        name: "darkModeNeptune",
+        backgroundUrl:"/images/nep-2730x1536.png"
+    },
+    lightOrange:{
+        theme: lightMode,
+        name: "lightOrange",
+        backgroundUrl: "/images/lxh-background01.jpg"
     }
 }

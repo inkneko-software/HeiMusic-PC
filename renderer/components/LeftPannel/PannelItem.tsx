@@ -15,7 +15,7 @@ import Collapse from '@mui/material/Collapse';
 import ExpandLess from '@mui/icons-material/ExpandLess';
 import ExpandMore from '@mui/icons-material/ExpandMore';
 import HeadphonesOutlinedIcon from '@mui/icons-material/HeadphonesOutlined';
-import { theme } from "../../lib/theme"
+import { lightMode } from "../../lib/theme"
 import { styled } from "@mui/material/styles"
 
 import { PannelListContext } from "./PannelList"
@@ -32,8 +32,8 @@ export const StyledListItemButton = styled(ListItemButton)<ListItemButtonProps>(
         color: "#000000",
     },
     "&.Mui-selected": {
-        backgroundColor: theme.palette.primary.main,
-        color: theme.palette.primary.contrastText,
+        backgroundColor: lightMode.palette.primary.main,
+        color: lightMode.palette.primary.contrastText,
         "& .MuiListItemIcon-root": {
             color: "#ffffff",
         },

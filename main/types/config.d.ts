@@ -18,7 +18,8 @@ interface HeiMusicConfig {
         playback: string,
         next: string,
         prev: string,
-    }
+    },
+    theme: string,
     lastPannel: string,
     closeWindowMinimized?: boolean
 }

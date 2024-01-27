@@ -8,6 +8,7 @@ import { contextBridge, ipcRenderer } from "electron"
 contextBridge.exposeInMainWorld('electronAPI', {
     windowManagement: {
         close: () => ipcRenderer.send('windowManagement::close'),
+        show: () => ipcRenderer.send("windowManagement::show"),
         minimize: () => ipcRenderer.send('windowManagement::minimize'),
         maximize: () => ipcRenderer.send('windowManagement::maximize'),
     },

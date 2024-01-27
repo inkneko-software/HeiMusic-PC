@@ -41,6 +41,7 @@ function getDefaultConfig(): HeiMusicConfig {
             next: "Control+Alt+Right",
             prev: "Control+Alt+Left"
         },
+        theme: "light",
         lastPannel: null,
         closeWindowMinimized: null
     }
@@ -76,6 +77,7 @@ function saveConfig() {
         minWidth: 1000,
         minHeight: 600,
         frame: false,
+        show: false,
         webPreferences: {
             nodeIntegration: false,
             contextIsolation: true,
@@ -156,7 +158,13 @@ function saveConfig() {
     /**
      * windowManagement
      */
-    ipcMain.on("windowManagement::close", () => { app.quit() })
+    ipcMain.on("windowManagement::close", () => {
+        app.quit()
+    })
+    ipcMain.on("windowManagement::show", ()=>{
+        mainWindow.show();
+    })
+    
     ipcMain.on("windowManagement::minimize", () => {
         mainWindow.minimize()
     })

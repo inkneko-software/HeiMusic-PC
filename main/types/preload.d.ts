@@ -6,6 +6,7 @@ declare global {
         electronAPI: {
             windowManagement: {
                 close: () => void,
+                show: () => void,
                 minimize: () => void,
                 maximize: () => void,
             },

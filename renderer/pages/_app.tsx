@@ -2,7 +2,6 @@ import React from 'react';
 import Head from 'next/head';
 import { ThemeProvider, Theme, StyledEngineProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
-import { theme } from '../lib/theme';
 import type { AppProps } from 'next/app';
 import HeiMusicThemeProvider from '../lib/HeiMusicThemeProvider';
 import HeiMusicMainLayout from '../components/HeiMusicMainLayout';
