@@ -22,7 +22,10 @@ import PlayList from "./PlayList"
 import FullScreenMusicPannel from "./FullScreenMusicPannel"
 import ImageSkeleton from "@components/Common/ImageSkeleton"
 import { useRouter } from "next/router"
-
+import FavoriteBorderOutlinedIcon from '@mui/icons-material/FavoriteBorderOutlined';
+import FavoriteOutlinedIcon from '@mui/icons-material/FavoriteOutlined';
+import { PlaylistControllerService } from "@api/codegen/services/PlaylistControllerService"
+import { pushToast } from "@components/HeiMusicMainLayout"
 
 /**
  * 更换播放列表并播放
@@ -82,7 +85,7 @@ export interface IMusicInfo {
     duration?: number,
 }
 
-interface IPlayingMusicInfo extends IMusicInfo {
+export interface IPlayingMusicInfo extends IMusicInfo {
     currentQuality: IMusicQuality,
     currentIndex: number
 }
@@ -97,6 +100,7 @@ function MusicControlPannel(props: IMusicControlPannel) {
     const audioRef = React.useRef<HTMLAudioElement>(null)
     const volumeButtonRef = React.useRef()
 
+    const [playing, setPlaying] = React.useState(false);
     const [playBtnIcon, setPlayBtnIcon] = React.useState(<PlayCircleFilled style={{ fontSize: 42 }} />);
     const [volumePanelOpen, setVolumePanelOpen] = React.useState(false);
     const [volume, setVolume] = React.useState(35);
@@ -161,10 +165,12 @@ function MusicControlPannel(props: IMusicControlPannel) {
             }
 
             audio.onplay = () => {
+                setPlaying(true)
                 setPlayBtnIcon(<PauseCircleFilled style={{ fontSize: 42 }} />)
             }
 
             audio.onpause = () => {
+                setPlaying(false)
                 setPlayBtnIcon(<PlayCircleFilled style={{ fontSize: 42 }} />)
             }
 
@@ -329,10 +335,42 @@ function MusicControlPannel(props: IMusicControlPannel) {
         }
     }
 
+    const handleVolumeChange = (value) => {
+        setVolume(value);
+        audioRef.current.volume = value / 100
+    }
+
+    const handleAddFavoriteMusic = () => {
+        PlaylistControllerService.addMusicFavorite(currentMusicInfo.musicId)
+            .then(res => {
+                setCurrentMusicInfo(prev => ({ ...prev, isFavorite: true }))
+            })
+            .catch((error) => {
+                pushToast(error.message)
+            })
+    }
+
+    const handleRemoveFavoriteMusic = () => {
+        PlaylistControllerService.removeMusicFavorite(currentMusicInfo.musicId)
+            .then(res => {
+                setCurrentMusicInfo(prev => ({ ...prev, isFavorite: false }))
+
+            })
+            .catch((error) => {
+                pushToast(error.message)
+            })
+    }
+
+    const handleProgressSeek = (newProgress: number) => {
+        audioRef.current.currentTime = newProgress;
+        audioRef.current.play();
+        setCurrentTime(newProgress);
+    }
+
     return (
         <Box {...props} sx={{ ...(props.sx), display: "flex", flexDirection: "column" }}>
             <audio ref={audioRef} />
-            <MusicSlider size="small" max={duration} value={currentTime} onChangeCommitted={(event, value: number) => { audioRef.current.currentTime = value; audioRef.current.play(); setCurrentTime(value) }} />
+            <MusicSlider size="small" max={duration} value={currentTime} onChangeCommitted={(event, value: number) => handleProgressSeek(value)} />
             <Box sx={{ display: "flex", margin: "auto 0px", flexGrow: "1", paddingBottom: '4px' }}>
                 <Box sx={{ display: "flex", marginLeft: "20px", width: "30%", textAlign: "left", '@media(max-width:600px)': { flexGrow: '1' } }}>
                     {/* <Avatar
@@ -343,11 +381,22 @@ function MusicControlPannel(props: IMusicControlPannel) {
                     >
                         <MusicNote />
                     </Avatar> */}
-                    <ImageSkeleton sx={{
-                        width: '40px', height: '40px', margin:"auto 0px", borderRadius: '6px', imageRendering: "auto", objectFit: "contain"
-                    }} src={currentMusicInfo.cover !== null ? currentMusicInfo.cover + "?s=@w32h32" : null} />
+                    <ImageSkeleton
+                        sx={{
+                            width: '40px',
+                            height: '40px',
+                            margin: "auto 0px",
+                            borderRadius: '6px',
+                            imageRendering: "auto",
+                            objectFit: "contain",
+                            ':hover': {
+                                cursor: 'pointer'
+                            }
+                        }}
+                        src={currentMusicInfo.cover !== null ? currentMusicInfo.cover + "?s=@w32h32" : null}
+                        onClick={() => setFullScreenMusicPannelOpen(true)} />
                     <Box sx={{ margin: "auto 0 auto 15px", display: "flex", flexDirection: "column", textAlign: "left", width: '30%', flexGrow: 1 }}>
-                        <ScrollableTypography sx={{cursor: 'pointer'}} onClick={()=>router.push(`/album/${currentMusicInfo.albumId}`)}>{currentMusicInfo.title}</ScrollableTypography>
+                        <ScrollableTypography sx={{ cursor: 'pointer' }} onClick={() => router.push(`/album/${currentMusicInfo.albumId}`)}>{currentMusicInfo.title}</ScrollableTypography>
                         <ScrollableTypography sx={{ fontSize: "12px", color: "#a1a1a1" }} noWrap>{currentMusicInfo.artists.join(' / ')}</ScrollableTypography>
                     </Box>
                 </Box>
@@ -359,7 +408,7 @@ function MusicControlPannel(props: IMusicControlPannel) {
                     <VolumePannel
                         open={volumePanelOpen}
                         value={volume}
-                        onChange={(event, value: number) => { setVolume(value); audioRef.current.volume = value / 100 }}
+                        onChange={(event, value: number) => handleVolumeChange(value)}
                         onMouseEnter={() => setVolumePanelOpen(true)}
                         onMouseLeave={() => setVolumePanelOpen(false)}
                         anchorEl={volumeButtonRef.current}
@@ -392,7 +441,26 @@ function MusicControlPannel(props: IMusicControlPannel) {
             >
                 <PlayList musicList={musicList} currentIndex={currentMusicInfo.currentIndex} onClose={() => setPlaylistOpen(false)} />
             </Drawer>
-            <FullScreenMusicPannel open={fullScreenMusicPannelOpen} onClose={() => setFullScreenMusicPannelOpen(false)} />
+            <FullScreenMusicPannel
+                open={fullScreenMusicPannelOpen}
+                onClose={() => setFullScreenMusicPannelOpen(false)}
+                currentMusicInfo={currentMusicInfo}
+                timeLabel={timeLabel}
+                playing={playing}
+                handleLoopOptionClick={handleLoopOptionClick}
+                handlePrevClick={handlePrevClick}
+                handlePlayButtonClick={handlePlayButtonClick}
+                playBtnIcon={playBtnIcon}
+                handleNextClick={handleNextClick}
+                volume={volume}
+                handleVolumeChange={handleVolumeChange}
+                setPlaylistOpen={setPlaylistOpen}
+                handleAddFavoriteMusic={handleAddFavoriteMusic}
+                handleRemoveFavoriteMusic={handleRemoveFavoriteMusic}
+                handleProgressSeek={handleProgressSeek}
+                currentTime={currentTime}
+                duration={duration}
+            />
         </Box>
     )
 }
