@@ -27,7 +27,7 @@ export default function ImageSkeleton(props: CardMediaProps<'img'>) {
             <CardMedia {...props} component='img' ref={imageRef} sx={{ ...(props.sx), display: props.src !== null && loaded ? 'block' : 'none' }} />
             {
                 !props.src && loaded &&
-                <Avatar sx={props.sx}>
+                <Avatar sx={props.sx} onClick={props.onClick}>
                     <MusicNote/>
                 </Avatar>
             }
