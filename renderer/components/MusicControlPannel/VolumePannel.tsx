@@ -43,7 +43,7 @@ interface IVolumePannel extends SliderProps {
 function VolumePannel(props: IVolumePannel) {
     return (
         <>
-            <Popper open={props.open} anchorEl={props.anchorEl} transition placement="top" onMouseEnter={props.onMouseEnter} onMouseLeave={props.onMouseLeave} >
+            <Popper open={props.open} anchorEl={props.anchorEl} transition placement="top" onMouseEnter={props.onMouseEnter} onMouseLeave={props.onMouseLeave} sx={{zIndex: '1300'}} >
                 {({ TransitionProps }) => (
                     <Fade {...TransitionProps} timeout={350}>
                         <Paper sx={{ bgcolor: "black", marginBottom: 2, paddingTop: 1, paddingBottom: 1 }} >

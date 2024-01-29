@@ -17,7 +17,7 @@ export default function PlayList(props: IPlayList) {
     }
 
     return (
-        <Box sx={{ width: "300px", height: "100%", display: "flex", flexDirection: "column" }}>
+        <Box sx={{ width: "300px", height: "100%", display: "flex", flexDirection: "column", zIndex: '1300' }}>
             {/* 标题 */}
             <Box sx={{ margin: "18px 16px 12px 16px", flex: "0 0 auto", display: "flex", flexDirection: "column" }}>
                 <Typography variant="h5"  >播放列表</Typography>
