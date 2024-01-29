@@ -154,7 +154,6 @@ function saveConfig() {
         saveConfig()
     })
 
-
     /**
      * windowManagement
      */
@@ -163,6 +162,23 @@ function saveConfig() {
     })
     ipcMain.on("windowManagement::show", ()=>{
         mainWindow.show();
+        mainWindow.setThumbarButtons([
+            {
+                tooltip: '上一曲',
+                icon: nativeImage.createFromPath(path.join(__dirname, "images", "thumbar", "prev.png")),
+                click: () => { mainWindow.webContents.send("playback::prev") }
+            },
+            {
+                tooltip: '播放',
+                icon: nativeImage.createFromPath(path.join(__dirname, "images", "thumbar", "play.png")),
+                click: () => { mainWindow.webContents.send("playback::play") }
+            },
+            {
+                tooltip: '下一曲',
+                icon: nativeImage.createFromPath(path.join(__dirname, "images", "thumbar", "next.png")),
+                click: () => { mainWindow.webContents.send("playback::next") }
+            }
+        ])
     })
     
     ipcMain.on("windowManagement::minimize", () => {
@@ -248,23 +264,7 @@ function saveConfig() {
         }
     );
 
-    const ret = mainWindow.setThumbarButtons([
-        {
-            tooltip: '上一曲',
-            icon: nativeImage.createFromPath(path.join(__dirname, "images", "thumbar", "prev.png")),
-            click: () => { mainWindow.webContents.send("playback::prev") }
-        },
-        {
-            tooltip: '播放',
-            icon: nativeImage.createFromPath(path.join(__dirname, "images", "thumbar", "play.png")),
-            click: () => { mainWindow.webContents.send("playback::play") }
-        },
-        {
-            tooltip: '下一曲',
-            icon: nativeImage.createFromPath(path.join(__dirname, "images", "thumbar", "next.png")),
-            click: () => { mainWindow.webContents.send("playback::next") }
-        }
-    ])
+    
 
     ipcMain.handle("thumbnail::playing", () => {
         mainWindow.setThumbarButtons([
