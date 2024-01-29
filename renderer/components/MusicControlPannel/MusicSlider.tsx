@@ -6,13 +6,14 @@ function MusicSlider(props: SliderProps) {
     const theme = useTheme();
     return (
         <Slider
+            {...props}
             step={1}
             sx={{
                 height: 2,
                 padding: "0px 0px 4px 0px",
-                display:"block",
+                display: "block",
                 '& .MuiSlider-thumb': {
-                    display:"none",
+                    display: "none",
                     width: 8,
                     height: 8,
                     '&:before': {
@@ -29,18 +30,19 @@ function MusicSlider(props: SliderProps) {
                         height: 10,
                     },
                 },
-                "&:hover":{
+                "&:hover": {
                     '& .MuiSlider-thumb': {
-                        display:"unset",
+                        display: "unset",
                     }
                 },
                 '& .MuiSlider-rail': {
                     opacity: 0.28,
                 },
-                '@media (pointer: coarse)':{
+                '@media (pointer: coarse)': {
                     padding: "0px 0px 4px 0px",
                 },
-            }} {...props} />
+                ...(props.sx)
+            }} />
     )
 }
 
