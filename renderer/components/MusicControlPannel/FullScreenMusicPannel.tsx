@@ -21,6 +21,69 @@ import ScrollableTypography from "@components/Common/ScrollableTypography"
 import PlayList from "./PlayList"
 import ExpandMoreOutlinedIcon from '@mui/icons-material/ExpandMoreOutlined';
 
+const testLyric = `[00:00.00]测试歌词测试歌词
+[00:02.16]测试歌词
+[00:02.39]测试歌词
+[00:02.73]测试歌词测试歌词测试歌词
+[00:05.19]测试歌词测试歌词测试歌词
+[00:07.89]
+[00:08.42]测试歌词
+[00:15.39]
+[00:24.87]测试歌词
+[00:27.52]测试歌词
+[00:30.19]测试歌词
+[00:33.82]测试歌词
+[00:35.48]测试歌词
+[00:38.14]测试歌词
+[00:40.83]测试歌词
+[00:45.11]
+[00:45.95]测试歌词
+[00:50.30]测试歌词
+[00:53.85]测试歌词
+[00:56.69]测试歌词
+[00:58.55]测试歌词
+[01:01.14]测试歌词
+[01:04.35]测试歌词
+[01:06.88]测试歌词
+[01:09.16]测试歌词
+[01:11.80]测试歌词
+[01:15.08]测试歌词
+[01:16.38]测试歌词
+[01:22.47]
+[01:31.63]测试歌词
+[01:34.13]测试歌词
+[01:36.82]测试歌词
+[01:40.58]测试歌词
+[01:42.15]测试歌词
+[01:44.85]测试歌词
+[01:47.46]测试歌词
+[01:51.56]
+[01:52.54]测试歌词
+[01:56.99]测试歌词
+[02:00.56]测试歌词
+[02:05.20]测试歌词
+[02:07.83]测试歌词
+[02:10.97]测试歌词
+[02:13.69]测试歌词
+[02:15.80]测试歌词测试歌词测试歌词测试歌词测试歌词
+[02:18.45]测试歌词
+[02:21.62]测试歌词
+[02:28.70]
+[02:38.34]测试歌词
+[02:43.51]测试歌词
+[02:47.25]测试歌词
+[02:48.82]测试歌词
+[02:53.32]测试歌词
+[02:55.21]测试歌词
+[03:01.83]
+[03:05.15]测试歌词
+[03:07.81]测试歌词
+[03:10.81]测试歌词
+[03:13.54]测试歌词
+[03:15.96]测试歌词
+[03:18.44]测试歌词
+[03:21.67]测试歌词`
+
 const Transition = React.forwardRef(function Transition(
     props: TransitionProps & {
         children: React.ReactElement;
@@ -50,11 +113,40 @@ export interface IFullScreenMusicPannelProps {
     currentTime: number,
     handleProgressSeek: (newProgress: number) => void
 }
+
+interface LyricLine {
+    startTime: number,
+    duration: number,
+    text: string
+}
+
 export default function FullScreenMusicPannel(props: IFullScreenMusicPannelProps) {
     const theme = useTheme();
     const [volumePanelOpen, setVolumePanelOpen] = React.useState(false);
     const volumeButtonRef = React.useRef(null);
+    const [lyrics, setLyrics] = React.useState<LyricLine[]>([]);
+    React.useEffect(() => {
+        const regex = /\[(\d+):(\d+\.\d+)\](.*)/;
+        const lyricLines: LyricLine[] = [];
 
+        testLyric.split('\n')
+            .map((line, i) => {
+                var match = line.match(regex);
+                var startTime = parseInt(match[1]) * 60 + parseFloat(match[2]);
+                if (i !== 0) {
+                    lyricLines[i - 1].duration = startTime - lyricLines[i - 1].startTime;
+                }
+                lyricLines.push({
+                    startTime: startTime,
+                    duration: 0,
+                    text: match[3]
+                })
+            });
+
+        lyricLines[lyricLines.length - 1].duration = props.duration - lyricLines[lyricLines.length - 1].startTime;
+        setLyrics(lyricLines);
+        console.log(lyricLines)
+    }, [])
 
 
     return (
@@ -106,26 +198,48 @@ export default function FullScreenMusicPannel(props: IFullScreenMusicPannelProps
                     margin: 'auto auto',
                     marginLeft: '24px'
                 }}>
-                    <Typography fontWeight={600} variant='h5' sx={{ '@media(max-width: 600px)': { fontSize: "1em" } }} noWrap title={props.currentMusicInfo.title} >{props.currentMusicInfo.title}</Typography>
-                    <Typography variant='caption' noWrap sx={{ marginTop: '24px', color: theme.palette.text.secondary }} >{`艺术家：${props.currentMusicInfo.artists.join(" / ")}`}</Typography>
-                    <Typography variant='caption' noWrap sx={{ color: theme.palette.text.secondary }} >{`专辑：${props.currentMusicInfo.albumTitle}`}</Typography>
-                    <Box sx={{ flex: '1 1 auto', marginTop: '24px', marginBottom: '24px', overflow: 'auto', display: 'flex', flexDirection: 'column', '::-webkit-scrollbar':{display: 'none'} }}>
-                        <Typography component='ruby' sx={{ marginBottom: '12px', "rt": { fontSize: '12px' } }}>
-                            夢<rt >ゆめ</rt>
-                            咲<rt>さき</rt>
-                            ＊ハレ<rt></rt>
-                            舞<rt>ぶ</rt>
-                            台<rt>たい</rt>
-                            - 和气杏未 (和氣あず未)/楠木灯 (楠木ともり)/富田美憂 (とみた みゆ)/中島由貴 (なかしま ゆき)/鬼頭明里 (きとう あかり)
-                        </Typography>
-                        <Typography component='ruby' sx={{ marginBottom: '12px', "rt": { fontSize: '12px' } }}>词：六ツ見純代</Typography>
-                        <Typography component='ruby' sx={{ marginBottom: '12px', "rt": { fontSize: '12px' } }}>曲：睦月周平</Typography>
-                        <Typography component='ruby' sx={{ marginBottom: '12px', "rt": { fontSize: '12px' } }}>はらはら 花吹雪</Typography>
-                        <Typography component='ruby' sx={{ marginBottom: '12px', "rt": { fontSize: '12px' } }}>ひらひら 舞いおどれ</Typography>
-                        <Typography component='ruby' sx={{ marginBottom: '12px', "rt": { fontSize: '12px' } }}>春夏秋冬 笑顔満開でウェルカム</Typography>
-                        <Typography component='ruby' sx={{ marginBottom: '12px', "rt": { fontSize: '12px' } }}>刹那の浮世に</Typography>
-                        <Typography component='ruby' sx={{ marginBottom: '12px', "rt": { fontSize: '12px' } }}>落ち込んでないで</Typography>
+                    <Typography fontWeight={600} variant='h5' sx={{ flexShrink: '0', '@media(max-width: 600px)': { fontSize: "1em" } }} noWrap title={props.currentMusicInfo.title} >{props.currentMusicInfo.title}</Typography>
+                    <Typography variant='caption' noWrap sx={{ flexShrink: '0', marginTop: '24px', color: theme.palette.text.secondary }} >{`艺术家：${props.currentMusicInfo.artists.join(" / ")}`}</Typography>
+                    <Typography variant='caption' noWrap sx={{ flexShrink: '0', color: theme.palette.text.secondary }} >{`专辑：${props.currentMusicInfo.albumTitle}`}</Typography>
+                    <Box sx={{ flex: '1 1 auto', marginTop: '24px', marginBottom: '24px', overflow: 'auto', display: 'flex', flexDirection: 'column', '::-webkit-scrollbar': { display: 'none' } }}>
+                        {
+                            lyrics.map((lyric, i) => {
+                                var currentLine = lyric.startTime <= props.currentTime && props.currentTime <= (lyric.startTime + lyric.duration);
+                                return <Box component='p' key={i}>
+                                    <Typography component='span'
+                                        onAnimationStart={e => {
+                                            e.currentTarget.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                            console.log('dick')
+                                        }}
+                                        sx={[{
+                                            display: 'inline',
+                                            textAlign: 'center',
+                                            paddingTop: '12px',
+                                            "rt": { fontSize: '12px' },
 
+                                        },
+                                        currentLine && {
+                                            background: `linear-gradient(90deg, #3152ad 50%, ${theme.palette.text.primary} 50%)`,
+                                            backgroundRepeat: 'no-repeat',
+                                            backgroundSize: '200%',
+                                            backgroundClip: 'text',
+                                            color: currentLine ? 'transparent' : theme.palette.text.primary,
+                                            animation: `${lyric.duration}s linear 0s infinite normal lyric_progress`,
+                                            animationPlayState: props.playing && currentLine ? 'running' : 'paused',
+                                            '@keyframes lyric_progress': {
+                                                '0%': {
+                                                    backgroundPosition: '100%'
+                                                },
+                                                '100%': {
+                                                    backgroundPosition: '0%'
+                                                }
+                                            }
+                                        }]}>
+                                        {lyric.text}
+                                    </Typography>
+                                </Box>
+                            })
+                        }
 
                     </Box>
                 </Box>
