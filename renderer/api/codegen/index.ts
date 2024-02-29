@@ -41,4 +41,5 @@ export { AuthControllerService } from './services/AuthControllerService';
 export { MinIoControllerService } from './services/MinIoControllerService';
 export { MusicControllerService } from './services/MusicControllerService';
 export { PlaylistControllerService } from './services/PlaylistControllerService';
+export { SearchControllerService } from './services/SearchControllerService';
 export { UserControllerService } from './services/UserControllerService';

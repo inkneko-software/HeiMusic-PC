@@ -127,6 +127,18 @@ musicIds: Array<number>,
     }
 
     /**
+     * 扫描专辑
+     * @returns ResponseObject OK
+     * @throws ApiError
+     */
+    public static scanAlbum(): CancelablePromise<ResponseObject> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/album/scanAlbum',
+        });
+    }
+
+    /**
      * 查询专辑基础信息
      * @param albumId 
      * @returns ResponseAlbumVo OK
@@ -179,6 +191,29 @@ albumId: number,
             url: '/api/v1/album/getMusicList',
             query: {
                 'albumId': albumId,
+            },
+        });
+    }
+
+    /**
+     * 获取封面文件
+     * @param albumId 
+     * @param s 
+     * @returns binary OK
+     * @throws ApiError
+     */
+    public static getMusicFile1(
+albumId: number,
+s?: string,
+): CancelablePromise<Blob> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/album/getFrontCoverFile/{albumId}',
+            path: {
+                'albumId': albumId,
+            },
+            query: {
+                's': s,
             },
         });
     }

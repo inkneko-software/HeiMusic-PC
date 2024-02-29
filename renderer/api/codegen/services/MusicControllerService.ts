@@ -84,4 +84,22 @@ file: Blob;
         });
     }
 
+    /**
+     * 获取音乐文件
+     * @param musicId 
+     * @returns binary OK
+     * @throws ApiError
+     */
+    public static getMusicFile(
+musicId: number,
+): CancelablePromise<Blob> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/music/getMusicFile/{musicId}',
+            path: {
+                'musicId': musicId,
+            },
+        });
+    }
+
 }

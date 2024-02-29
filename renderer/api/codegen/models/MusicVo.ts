@@ -13,6 +13,11 @@ export type MusicVo = {
     bitrate?: string;
     codec?: string;
     duration?: number;
+    trackNumber?: number;
+    trackTotal?: number;
+    discNumber?: number;
+    discTotal?: number;
+    artist?: string;
     albumId?: number;
     albumTitle?: string;
     albumCoverUrl?: string;
