@@ -38,7 +38,7 @@ import SearchOutlinedIcon from '@mui/icons-material/SearchOutlined';
 import useToast from './Common/Toast'
 import InputBase from '@mui/material/InputBase'
 import Paper from '@mui/material/Paper'
-import { ApiError, AuthControllerService, UserControllerService } from '../api/codegen'
+import { AlbumControllerService, ApiError, AuthControllerService, UserControllerService } from '../api/codegen'
 import { useRouter } from 'next/router'
 import ChevronRightOutlinedIcon from '@mui/icons-material/ChevronRightOutlined';
 import ChevronLeftOutlinedIcon from '@mui/icons-material/ChevronLeftOutlined';
@@ -46,7 +46,10 @@ import ChevronLeftOutlinedIcon from '@mui/icons-material/ChevronLeftOutlined';
 import FilterNoneOutlinedIcon from '@mui/icons-material/FilterNoneOutlined';
 import ZoomInMapOutlinedIcon from '@mui/icons-material/ZoomInMapOutlined';
 import WebAssetOutlinedIcon from '@mui/icons-material/WebAssetOutlined';
-
+import AccountCircleRoundedIcon from '@mui/icons-material/AccountCircleRounded';
+import SettingsRoundedIcon from '@mui/icons-material/SettingsRounded';
+import ManageSearchRoundedIcon from '@mui/icons-material/ManageSearchRounded';
+import ExitToAppRoundedIcon from '@mui/icons-material/ExitToAppRounded';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import { Drawer } from '@mui/material'
 
@@ -88,6 +91,7 @@ function HeiMusicMainLayout({ children }) {
     const [heiMusicConfig, setHeiMusicConfig] = React.useState<HeiMusicConfig>(null)
     const settingButtonRef = React.useRef(null)
     const [settingMenuOpen, setSettingMenuOpen] = React.useState(false)
+    const [prompt, setPrompt] = React.useState("");
     //当前登录用户的信息
     const [userDetail, setUserDetail] = React.useState(null)
 
@@ -144,9 +148,25 @@ function HeiMusicMainLayout({ children }) {
     }
 
     const handleLogout = () => {
+        setSettingMenuOpen(false)
         AuthControllerService.logout()
             .then(res => {
                 router.reload();
+            });
+    }
+
+    const handleSearch = () => {
+        router.push(`/search?keyword=${prompt}`)
+    }
+
+    const handleScan = () => {
+        setSettingMenuOpen(false)
+        AlbumControllerService.scanAlbum()
+            .then(res => {
+                pushToast("已提交扫描请求", "success")
+            })
+            .catch((error: ApiError) => {
+                pushToast(error.message)
             });
     }
 
@@ -169,7 +189,7 @@ function HeiMusicMainLayout({ children }) {
                 {
                     matcheMobile && <Box sx={{ width: '196px', display: 'flex' }} >
                         <Box sx={{ margin: 'auto auto auto 12px', display: 'flex' }}>
-                            <Avatar src='/images/logo.jpg' onClick={()=>setLeftPannelDrawerOpen(true)}></Avatar>
+                            <Avatar src='/images/logo.jpg' onClick={() => setLeftPannelDrawerOpen(true)}></Avatar>
                         </Box>
                     </Box>
                 }
@@ -180,7 +200,7 @@ function HeiMusicMainLayout({ children }) {
                     <IconButton size="small" onClick={() => { window.history.forward() }} sx={{ margin: "auto 0px", WebkitAppRegion: 'no-drag' }}><ChevronRightOutlinedIcon /></IconButton>
                     {/* 搜索框 */}
                     <Box sx={{ margin: "auto 12px", WebkitAppRegion: 'no-drag' }}>
-                        <InputBase startAdornment={<SearchOutlinedIcon />} size='small' placeholder='搜索音乐' sx={{ borderRadius: '12px', border: '1px grey solid', padding: '2px 12px', fontSize: '14px', "input": { padding: 0 } }} />
+                        <InputBase startAdornment={<SearchOutlinedIcon onClick={handleSearch} />} value={prompt} onChange={e => setPrompt(e.target.value)} size='small' placeholder='搜索音乐' sx={{ borderRadius: '12px', border: '1px grey solid', padding: '2px 12px', fontSize: '14px', "input": { padding: 0 } }} />
                     </Box>
                     <Box sx={{ margin: 'auto 5px auto auto', WebkitAppRegion: 'no-drag' }}>
                         {
@@ -209,12 +229,41 @@ function HeiMusicMainLayout({ children }) {
                             }} >
                             <Paper sx={{ display: 'flex', flexDirection: 'column' }}>
                                 <Link href="/userDetail">
-                                    <Button onClick={() => setSettingMenuOpen(false)}>用户设置</Button>
+                                    <Button
+                                        sx={{ justifyContent: 'flex-start', padding: "6px 16px" }}
+                                        color='inherit'
+                                        startIcon={<AccountCircleRoundedIcon />}
+                                        onClick={() => setSettingMenuOpen(false)}
+                                    >
+                                        用户设置
+                                    </Button>
                                 </Link>
                                 <Link href="/settings/player/home">
-                                    <Button onClick={() => setSettingMenuOpen(false)}>播放器设置</Button>
+                                    <Button
+                                        sx={{ justifyContent: 'flex-start', padding: "6px 16px" }}
+                                        color='inherit'
+                                        startIcon={<SettingsRoundedIcon />}
+                                        onClick={() => setSettingMenuOpen(false)}
+                                    >
+                                        播放器设置
+                                    </Button>
                                 </Link>
-                                <Button onClick={handleLogout}>退出登录</Button>
+                                <Button
+                                    sx={{ justifyContent: 'flex-start', padding: "6px 16px" }}
+                                    color='inherit'
+                                    startIcon={<ManageSearchRoundedIcon />}
+                                    onClick={handleScan}
+                                >
+                                    扫描音乐
+                                </Button>
+                                <Button
+                                    sx={{ justifyContent: 'flex-start', padding: "6px 16px" }}
+                                    color='inherit'
+                                    startIcon={<ExitToAppRoundedIcon />}
+                                    onClick={handleLogout}
+                                >
+                                    退出登录
+                                </Button>
                             </Paper>
                         </Popover>
                     </Box>
@@ -232,11 +281,11 @@ function HeiMusicMainLayout({ children }) {
             {/* 左侧面板 与 右侧 */}
             <Box sx={{ display: 'flex', flexGrow: '1', height: "calc(100% - 64px)" }}>
                 <LeftPannel sx={[{ width: '196px', height: "calc(100%)", maxHeight: "calc(100%)", flex: '0 0 auto', overflowY: 'auto', display: 'flex', flexDirection: 'column', background: theme.palette.pannelBackground.main }, matcheMobile && { display: 'none' }]} />
-                <Drawer variant='temporary' open={leftPannelDrawerOpen} onClose={()=>setLeftPannelDrawerOpen(false)} sx={{height: "calc(100%)"}}>
+                <Drawer variant='temporary' open={leftPannelDrawerOpen} onClose={() => setLeftPannelDrawerOpen(false)} sx={{ height: "calc(100%)" }}>
                     <LeftPannel sx={[{ width: '196px', height: "calc(100%)", maxHeight: "calc(100%)", flex: '0 0 auto', overflowY: 'auto', display: 'flex', flexDirection: 'column', background: theme.palette.pannelBackground.main }]} />
                 </Drawer>
                 {/* 上部视窗 与 下部播放器 */}
-                <Box sx={[{ width: "calc(100% - 196px)", display: 'flex', flexDirection: 'column', background: theme.palette.pannelBackground.light }, matcheMobile && {width: "calc(100%)"}]}>
+                <Box sx={[{ width: "calc(100% - 196px)", display: 'flex', flexDirection: 'column', background: theme.palette.pannelBackground.light }, matcheMobile && { width: "calc(100%)" }]}>
                     {/* <MusicAlbum sx={{ flexGrow: 1 }} /> */}
                     <Box sx={{ flexGrow: 1, flexShrink: 1, height: 'calc(100% - 64px - 76px)' }}>{children}</Box>
                     <MusicControlPannel sx={{ height: '76px', flexShrink: 0 }} />
