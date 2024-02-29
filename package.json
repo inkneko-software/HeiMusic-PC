@@ -2,7 +2,7 @@
   "private": true,
   "name": "heimusic",
   "description": "HeiMusic cross-platform PC client.",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "author": "inkneko <legendlxh@gmail.com>",
   "main": "app/background.js",
   "preload": "app/preload.js",
