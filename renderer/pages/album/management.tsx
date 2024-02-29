@@ -125,8 +125,15 @@ function AlbumManagement() {
     const handleDeleteAlbum = async function () {
         try {
             await AlbumControllerService.removeAlbum(albumMenuInfo.albumId)
-            router.reload();
-
+            AlbumControllerService.getAlbumList(page, rowsPerPage)
+            .then(res => {
+                setTotal(res.data.total);
+                setAlbumList(res.data.albumList);
+                setDeleteAlbumConfirmDialogOpen(false)
+            })
+            .catch((error: ApiError) => {
+                pushToast(error.message)
+            })
         } catch (e) {
             pushToast(e.message)
         }
