@@ -4,7 +4,7 @@ import * as React from "react"
 
 import Layout from "./layout"
 
-const version = "0.3.2"
+const version = "0.3.3"
 
 
 /**
