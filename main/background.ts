@@ -71,27 +71,9 @@ function saveConfig() {
 (async () => {
     await app.whenReady();
 
-    const mainWindow = createWindow('main', {
-        width: 1280,
-        height: 768,
-        minWidth: 1000,
-        minHeight: 600,
-        frame: false,
-        show: false,
-        webPreferences: {
-            nodeIntegration: false,
-            contextIsolation: true,
-            preload: path.join(__dirname, 'preload.js'),
-        },
-    });
+    var mainWindow = null;
 
-    if (isProd) {
-        await mainWindow.loadURL('app://./home.html');
-    } else {
-        const port = process.argv[2];
-        await mainWindow.loadURL(`http://localhost:${port}/home`);
-        mainWindow.webContents.openDevTools();
-    }
+    
 
 
     //检查存储配置文件的文件夹是否存在
@@ -305,6 +287,30 @@ function saveConfig() {
             }
         ])
     });
+
+
+
+    mainWindow =  createWindow('main', {
+        width: 1280,
+        height: 768,
+        minWidth: 1000,
+        minHeight: 600,
+        frame: false,
+        show: false,
+        webPreferences: {
+            nodeIntegration: false,
+            contextIsolation: true,
+            preload: path.join(__dirname, 'preload.js'),
+        },
+    });
+
+    if (isProd) {
+        await mainWindow.loadURL('app://./home.html');
+    } else {
+        const port = process.argv[2];
+        await mainWindow.loadURL(`http://localhost:${port}/home`);
+        mainWindow.webContents.openDevTools();
+    }
 })();
 
 app.on('window-all-closed', () => {
