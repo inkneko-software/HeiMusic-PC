@@ -1,5 +1,5 @@
 import Box from '@mui/material/Box'
-import { BoxProps, CardMedia, IconButton, Stack, Typography, useTheme } from "@mui/material"
+import { BoxProps, CardMedia, Divider, IconButton, Popover, Stack, Typography, useTheme } from "@mui/material"
 
 import * as React from 'react';
 import Table from '@mui/material/Table';
@@ -17,8 +17,26 @@ import { useRouter } from 'next/router';
 
 import FavoriteBorderOutlinedIcon from '@mui/icons-material/FavoriteBorderOutlined';
 import FavoriteOutlinedIcon from '@mui/icons-material/FavoriteOutlined';
-
-import { IChangePlayListEvent, IMusicInfo, IMusicQuality } from '../../components/MusicControlPannel/MusicControlPannel';
+import LibraryMusicOutlinedIcon from '@mui/icons-material/LibraryMusicOutlined';
+import EditNoteOutlinedIcon from '@mui/icons-material/EditNoteOutlined';
+import PlayCircleFilledWhiteOutlinedIcon from '@mui/icons-material/PlayCircleFilledWhiteOutlined';
+import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
+import SkipNextRoundedIcon from '@mui/icons-material/SkipNextRounded';
+import MoreHorizIcon from '@mui/icons-material/MoreHoriz';
+import SubdirectoryArrowRightRoundedIcon from '@mui/icons-material/SubdirectoryArrowRightRounded';
+import PlaylistAddRoundedIcon from '@mui/icons-material/PlaylistAddRounded';
+import NavigateNextRoundedIcon from '@mui/icons-material/NavigateNextRounded';
+import TextSnippetRoundedIcon from '@mui/icons-material/TextSnippetRounded';
+import KeyboardTabRoundedIcon from '@mui/icons-material/KeyboardTabRounded';
+import BackspaceOutlinedIcon from '@mui/icons-material/BackspaceOutlined';
+import ClearAllOutlinedIcon from '@mui/icons-material/ClearAllOutlined';
+import DeleteSweepOutlinedIcon from '@mui/icons-material/DeleteSweepOutlined';
+import PlaylistRemoveRoundedIcon from '@mui/icons-material/PlaylistRemoveRounded';
+import NotesRoundedIcon from '@mui/icons-material/NotesRounded';
+import SortOutlinedIcon from '@mui/icons-material/SortOutlined';
+import MenuOutlinedIcon from '@mui/icons-material/MenuOutlined';
+import SubscriptionsOutlinedIcon from '@mui/icons-material/SubscriptionsOutlined';
+import { IChangePlayListEvent, IEnqueueNextEvent, IMusicInfo, IMusicQuality } from '../../components/MusicControlPannel/MusicControlPannel';
 import { AlbumControllerService, ArtistVo, PlaylistControllerService } from '../../api/codegen';
 import { pushToast } from '@components/HeiMusicMainLayout';
 
@@ -40,6 +58,11 @@ function MusicAlbum(props: MusicAlbumProps) {
     })
     const [playlist, setPlayList] = React.useState<IMusicInfo[]>([])
     const [showLargeAlbumInfo, setShowLargeAlbumInfo] = React.useState(true)
+
+    //音乐右键菜单
+    const [musicMenuOpen, setMusicMenuOpen] = React.useState(false);
+    const [musicMenuPos, setMusicMenuPos] = React.useState({ top: 0, left: 0 })
+    const [musicMenuInfo, setMusicMenuInfo] = React.useState({ albumTitle: "", albumId: 0, musicTitle: "", musicId: 0, index: 0, isFavorite: false })
 
     const containerRef = React.useRef<HTMLElement>();
     const albumInfoRef = React.useRef<HTMLElement>();
@@ -157,8 +180,28 @@ function MusicAlbum(props: MusicAlbumProps) {
             })
     }
 
+    const handleContextMenuPlay = () => {
+        const event = new CustomEvent<IChangePlayListEvent>("music-control-panel::changePlayList", {
+            detail: {
+                playlist: playlist,
+                startIndex: musicMenuInfo.index
+            }
+        });
+        document.dispatchEvent(event)
+    }
+
+    const handleContextMenuPlayNext = () => {
+        const event = new CustomEvent<IEnqueueNextEvent>("music-control-panel::enqueueNext", {
+            detail: {
+                musicList: [playlist[musicMenuInfo.index]]
+            }
+        });
+        document.dispatchEvent(event)
+    }
+
     return (
         <Box sx={{ height: '100%', width: '100%', overflowY: "auto" }} ref={containerRef}>
+            {/* 专辑信息 */}
             <Box sx={{
                 marginTop: '20px',
                 width: "auto",
@@ -189,11 +232,12 @@ function MusicAlbum(props: MusicAlbumProps) {
                     {albumInfo.date ? <Typography variant='caption' noWrap >{albumInfo.date}</Typography> : null}
                     <Typography variant='caption' sx={{ marginTop: "12px" }} >{"播放量 " + albumInfo.listenedCount}</Typography>
                     <Box sx={{ marginTop: "auto", display: 'flex' }}>
-                        <Button sx={{  marginRight: "30px" }} size='small' variant="contained" onClick={handlePlayAll} >播放全部</Button>
-                        <Button sx={{  marginRight: "30px" }} size='small' variant="outlined">下载</Button>
+                        <Button sx={{ marginRight: "30px" }} size='small' variant="contained" onClick={handlePlayAll} >播放全部</Button>
+                        <Button sx={{ marginRight: "30px" }} size='small' variant="outlined">下载</Button>
                     </Box>
                 </Box>
             </Box>
+            {/* 专辑信息Lite */}
             <Box sx={[
                 {
                     marginTop: '20px',
@@ -247,6 +291,7 @@ function MusicAlbum(props: MusicAlbumProps) {
                     </Table>
                 </TableContainer>
             </Box>
+            {/* 音乐列表 */}
             <TableContainer sx={{ width: "auto", padding: "0px 12px", }}>
                 <Table sx={{ tableLayout: "fixed", ".MuiTableCell-root": { padding: "14px 6px" } }}>
                     <TableHead>
@@ -261,6 +306,11 @@ function MusicAlbum(props: MusicAlbumProps) {
                         playlist.map((row, index) => (
                             <TableRow
                                 sx={{ userSelect: "none", ":hover": { background: "rgba(0,0,0,0.1)", color: theme.palette.primary.main, } }}
+                                onContextMenu={e => {
+                                    setMusicMenuOpen(true);
+                                    setMusicMenuPos({ left: e.clientX, top: e.clientY });
+                                    setMusicMenuInfo({ albumTitle: row.albumTitle, albumId: row.albumId, musicTitle: row.title, musicId: row.musicId, index: index, isFavorite: row.isFavorite });
+                                }}
                                 onDoubleClick={() => {
                                     const event = new CustomEvent<IChangePlayListEvent>("music-control-panel::changePlayList", {
                                         detail: {
@@ -290,9 +340,102 @@ function MusicAlbum(props: MusicAlbumProps) {
 
                 </Table>
             </TableContainer>
+            {/* 无音乐提示 */}
             <Box sx={[{ height: "96px", width: "100%", display: "flex" }, playlist.length !== 0 && { display: "none" }]}>
                 <Typography sx={{ margin: "auto auto" }} >当前专辑暂无音乐</Typography>
             </Box>
+            {/* 音乐菜单 */}
+            <Popover
+                open={musicMenuOpen}
+                anchorReference='anchorPosition'
+                anchorPosition={musicMenuPos}
+                onClose={() => setMusicMenuOpen(false)}
+                transitionDuration={0}
+            >
+                <Paper sx={{ display: 'flex', flexDirection: 'column', width: "160px", backgroundColor: theme.palette.pannelBackground.main }}
+                    onClick={() => setMusicMenuOpen(false)}
+                >
+                    <Button
+                        sx={{ justifyContent: 'flex-start', padding: "6px 16px" }}
+                        color='inherit'
+                        startIcon={<PlayCircleFilledWhiteOutlinedIcon />}
+                        onClick={handleContextMenuPlay}
+                        size='small'
+                    >
+                        播放
+                    </Button>
+                    <Button
+                        sx={{ justifyContent: 'flex-start', padding: "6px 16px" }}
+                        color='inherit'
+                        startIcon={<LibraryMusicOutlinedIcon />}
+                        onClick={handleContextMenuPlayNext}
+                        size='small'
+
+                    >
+                        下一首播放
+                    </Button>
+                    <Divider />
+                    {
+                        musicMenuInfo.isFavorite &&
+                        <Button
+                            sx={{ justifyContent: 'flex-start', padding: "6px 16px" }}
+                            color='inherit'
+                            startIcon={<FavoriteOutlinedIcon />}
+                            onClick={() => { }}
+                        size='small'
+
+                        >
+                            收藏
+                        </Button>
+                    }
+                    {
+                        !musicMenuInfo.isFavorite &&
+                        <Button
+                            sx={{ justifyContent: 'flex-start', padding: "6px 16px" }}
+                            color='inherit'
+                            startIcon={<FavoriteBorderOutlinedIcon />}
+                            onClick={() => { }}
+                        size='small'
+
+                        >
+                            收藏
+                        </Button>
+                    }
+                    <Button
+                        sx={{ justifyContent: 'flex-start', padding: "6px 16px", ".MuiButton-endIcon": { marginLeft: 'auto', marginRight: '0px' } }}
+                        color='inherit'
+                        startIcon={<PlaylistAddRoundedIcon />}
+                        endIcon={<NavigateNextRoundedIcon />}
+                        onClick={() => { }}
+                        size='small'
+
+                    >
+                        添加到
+                    </Button>
+                    <Divider />
+
+                    <Button
+                        sx={{ justifyContent: 'flex-start', padding: "6px 16px" }}
+                        color='inherit'
+                        startIcon={<MenuOutlinedIcon />}
+                        onClick={() => { router.push(`/album/edit/${musicMenuInfo.albumId}`) }}
+                        size='small'
+
+                    >
+                        复制音乐信息
+                    </Button>
+                    <Button
+                        sx={{ justifyContent: 'flex-start', padding: "6px 16px" }}
+                        color='inherit'
+                        startIcon={<DeleteSweepOutlinedIcon />}
+                        onClick={() => { router.push(`/album/edit/${musicMenuInfo.albumId}`) }}
+                        size='small'
+
+                    >
+                        删除
+                    </Button>
+                </Paper>
+            </Popover>
         </Box >
     );
 }
