@@ -159,8 +159,6 @@ function MusicControlPannel(props: IMusicControlPannel) {
 
     const [fullScreenMusicPannelOpen, setFullScreenMusicPannelOpen] = React.useState(false);
 
-    
-
     React.useEffect(() => {
         if (audioRef.current !== null) {
             const audio = audioRef.current;
@@ -523,9 +521,11 @@ function MusicControlPannel(props: IMusicControlPannel) {
                 anchor="right"
                 open={playlistOpen}
                 onClose={() => setPlaylistOpen(false)}
+                sx={{zIndex: '1300'}}
             >
                 <PlayList musicList={musicList} currentIndex={currentMusicInfo.currentIndex} onClose={() => setPlaylistOpen(false)} />
             </Drawer>
+            {/* 全屏歌词页面 */}
             <FullScreenMusicPannel
                 open={fullScreenMusicPannelOpen}
                 onClose={() => setFullScreenMusicPannelOpen(false)}
