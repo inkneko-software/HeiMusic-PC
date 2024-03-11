@@ -106,6 +106,7 @@ export interface IFullScreenMusicPannelProps {
     handleNextClick: () => void,
     volume: number,
     handleVolumeChange: (newVolume: number) => void,
+    handleVolumePanelClose: () => void,
     setPlaylistOpen: (open: boolean) => void,
     handleRemoveFavoriteMusic: () => void,
     handleAddFavoriteMusic: () => void,
@@ -267,7 +268,7 @@ export default function FullScreenMusicPannel(props: IFullScreenMusicPannelProps
                         value={props.volume}
                         onChange={(event, value: number) => props.handleVolumeChange(value)}
                         onMouseEnter={() => setVolumePanelOpen(true)}
-                        onMouseLeave={() => setVolumePanelOpen(false)}
+                        onMouseLeave={props.handleVolumePanelClose}
                         anchorEl={volumeButtonRef.current}
                     />
                     <IconButton
