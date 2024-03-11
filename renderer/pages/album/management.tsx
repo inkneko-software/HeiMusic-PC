@@ -175,7 +175,56 @@ function AlbumManagement() {
                     <Button onClick={() => setDeleteAlbumConfirmDialogOpen(false)}>取消</Button>
                 </DialogActions>
             </Dialog>
-
+            {/* 专辑菜单 */}
+            <Popover
+                open={albumMenuOpen}
+                anchorReference='anchorPosition'
+                anchorPosition={albumMenuPos}
+                onClose={() => setAlbumMenuOpen(false)}
+                transitionDuration={100}
+                onContextMenu={e => {
+                    e.preventDefault();
+                    setAlbumMenuOpen(false);
+                }}
+            >
+                <Paper sx={{ display: 'flex', flexDirection: 'column', width: "100px", backgroundColor: theme.palette.pannelBackground.main }}
+                    onClick={() => setAlbumMenuOpen(false)}
+                >
+                    <Button
+                        sx={{ justifyContent: 'flex-start', padding: "6px 16px" }}
+                        color='inherit'
+                        startIcon={<PlayCircleFilledWhiteOutlinedIcon />}
+                        onClick={() => handleMenuPlayAlbum(albumMenuInfo.albumId)}
+                    >
+                        播放
+                    </Button>
+                    <Button
+                        sx={{ justifyContent: 'flex-start', padding: "6px 16px" }}
+                        color='inherit'
+                        startIcon={<LibraryMusicOutlinedIcon />}
+                        onClick={() => { router.push(`/album/${albumMenuInfo.albumId}`) }}
+                    >
+                        查看
+                    </Button>
+                    <Divider />
+                    <Button
+                        sx={{ justifyContent: 'flex-start', padding: "6px 16px" }}
+                        color='inherit'
+                        startIcon={<EditNoteOutlinedIcon />}
+                        onClick={() => { router.push(`/album/edit/${albumMenuInfo.albumId}`) }}
+                    >
+                        编辑
+                    </Button>
+                    <Button
+                        sx={{ justifyContent: 'flex-start', padding: "6px 16px" }}
+                        color='inherit'
+                        startIcon={<DeleteForeverIcon />}
+                        onClick={() => setDeleteAlbumConfirmDialogOpen(true)}
+                    >
+                        删除
+                    </Button>
+                </Paper>
+            </Popover>
             {/* 表头 */}
             <TableRow sx={{ display: "table" }}>
                 <TableCell width="15%" >专辑封面</TableCell>
@@ -232,8 +281,6 @@ function AlbumManagement() {
 
 
                                     </TableCell>
-
-
                                 </TableRow>
                             ))
                         }
@@ -241,56 +288,6 @@ function AlbumManagement() {
 
                 </Table>
             </TableContainer>
-            {/* 专辑菜单 */}
-            <Popover
-                open={albumMenuOpen}
-                anchorReference='anchorPosition'
-                anchorPosition={albumMenuPos}
-                onClose={() => setAlbumMenuOpen(false)}
-                transitionDuration={100}
-                onContextMenu={e=>{
-                    e.preventDefault();
-                    setAlbumMenuOpen(false);
-                }}
-            >
-                <Paper sx={{ display: 'flex', flexDirection: 'column', width: "100px", backgroundColor: theme.palette.pannelBackground.main }}
-                    onClick={() => setAlbumMenuOpen(false)}
-                >
-                    <Button
-                        sx={{ justifyContent: 'flex-start', padding: "6px 16px" }}
-                        color='inherit'
-                        startIcon={<PlayCircleFilledWhiteOutlinedIcon />}
-                        onClick={() => handleMenuPlayAlbum(albumMenuInfo.albumId)}
-                    >
-                        播放
-                    </Button>
-                    <Button
-                        sx={{ justifyContent: 'flex-start', padding: "6px 16px" }}
-                        color='inherit'
-                        startIcon={<LibraryMusicOutlinedIcon />}
-                        onClick={() => { router.push(`/album/${albumMenuInfo.albumId}`) }}
-                    >
-                        查看
-                    </Button>
-                    <Divider />
-                    <Button
-                        sx={{ justifyContent: 'flex-start', padding: "6px 16px" }}
-                        color='inherit'
-                        startIcon={<EditNoteOutlinedIcon />}
-                        onClick={() => { router.push(`/album/edit/${albumMenuInfo.albumId}`) }}
-                    >
-                        编辑
-                    </Button>
-                    <Button
-                        sx={{ justifyContent: 'flex-start', padding: "6px 16px" }}
-                        color='inherit'
-                        startIcon={<DeleteForeverIcon />}
-                        onClick={() => setDeleteAlbumConfirmDialogOpen(true)}
-                    >
-                        删除
-                    </Button>
-                </Paper>
-            </Popover>
         </Box >
     )
 }
