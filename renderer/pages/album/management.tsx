@@ -126,14 +126,14 @@ function AlbumManagement() {
         try {
             await AlbumControllerService.removeAlbum(albumMenuInfo.albumId)
             AlbumControllerService.getAlbumList(page, rowsPerPage)
-            .then(res => {
-                setTotal(res.data.total);
-                setAlbumList(res.data.albumList);
-                setDeleteAlbumConfirmDialogOpen(false)
-            })
-            .catch((error: ApiError) => {
-                pushToast(error.message)
-            })
+                .then(res => {
+                    setTotal(res.data.total);
+                    setAlbumList(res.data.albumList);
+                    setDeleteAlbumConfirmDialogOpen(false)
+                })
+                .catch((error: ApiError) => {
+                    pushToast(error.message)
+                })
         } catch (e) {
             pushToast(e.message)
         }
@@ -175,13 +175,83 @@ function AlbumManagement() {
                     <Button onClick={() => setDeleteAlbumConfirmDialogOpen(false)}>取消</Button>
                 </DialogActions>
             </Dialog>
+
+            {/* 表头 */}
+            <TableRow sx={{ display: "table" }}>
+                <TableCell width="15%" >专辑封面</TableCell>
+                <TableCell width="35%" >专辑标题</TableCell>
+                <TableCell width="30%">艺术家</TableCell>
+                <TableCell width="10%" >曲数</TableCell>
+                <TableCell width="10%" >操作</TableCell>
+            </TableRow>
+            {/* 表格 */}
+            <TableContainer sx={{ overflowY: "auto", overflowX: "hidden", width: "auto" }} ref={tableRef}>
+                <Table sx={{ tableLayout: 'fixed', margin: "0px 6px", ".MuiTableCell-root": { padding: "10px 16px" } }} >
+                    <TableBody >
+                        {
+                            albumList.map((album, index) => (
+                                <TableRow
+                                    key={album.albumId}
+                                    sx={[{ ':hover': { background: theme.palette.pannelBackground.main } }, albumMenuOpen && albumMenuInfo.albumId === album.albumId && { background: theme.palette.pannelBackground.main }]}
+                                    onContextMenu={e => {
+                                        setAlbumMenuOpen(true);
+                                        setAlbumMenuPos({ left: e.clientX, top: e.clientY });
+                                        setAlbumMenuInfo({ title: album.title, albumId: album.albumId });
+                                    }}
+                                >
+                                    <TableCell sx={{ width: "15%", borderBottom: "unset" }} align="center">
+                                        <ImageSkeleton sx={{
+                                            width: '32px', height: '32px', borderRadius: '6%', flex: "0 0 auto", marginLeft: "12px", imageRendering: "auto", objectFit: "contain"
+                                        }} src={album.frontCoverUrl !== null ? album.frontCoverUrl + "?s=@w32h32" : null} />
+
+                                        {/* <CardMedia sx={{
+                                            width: '32px', height: '32px', borderRadius: '6%', flex: "0 0 auto", marginLeft: "12px", imageRendering: "auto", objectFit: "contain"
+                                        }} src={album.frontCoverUrl !== null ? album.frontCoverUrl + "?s=@w32h32" : "/images/akari.jpg"} component="img"></CardMedia> */}
+                                    </TableCell>
+                                    <TableCell sx={{ width: "35%", borderBottom: "unset" }}>
+                                        <Link href={`/album/${album.albumId}`}>
+                                            <Typography variant="body2" noWrap sx={{ ":hover": { cursor: "pointer", color: theme.palette.primary.main } }} title={album.title} >{album.title}</Typography>
+                                        </Link>
+                                    </TableCell>
+                                    <TableCell sx={{ width: "30%", borderBottom: "unset" }}>
+                                        <Typography variant="body2" noWrap>{album.artistList.map((v, i) => v.name).join('/')}</Typography>
+                                    </TableCell>
+                                    <TableCell sx={{ width: "10%", borderBottom: "unset" }}>{album.musicNum}</TableCell>
+                                    <TableCell sx={{ width: "10%", borderBottom: "unset" }}>
+                                        <IconButton
+                                            size='small'
+                                            sx={{ padding: '0 0' }}
+                                            onClick={e => {
+                                                setAlbumMenuOpen(true);
+                                                setAlbumMenuPos({ left: e.clientX, top: e.clientY });
+                                                setAlbumMenuInfo({ title: album.title, albumId: album.albumId });
+                                            }}
+                                        >
+                                            <MoreHorizIcon />
+                                        </IconButton>
+
+
+                                    </TableCell>
+
+
+                                </TableRow>
+                            ))
+                        }
+                    </TableBody>
+
+                </Table>
+            </TableContainer>
             {/* 专辑菜单 */}
             <Popover
                 open={albumMenuOpen}
                 anchorReference='anchorPosition'
                 anchorPosition={albumMenuPos}
                 onClose={() => setAlbumMenuOpen(false)}
-                transitionDuration={0}
+                transitionDuration={100}
+                onContextMenu={e=>{
+                    e.preventDefault();
+                    setAlbumMenuOpen(false);
+                }}
             >
                 <Paper sx={{ display: 'flex', flexDirection: 'column', width: "100px", backgroundColor: theme.palette.pannelBackground.main }}
                     onClick={() => setAlbumMenuOpen(false)}
@@ -221,64 +291,6 @@ function AlbumManagement() {
                     </Button>
                 </Paper>
             </Popover>
-            {/* 表头 */}
-            <TableRow sx={{ display: "table" }}>
-                <TableCell width="15%" >专辑封面</TableCell>
-                <TableCell width="35%" >专辑标题</TableCell>
-                <TableCell width="30%">艺术家</TableCell>
-                <TableCell width="10%" >曲数</TableCell>
-                <TableCell width="10%" >操作</TableCell>
-            </TableRow>
-            {/* 表格 */}
-            <TableContainer sx={{ overflowY: "auto", overflowX: "hidden", width: "auto" }} ref={tableRef}>
-                <Table sx={{ tableLayout: 'fixed', margin: "0px 6px", ".MuiTableCell-root": { padding: "10px 16px" } }} >
-                    <TableBody >
-                        {
-                            albumList.map((album, index) => (
-                                <TableRow
-                                    key={album.albumId}
-                                    sx={{ ':hover': { background: theme.palette.pannelBackground.main } }}
-                                >
-                                    <TableCell sx={{ width: "15%", borderBottom: "unset" }} align="center">
-                                        <ImageSkeleton sx={{
-                                            width: '32px', height: '32px', borderRadius: '6%', flex: "0 0 auto", marginLeft: "12px", imageRendering: "auto", objectFit: "contain"
-                                        }} src={album.frontCoverUrl !== null ? album.frontCoverUrl + "?s=@w32h32" : null} />
-
-                                        {/* <CardMedia sx={{
-                                            width: '32px', height: '32px', borderRadius: '6%', flex: "0 0 auto", marginLeft: "12px", imageRendering: "auto", objectFit: "contain"
-                                        }} src={album.frontCoverUrl !== null ? album.frontCoverUrl + "?s=@w32h32" : "/images/akari.jpg"} component="img"></CardMedia> */}
-                                    </TableCell>
-                                    <TableCell sx={{ width: "35%", borderBottom: "unset" }}>
-                                        <Link href={`/album/${album.albumId}`}>
-                                            <Typography variant="body2" noWrap sx={{ ":hover": { cursor: "pointer", color: theme.palette.primary.main } }} title={album.title} >{album.title}</Typography>
-                                        </Link>
-                                    </TableCell>
-                                    <TableCell sx={{ width: "30%", borderBottom: "unset" }}>
-                                        <Typography variant="body2" noWrap>{album.artistList.map((v, i) => v.name).join('/')}</Typography>
-                                    </TableCell>
-                                    <TableCell sx={{ width: "10%", borderBottom: "unset" }}>{album.musicNum}</TableCell>
-                                    <TableCell sx={{ width: "10%", borderBottom: "unset" }}>
-                                        <IconButton
-                                            size='small'
-                                            sx={{ padding: '0 0' }}
-                                            onClick={e => {
-                                                setAlbumMenuOpen(true);
-                                                setAlbumMenuPos({ left: e.clientX, top: e.clientY });
-                                                setAlbumMenuInfo({ title: album.title, albumId: album.albumId });
-                                            }}
-                                        >
-                                            <MoreHorizIcon />
-                                        </IconButton>
-
-
-                                    </TableCell>
-                                </TableRow>
-                            ))
-                        }
-                    </TableBody>
-
-                </Table>
-            </TableContainer>
         </Box >
     )
 }
