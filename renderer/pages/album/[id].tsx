@@ -305,7 +305,17 @@ function MusicAlbum(props: MusicAlbumProps) {
                     {
                         playlist.map((row, index) => (
                             <TableRow
-                                sx={{ userSelect: "none", ":hover": { background: "rgba(0,0,0,0.1)", color: theme.palette.primary.main, } }}
+                                sx={[
+                                    {
+                                        userSelect: "none",
+                                        ":hover": {
+                                            background: "rgba(0,0,0,0.1)", color: theme.palette.primary.main
+                                        }
+                                    },
+                                    musicMenuOpen && musicMenuInfo.musicId === row.musicId && {
+                                        background: "rgba(0,0,0,0.1)", color: theme.palette.primary.main
+                                    }
+                                ]}
                                 onContextMenu={e => {
                                     setMusicMenuOpen(true);
                                     setMusicMenuPos({ left: e.clientX, top: e.clientY });
@@ -332,6 +342,7 @@ function MusicAlbum(props: MusicAlbumProps) {
                                 <TableCell style={{ width: "45%" }} sx={{ borderBottom: "unset", textOverflow: "ellipsis", whiteSpace: "nowrap", overflowX: "hidden" }} title={row.artists.join(" / ")}>{row.artists.join(" / ")}</TableCell>
                                 <TableCell style={{ width: "10%" }} sx={{ borderBottom: "unset", textOverflow: "ellipsis", whiteSpace: "nowrap", overflowX: "hidden" }}>{timePretty(row.duration)}</TableCell>
 
+
                             </TableRow>
                         ))
 
@@ -350,7 +361,11 @@ function MusicAlbum(props: MusicAlbumProps) {
                 anchorReference='anchorPosition'
                 anchorPosition={musicMenuPos}
                 onClose={() => setMusicMenuOpen(false)}
-                transitionDuration={0}
+                transitionDuration={100}
+                onContextMenu={e=>{
+                    e.preventDefault();
+                    setMusicMenuOpen(false);
+                }}
             >
                 <Paper sx={{ display: 'flex', flexDirection: 'column', width: "160px", backgroundColor: theme.palette.pannelBackground.main }}
                     onClick={() => setMusicMenuOpen(false)}
@@ -382,7 +397,7 @@ function MusicAlbum(props: MusicAlbumProps) {
                             color='inherit'
                             startIcon={<FavoriteOutlinedIcon />}
                             onClick={() => { }}
-                        size='small'
+                            size='small'
 
                         >
                             收藏
@@ -395,7 +410,7 @@ function MusicAlbum(props: MusicAlbumProps) {
                             color='inherit'
                             startIcon={<FavoriteBorderOutlinedIcon />}
                             onClick={() => { }}
-                        size='small'
+                            size='small'
 
                         >
                             收藏
@@ -408,7 +423,6 @@ function MusicAlbum(props: MusicAlbumProps) {
                         endIcon={<NavigateNextRoundedIcon />}
                         onClick={() => { }}
                         size='small'
-
                     >
                         添加到
                     </Button>
@@ -430,7 +444,6 @@ function MusicAlbum(props: MusicAlbumProps) {
                         startIcon={<DeleteSweepOutlinedIcon />}
                         onClick={() => { router.push(`/album/edit/${musicMenuInfo.albumId}`) }}
                         size='small'
-
                     >
                         删除
                     </Button>
