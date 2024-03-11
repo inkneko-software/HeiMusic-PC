@@ -34,7 +34,7 @@ import { pushToast } from "@components/HeiMusicMainLayout"
  * 
  * const event = new CustomEvent<IChangePlayListEvent>("music-control-panel::changePlayList", {detail: {...}});
  * 
- * window.dispatchEvent(event)
+ * document.dispatchEvent(event)
  */
 export interface IChangePlayListEvent {
     playlist: IMusicInfo[],
@@ -48,10 +48,37 @@ export interface IChangePlayListEvent {
  * 
  * const event = new CustomEvent<IPlayEvent>("music-control-panel::play", {detail: {action: "play"}});
  * 
- * window.dispatchEvent(event)
+ * document.dispatchEvent(event)
  */
 export interface IPlayEvent {
     action: "play" | "pause" | "next" | "prev" | "play_or_pause"
+}
+
+
+/**
+ * 将指定音乐列表加入到当前的播放列表的底部
+ * 
+ * 通过以下方式调用
+ * 
+ * const event = new CustomEvent<IEnqueueEvent>("music-control-panel::enqueue", {detail: ...});
+ * 
+ * document.dispatchEvent(event)
+ */
+export interface IEnqueueEvent {
+    musicList: IMusicInfo[]
+}
+
+/**
+ * 将指定的音乐列表插入到下一首进行播放
+ * 
+ * 通过以下方式调用
+ * 
+ * const event = new CustomEvent<IEnqueueNextEvent>("music-control-panel::enqueueNext", {detail: ...});
+ * 
+ * document.dispatchEvent(event)
+ */
+export interface IEnqueueNextEvent {
+    musicList: IMusicInfo[]
 }
 
 /**
@@ -61,7 +88,7 @@ export interface IPlayEvent {
  * 
  * const event = new CustomEvent<IChangeMusicEvent>("music-control-panel::changeMusic", {detail: {index: 0}});
  * 
- * window.dispatchEvent(event)
+ * document.dispatchEvent(event)
  */
 export interface IChangeMusicEvent {
     index: number
@@ -132,10 +159,19 @@ function MusicControlPannel(props: IMusicControlPannel) {
 
     const [fullScreenMusicPannelOpen, setFullScreenMusicPannelOpen] = React.useState(false);
 
+    
+
     React.useEffect(() => {
         if (audioRef.current !== null) {
             const audio = audioRef.current;
-            audio.volume = volume / 100;
+            //获取音量配置
+            (async function () {
+                if (window !== undefined && window.electronAPI !== undefined) {
+                    var config = await window.electronAPI.config.get();
+                    setVolume(config.volume);
+                    audio.volume = config.volume / 100;
+                }
+            })()
             audio.ontimeupdate = () => {
                 document.title = `${currentMusicInfo.title} - HeiMusic!`;
 
@@ -179,6 +215,7 @@ function MusicControlPannel(props: IMusicControlPannel) {
             }
 
 
+            //更换播放列表消息的处理函数
             const changePlayList = (data: CustomEvent<IChangePlayListEvent>) => {
                 var index = data.detail.startIndex;
                 var newMusic = data.detail.playlist[index]
@@ -192,6 +229,7 @@ function MusicControlPannel(props: IMusicControlPannel) {
                 }
             }
 
+            //更换当前播放音乐消息的处理函数
             const changeMusic = (data: CustomEvent<IChangeMusicEvent>) => {
                 var newIndex = data.detail.index;
                 var newMusic = musicList[newIndex]
@@ -203,20 +241,60 @@ function MusicControlPannel(props: IMusicControlPannel) {
                     handlePlayButtonClick(true);
                 }
             }
+
+            //添加音乐到播放列表消息的处理函数
+            const enqueue = (data: CustomEvent<IEnqueueEvent>) => {
+                //对于已在播放列表中的音乐，将其移动到队尾
+                //也就是先将已存在的歌曲删掉，然后追加音乐列表
+                var enqueueMusicList = data.detail.musicList;
+                const isNotEnqueuedMusic = (music: IMusicInfo) => {
+                    return enqueueMusicList.find(m => m.musicId === music.musicId) === undefined;
+                }
+                var modifiedList = [...musicList.filter(isNotEnqueuedMusic), ...enqueueMusicList]
+                setMusicList(modifiedList);
+                //调整currentIndex
+                var afterEnqueuePlayingIndex = modifiedList.findIndex(music => {
+                    return music.musicId == currentMusicInfo.musicId;
+                });
+                setCurrentMusicInfo({ ...currentMusicInfo, currentIndex: afterEnqueuePlayingIndex });
+            }
+
+            //添加音乐到下一曲播放消息的处理函数
+            const enqueueNext = (data: CustomEvent<IEnqueueNextEvent>) => {
+                var enqueueMusicList = data.detail.musicList;
+                //判断给定的音乐是否不在入队的音乐列表中
+                const isNotEnqueuedMusic = (music: IMusicInfo) => {
+                    return enqueueMusicList.find(m => m.musicId === music.musicId) === undefined;
+                }
+                var modifiedList = [...musicList.slice(0, currentMusicInfo.currentIndex + 1).filter(isNotEnqueuedMusic), ...enqueueMusicList, ...musicList.slice(currentMusicInfo.currentIndex + 1).filter(isNotEnqueuedMusic)];
+                setMusicList(modifiedList);
+                //调整currentIndex
+                var afterEnqueuePlayingIndex = modifiedList.findIndex(music => {
+                    return music.musicId == currentMusicInfo.musicId;
+                });
+                setCurrentMusicInfo({ ...currentMusicInfo, currentIndex: afterEnqueuePlayingIndex });
+            }
+
+
             document.addEventListener("music-control-panel::changePlayList", changePlayList);
             document.addEventListener("music-control-panel::changeMusic", changeMusic);
+            document.addEventListener("music-control-panel::enqueue", enqueue);
+            document.addEventListener("music-control-panel::enqueueNext", enqueueNext);
+
+
+            //electron 相关操作
             if (window.electronAPI !== undefined) {
                 window.electronAPI.playback.next(handleNextClick);
                 window.electronAPI.playback.prev(handlePrevClick);
                 window.electronAPI.playback.play(handlePlayButtonClick);
             }
 
-
-
             return () => {
                 audio.ontimeupdate = null;
                 document.removeEventListener("music-control-panel::changePlayList", changePlayList);
                 document.removeEventListener("music-control-panel::changeMusic", changeMusic);
+                document.removeEventListener("music-control-panel::enqueue", enqueue);
+                document.removeEventListener("music-control-panel::enqueueNext", enqueueNext);
                 if (window.electronAPI !== undefined) {
                     window.electronAPI.playback.cleanup();
                 }
@@ -225,7 +303,6 @@ function MusicControlPannel(props: IMusicControlPannel) {
         }
 
     }, [audioRef.current, currentMusicInfo, musicList])
-
 
     const handlePlayButtonClick = (newList: boolean = false) => {
         if (musicList.length === 0 && newList == false) {
@@ -367,6 +444,14 @@ function MusicControlPannel(props: IMusicControlPannel) {
         setCurrentTime(newProgress);
     }
 
+    const handleVolumePanelClose = () => {
+        if (window !== undefined && window.electronAPI !== undefined) {
+            window.electronAPI.config.set("volume", volume);
+            window.electronAPI.config.save();
+        }
+        setVolumePanelOpen(false);
+    }
+
     return (
         <Box {...props} sx={{ ...(props.sx), display: "flex", flexDirection: "column" }}>
             <audio ref={audioRef} />
@@ -410,7 +495,7 @@ function MusicControlPannel(props: IMusicControlPannel) {
                         value={volume}
                         onChange={(event, value: number) => handleVolumeChange(value)}
                         onMouseEnter={() => setVolumePanelOpen(true)}
-                        onMouseLeave={() => setVolumePanelOpen(false)}
+                        onMouseLeave={handleVolumePanelClose}
                         anchorEl={volumeButtonRef.current}
                     />
                     <IconButton
@@ -454,6 +539,7 @@ function MusicControlPannel(props: IMusicControlPannel) {
                 handleNextClick={handleNextClick}
                 volume={volume}
                 handleVolumeChange={handleVolumeChange}
+                handleVolumePanelClose={handleVolumePanelClose}
                 setPlaylistOpen={setPlaylistOpen}
                 handleAddFavoriteMusic={handleAddFavoriteMusic}
                 handleRemoveFavoriteMusic={handleRemoveFavoriteMusic}
