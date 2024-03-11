@@ -200,7 +200,7 @@ function HeiMusicMainLayout({ children }) {
                     <IconButton size="small" onClick={() => { window.history.forward() }} sx={{ margin: "auto 0px", WebkitAppRegion: 'no-drag' }}><ChevronRightOutlinedIcon /></IconButton>
                     {/* 搜索框 */}
                     <Box sx={{ margin: "auto 12px", WebkitAppRegion: 'no-drag' }}>
-                        <InputBase startAdornment={<SearchOutlinedIcon onClick={handleSearch} />} value={prompt} onChange={e => setPrompt(e.target.value)} size='small' placeholder='搜索音乐' sx={{ borderRadius: '12px', border: '1px grey solid', padding: '2px 12px', fontSize: '14px', "input": { padding: 0 } }} />
+                        <InputBase startAdornment={<SearchOutlinedIcon />} onKeyUp={e => { e.key === "Enter" && prompt.length !== 0 ? handleSearch() : null }} value={prompt} onChange={e => setPrompt(e.target.value)} size='small' placeholder='搜索音乐' sx={{ borderRadius: '12px', border: '1px grey solid', padding: '2px 12px', fontSize: '14px', "input": { padding: 0 } }} />
                     </Box>
                     <Box sx={{ margin: 'auto 5px auto auto', WebkitAppRegion: 'no-drag' }}>
                         {
