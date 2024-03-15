@@ -9,8 +9,6 @@ import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Paper from '@mui/material/Paper';
-import MusicNote from '@mui/icons-material/MusicNote'
-import Avatar from "@mui/material/Avatar"
 import Button from '@mui/material/Button';
 import { TableVirtuoso, TableComponents } from 'react-virtuoso';
 import { useRouter } from 'next/router';
@@ -18,33 +16,23 @@ import { useRouter } from 'next/router';
 import FavoriteBorderOutlinedIcon from '@mui/icons-material/FavoriteBorderOutlined';
 import FavoriteOutlinedIcon from '@mui/icons-material/FavoriteOutlined';
 import LibraryMusicOutlinedIcon from '@mui/icons-material/LibraryMusicOutlined';
-import EditNoteOutlinedIcon from '@mui/icons-material/EditNoteOutlined';
 import PlayCircleFilledWhiteOutlinedIcon from '@mui/icons-material/PlayCircleFilledWhiteOutlined';
-import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
-import SkipNextRoundedIcon from '@mui/icons-material/SkipNextRounded';
-import MoreHorizIcon from '@mui/icons-material/MoreHoriz';
-import SubdirectoryArrowRightRoundedIcon from '@mui/icons-material/SubdirectoryArrowRightRounded';
 import PlaylistAddRoundedIcon from '@mui/icons-material/PlaylistAddRounded';
 import NavigateNextRoundedIcon from '@mui/icons-material/NavigateNextRounded';
-import TextSnippetRoundedIcon from '@mui/icons-material/TextSnippetRounded';
-import KeyboardTabRoundedIcon from '@mui/icons-material/KeyboardTabRounded';
-import BackspaceOutlinedIcon from '@mui/icons-material/BackspaceOutlined';
-import ClearAllOutlinedIcon from '@mui/icons-material/ClearAllOutlined';
 import DeleteSweepOutlinedIcon from '@mui/icons-material/DeleteSweepOutlined';
-import PlaylistRemoveRoundedIcon from '@mui/icons-material/PlaylistRemoveRounded';
-import NotesRoundedIcon from '@mui/icons-material/NotesRounded';
-import SortOutlinedIcon from '@mui/icons-material/SortOutlined';
 import MenuOutlinedIcon from '@mui/icons-material/MenuOutlined';
-import SubscriptionsOutlinedIcon from '@mui/icons-material/SubscriptionsOutlined';
 import { IChangePlayListEvent, IEnqueueNextEvent, IMusicInfo, IMusicQuality } from '../../components/MusicControlPannel/MusicControlPannel';
 import { AlbumControllerService, ArtistVo, PlaylistControllerService } from '../../api/codegen';
 import { pushToast } from '@components/HeiMusicMainLayout';
+import SpectrumIcon from '@components/Common/Icon/SpectrumIcon';
+import { HeiMusicContext } from '../../lib/HeiMusicContext';
 
 interface MusicAlbumProps extends BoxProps {
 
 }
 
 function MusicAlbum(props: MusicAlbumProps) {
+    const heiMusicContext = React.useContext(HeiMusicContext)
     const router = useRouter()
     const theme = useTheme()
     const { id } = router.query
@@ -314,6 +302,9 @@ function MusicAlbum(props: MusicAlbumProps) {
                                     },
                                     musicMenuOpen && musicMenuInfo.musicId === row.musicId && {
                                         background: "rgba(0,0,0,0.1)", color: theme.palette.primary.main
+                                    },
+                                    heiMusicContext.currentMusicInfo !== null && heiMusicContext.currentMusicInfo.albumId === row.albumId && heiMusicContext.currentMusicInfo.musicId === row.musicId && {
+                                        color: theme.palette.primary.main
                                     }
                                 ]}
                                 onContextMenu={e => {
@@ -338,7 +329,15 @@ function MusicAlbum(props: MusicAlbumProps) {
                                         !row.isFavorite && <Button size="small" sx={{ padding: "0px 0px", width: "20px", height: "20px", minWidth: "unset" }} color="error" onClick={() => handleAddFavoriteMusic(row.musicId)}><FavoriteBorderOutlinedIcon sx={{ width: "18px", height: "18px" }} /></Button>
                                     }
                                 </TableCell>
-                                <TableCell style={{ width: "45%" }} sx={{ borderBottom: "unset", textOverflow: "ellipsis", whiteSpace: "nowrap", overflowX: "hidden" }} title={row.title}>{row.title}</TableCell>
+                                <TableCell sx={{ borderBottom: "unset", textOverflow: "ellipsis", whiteSpace: "nowrap", overflowX: "hidden", display: 'flex'}} title={row.title}>
+                                    <Typography variant='body2' noWrap >{row.title}</Typography>
+                                    {
+                                        heiMusicContext.currentMusicInfo !== null && heiMusicContext.currentMusicInfo.albumId === row.albumId && heiMusicContext.currentMusicInfo.musicId === row.musicId &&
+                                        <Box sx={{flex: '1 0 auto', margin: 'auto 0px auto 4px'}}>
+                                            <SpectrumIcon variant='small'/>
+                                        </Box>
+                                    }
+                                </TableCell>
                                 <TableCell style={{ width: "45%" }} sx={{ borderBottom: "unset", textOverflow: "ellipsis", whiteSpace: "nowrap", overflowX: "hidden" }} title={row.artists.join(" / ")}>{row.artists.join(" / ")}</TableCell>
                                 <TableCell style={{ width: "10%" }} sx={{ borderBottom: "unset", textOverflow: "ellipsis", whiteSpace: "nowrap", overflowX: "hidden" }}>{timePretty(row.duration)}</TableCell>
 
@@ -362,7 +361,7 @@ function MusicAlbum(props: MusicAlbumProps) {
                 anchorPosition={musicMenuPos}
                 onClose={() => setMusicMenuOpen(false)}
                 transitionDuration={100}
-                onContextMenu={e=>{
+                onContextMenu={e => {
                     e.preventDefault();
                     setMusicMenuOpen(false);
                 }}
