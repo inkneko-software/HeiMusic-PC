@@ -5,6 +5,7 @@ import CssBaseline from '@mui/material/CssBaseline';
 import type { AppProps } from 'next/app';
 import HeiMusicThemeProvider from '../lib/HeiMusicThemeProvider';
 import HeiMusicMainLayout from '../components/HeiMusicMainLayout';
+import { ICurrentMusicInfo, HeiMusicContext } from '../lib/HeiMusicContext';
 
 
 declare module '@mui/styles/defaultTheme' {
@@ -13,8 +14,11 @@ declare module '@mui/styles/defaultTheme' {
 }
 
 
+
 export default function (props: AppProps) {
   const { Component, pageProps } = props;
+
+  const [currentMusicInfo, setCurrentMusicInfo] = React.useState<ICurrentMusicInfo>(null);
 
   React.useEffect(() => {
     const jssStyles = document.querySelector('#jss-server-side');
@@ -78,10 +82,12 @@ export default function (props: AppProps) {
       </Head>
       <StyledEngineProvider injectFirst>
         <HeiMusicThemeProvider >
-          <CssBaseline />
-          <HeiMusicMainLayout>
-            <Component {...pageProps} />
-          </HeiMusicMainLayout>
+          <HeiMusicContext.Provider value={{currentMusicInfo: currentMusicInfo, setCurrentMusicInfo: setCurrentMusicInfo}}>
+            <CssBaseline />
+            <HeiMusicMainLayout>
+              <Component {...pageProps} />
+            </HeiMusicMainLayout>
+          </HeiMusicContext.Provider>
         </HeiMusicThemeProvider>
       </StyledEngineProvider>
     </React.Fragment>

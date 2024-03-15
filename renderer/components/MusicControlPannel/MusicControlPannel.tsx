@@ -26,6 +26,7 @@ import FavoriteBorderOutlinedIcon from '@mui/icons-material/FavoriteBorderOutlin
 import FavoriteOutlinedIcon from '@mui/icons-material/FavoriteOutlined';
 import { PlaylistControllerService } from "@api/codegen/services/PlaylistControllerService"
 import { pushToast } from "@components/HeiMusicMainLayout"
+import { HeiMusicContext } from "../../pages/_app"
 
 /**
  * 更换播放列表并播放
@@ -122,6 +123,7 @@ interface IMusicControlPannel extends BoxProps {
 }
 
 function MusicControlPannel(props: IMusicControlPannel) {
+    const heiMusicContext = React.useContext(HeiMusicContext);
     const router = useRouter();
     const theme = useTheme();
     const audioRef = React.useRef<HTMLAudioElement>(null)
@@ -160,6 +162,7 @@ function MusicControlPannel(props: IMusicControlPannel) {
     const [fullScreenMusicPannelOpen, setFullScreenMusicPannelOpen] = React.useState(false);
 
     React.useEffect(() => {
+        heiMusicContext.setCurrentMusicInfo({musicId: currentMusicInfo.musicId, albumId: currentMusicInfo.albumId});
         if (audioRef.current !== null) {
             const audio = audioRef.current;
             //获取音量配置
