@@ -26,7 +26,7 @@ import FavoriteBorderOutlinedIcon from '@mui/icons-material/FavoriteBorderOutlin
 import FavoriteOutlinedIcon from '@mui/icons-material/FavoriteOutlined';
 import { PlaylistControllerService } from "@api/codegen/services/PlaylistControllerService"
 import { pushToast } from "@components/HeiMusicMainLayout"
-import { HeiMusicContext } from "../../pages/_app"
+import { HeiMusicContext } from "../../lib/HeiMusicContext"
 
 /**
  * 更换播放列表并播放
