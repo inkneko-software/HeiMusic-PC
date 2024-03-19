@@ -54,7 +54,7 @@ function AlbumCard(props: IAlbumCard) {
 
             new Promise<void>((resolve, reject) => {
                 imgRef.current.onload = () => resolve()
-                imgRef.current.src = props.album.frontCoverUrl + '?s=@w256h256';
+                imgRef.current.src = props.album.frontCoverUrl + '?s=@w300h300';
                 imgRef.current.onerror = reject;
             }).then(() => {
                 setLoaded(true);
