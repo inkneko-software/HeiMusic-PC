@@ -220,8 +220,9 @@ function MusicAlbum(props: MusicAlbumProps) {
                     {albumInfo.date ? <Typography variant='caption' noWrap >{albumInfo.date}</Typography> : null}
                     <Typography variant='caption' sx={{ marginTop: "12px" }} >{"播放量 " + albumInfo.listenedCount}</Typography>
                     <Box sx={{ marginTop: "auto", display: 'flex' }}>
-                        <Button sx={{ marginRight: "30px" }} size='small' variant="contained" onClick={handlePlayAll} >播放全部</Button>
-                        <Button sx={{ marginRight: "30px" }} size='small' variant="outlined">下载</Button>
+                        <Button sx={{ marginRight: "16px" }} size='small' variant="contained" onClick={handlePlayAll} >播放全部</Button>
+                        <Button sx={{ marginRight: "16px" }} size='small' variant="contained" onClick={handlePlayAll} >加入列表</Button>
+                        <Button sx={{ marginRight: "16px" }} size='small' variant="outlined">下载</Button>
                     </Box>
                 </Box>
             </Box>
@@ -308,6 +309,7 @@ function MusicAlbum(props: MusicAlbumProps) {
                                     }
                                 ]}
                                 onContextMenu={e => {
+                                    e.preventDefault();
                                     setMusicMenuOpen(true);
                                     setMusicMenuPos({ left: e.clientX, top: e.clientY });
                                     setMusicMenuInfo({ albumTitle: row.albumTitle, albumId: row.albumId, musicTitle: row.title, musicId: row.musicId, index: index, isFavorite: row.isFavorite });

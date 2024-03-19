@@ -243,6 +243,7 @@ function AlbumManagement() {
                                     key={album.albumId}
                                     sx={[{ ':hover': { background: theme.palette.pannelBackground.main } }, albumMenuOpen && albumMenuInfo.albumId === album.albumId && { background: theme.palette.pannelBackground.main }]}
                                     onContextMenu={e => {
+                                        e.preventDefault();
                                         setAlbumMenuOpen(true);
                                         setAlbumMenuPos({ left: e.clientX, top: e.clientY });
                                         setAlbumMenuInfo({ title: album.title, albumId: album.albumId });
