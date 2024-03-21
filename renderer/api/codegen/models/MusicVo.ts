@@ -17,6 +17,8 @@ export type MusicVo = {
     trackTotal?: number;
     discNumber?: number;
     discTotal?: number;
+    discStartTime?: string;
+    discEndTime?: string;
     artist?: string;
     albumId?: number;
     albumTitle?: string;

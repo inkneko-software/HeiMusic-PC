@@ -19,6 +19,8 @@ export type Music = {
     artist?: string;
     filePath?: string;
     fileHash?: string;
+    discStartTime?: string;
+    discEndTime?: string;
     createdAt?: string;
     updatedAt?: string;
     deletedAt?: string;
