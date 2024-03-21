@@ -88,6 +88,8 @@ function MusicAlbum(props: MusicAlbumProps) {
                     musicId: music.musicId,
                     title: music.title,
                     artists: music.artistList.map(val => val.name),
+                    discStartTime: music.discStartTime,
+                    discEndTime: music.discEndTime,
                     qualityOption: [{
                         name: "SQ",
                         url: music.resourceUrl,
@@ -135,7 +137,7 @@ function MusicAlbum(props: MusicAlbumProps) {
     }
 
     const timePretty = (time: number) => {
-        return `${Math.floor(time / 60).toString().padStart(2, "0")}:${(time % 60).toString().padStart(2, "0")}`
+        return `${Math.floor(time / 60).toString().padStart(2, "0")}:${Math.floor(time % 60).toString().padStart(2, "0")}`
     }
 
     const handleAddFavoriteMusic = (musicId: number) => {
@@ -331,17 +333,17 @@ function MusicAlbum(props: MusicAlbumProps) {
                                         !row.isFavorite && <Button size="small" sx={{ padding: "0px 0px", width: "20px", height: "20px", minWidth: "unset" }} color="error" onClick={() => handleAddFavoriteMusic(row.musicId)}><FavoriteBorderOutlinedIcon sx={{ width: "18px", height: "18px" }} /></Button>
                                     }
                                 </TableCell>
-                                <TableCell sx={{ borderBottom: "unset", textOverflow: "ellipsis", whiteSpace: "nowrap", overflowX: "hidden", display: 'flex'}} title={row.title}>
+                                <TableCell sx={{ borderBottom: "unset", textOverflow: "ellipsis", whiteSpace: "nowrap", overflowX: "hidden", display: 'flex' }} title={row.title}>
                                     <Typography variant='body2' noWrap >{row.title}</Typography>
                                     {
                                         heiMusicContext.currentMusicInfo !== null && heiMusicContext.currentMusicInfo.albumId === row.albumId && heiMusicContext.currentMusicInfo.musicId === row.musicId &&
-                                        <Box sx={{flex: '1 0 auto', margin: 'auto 0px auto 4px'}}>
-                                            <SpectrumIcon variant='small'/>
+                                        <Box sx={{ flex: '1 0 auto', margin: 'auto 0px auto 4px' }}>
+                                            <SpectrumIcon variant='small' />
                                         </Box>
                                     }
                                 </TableCell>
                                 <TableCell style={{ width: "45%" }} sx={{ borderBottom: "unset", textOverflow: "ellipsis", whiteSpace: "nowrap", overflowX: "hidden" }} title={row.artists.join(" / ")}>{row.artists.join(" / ")}</TableCell>
-                                <TableCell style={{ width: "10%" }} sx={{ borderBottom: "unset", textOverflow: "ellipsis", whiteSpace: "nowrap", overflowX: "hidden" }}>{timePretty(row.duration)}</TableCell>
+                                <TableCell style={{ width: "10%" }} sx={{ borderBottom: "unset", textOverflow: "ellipsis", whiteSpace: "nowrap", overflowX: "hidden" }}>{timePretty(row.discStartTime == null ? row.duration : parseFloat(row.discEndTime) - parseFloat(row.discStartTime))}</TableCell>
 
 
                             </TableRow>

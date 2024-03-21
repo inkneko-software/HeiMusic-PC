@@ -91,6 +91,8 @@ function AlbumManagement() {
                         musicId: music.musicId,
                         title: music.title,
                         artists: music.artistList.map(val => val.name),
+                        discStartTime: music.discStartTime,
+                        discEndTime: music.discEndTime,
                         qualityOption: [{
                             name: "SQ",
                             url: music.resourceUrl,

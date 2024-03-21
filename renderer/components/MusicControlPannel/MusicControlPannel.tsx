@@ -111,6 +111,8 @@ export interface IMusicInfo {
     cover: string,
     isFavorite?: boolean,
     duration?: number,
+    discStartTime?: string,
+    discEndTime?: string
 }
 
 export interface IPlayingMusicInfo extends IMusicInfo {
@@ -162,7 +164,7 @@ function MusicControlPannel(props: IMusicControlPannel) {
     const [fullScreenMusicPannelOpen, setFullScreenMusicPannelOpen] = React.useState(false);
 
     React.useEffect(() => {
-        heiMusicContext.setCurrentMusicInfo({musicId: currentMusicInfo.musicId, albumId: currentMusicInfo.albumId});
+        heiMusicContext.setCurrentMusicInfo({ musicId: currentMusicInfo.musicId, albumId: currentMusicInfo.albumId });
         if (audioRef.current !== null) {
             const audio = audioRef.current;
             //获取音量配置
@@ -175,20 +177,28 @@ function MusicControlPannel(props: IMusicControlPannel) {
             })()
             audio.ontimeupdate = () => {
                 document.title = `${currentMusicInfo.title} - HeiMusic!`;
+                var duration = audio.duration;
+                if (currentMusicInfo.discStartTime != null && currentMusicInfo.discEndTime != null) {
+                    duration = parseFloat(currentMusicInfo.discEndTime) - parseFloat(currentMusicInfo.discStartTime)
+                }
 
                 var durationMinutes = '00';
                 var durationSeconds = '00';
                 if (!Number.isNaN(audio.duration)) {
-                    durationMinutes = String(Math.floor(audio.duration / 60)).padStart(2, '0')
-                    durationSeconds = String(Math.floor(audio.duration % 60)).padStart(2, '0')
+                    durationMinutes = String(Math.floor(duration / 60)).padStart(2, '0')
+                    durationSeconds = String(Math.floor(duration % 60)).padStart(2, '0')
+                }
+                var discStartTime = currentMusicInfo.discStartTime == null ? 0 : parseFloat(currentMusicInfo.discStartTime);
+                var discEndTime = currentMusicInfo.discEndTime == null ? 0 : parseFloat(currentMusicInfo.discEndTime);
+                var currentMinutes = String(Math.floor((audio.currentTime - discStartTime) / 60)).padStart(2, '0');
+                var currentSeconds = String(Math.floor((audio.currentTime - discStartTime) % 60)).padStart(2, '0')
+                setCurrentTime(audio.currentTime - discStartTime)
+                setDuration(duration)
+                setTimeLabel(`${currentMinutes}:${currentSeconds} / ${durationMinutes}:${durationSeconds}`)
+                if (discEndTime !== 0 && audio.currentTime > discEndTime) {
+                    handleNextClick();
                 }
 
-                var currentMinutes = String(Math.floor(audio.currentTime / 60)).padStart(2, '0');
-                var currentSeconds = String(Math.floor(audio.currentTime % 60)).padStart(2, '0')
-
-                setCurrentTime(audio.currentTime)
-                setDuration(audio.duration)
-                setTimeLabel(`${currentMinutes}:${currentSeconds} / ${durationMinutes}:${durationSeconds}`)
             }
 
             if ("mediaSession" in navigator) {
@@ -226,6 +236,9 @@ function MusicControlPannel(props: IMusicControlPannel) {
                 if (audioRef.current !== null) {
                     var audio = audioRef.current;
                     audio.src = newMusic.qualityOption[0].url;
+                    if (newMusic.discStartTime != null) {
+                        audio.currentTime = parseFloat(newMusic.discStartTime);
+                    }
                     handlePlayButtonClick(true);
                 }
             }
@@ -238,6 +251,9 @@ function MusicControlPannel(props: IMusicControlPannel) {
                 document.title = `${newMusic.title} - HeiMusic!`;
                 if (audioRef.current !== null) {
                     var audio = audioRef.current;
+                    if (newMusic.discStartTime != null) {
+                        audio.currentTime = parseFloat(newMusic.discStartTime);
+                    }
                     audio.src = newMusic.qualityOption[0].url;
                     handlePlayButtonClick(true);
                 }
@@ -390,8 +406,10 @@ function MusicControlPannel(props: IMusicControlPannel) {
             }
             var nextMusic: IMusicInfo = musicList[nextIndex];
             setCurrentMusicInfo({ ...nextMusic, currentIndex: nextIndex, currentQuality: nextMusic.qualityOption[0] });
-            //fix: 未调整
             audio.src = nextMusic.qualityOption[0].url;
+            if (nextMusic.discStartTime != null) {
+                audio.currentTime = parseFloat(nextMusic.discStartTime);
+            }
             audio.play();
             document.title = `${nextMusic.title} - HeiMusic!`;
         }
@@ -406,8 +424,10 @@ function MusicControlPannel(props: IMusicControlPannel) {
             }
             var nextMusic: IMusicInfo = musicList[nextIndex];
             setCurrentMusicInfo({ ...nextMusic, currentIndex: nextIndex, currentQuality: nextMusic.qualityOption[0] });
-            //fix: 未调整
             audio.src = nextMusic.qualityOption[0].url;
+            if (nextMusic.discStartTime != null) {
+                audio.currentTime = parseFloat(nextMusic.discStartTime);
+            }
             audio.play();
             document.title = `${nextMusic.title} - HeiMusic!`;
         }
@@ -440,7 +460,8 @@ function MusicControlPannel(props: IMusicControlPannel) {
     }
 
     const handleProgressSeek = (newProgress: number) => {
-        audioRef.current.currentTime = newProgress;
+        var offset = currentMusicInfo.discStartTime == null ? 0 : parseFloat(currentMusicInfo.discStartTime);
+        audioRef.current.currentTime = newProgress + offset;
         audioRef.current.play();
         setCurrentTime(newProgress);
     }
@@ -524,7 +545,7 @@ function MusicControlPannel(props: IMusicControlPannel) {
                 anchor="right"
                 open={playlistOpen}
                 onClose={() => setPlaylistOpen(false)}
-                sx={{zIndex: '1300'}}
+                sx={{ zIndex: '1300' }}
             >
                 <PlayList musicList={musicList} currentIndex={currentMusicInfo.currentIndex} onClose={() => setPlaylistOpen(false)} />
             </Drawer>
