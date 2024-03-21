@@ -178,7 +178,7 @@ function MusicControlPannel(props: IMusicControlPannel) {
             audio.ontimeupdate = () => {
                 document.title = `${currentMusicInfo.title} - HeiMusic!`;
                 var duration = audio.duration;
-                if (currentMusicInfo.discStartTime != null && currentMusicInfo.discEndTime != null) {
+                if (currentMusicInfo.duration === 0) {
                     duration = parseFloat(currentMusicInfo.discEndTime) - parseFloat(currentMusicInfo.discStartTime)
                 }
 
@@ -188,8 +188,8 @@ function MusicControlPannel(props: IMusicControlPannel) {
                     durationMinutes = String(Math.floor(duration / 60)).padStart(2, '0')
                     durationSeconds = String(Math.floor(duration % 60)).padStart(2, '0')
                 }
-                var discStartTime = currentMusicInfo.discStartTime == null ? 0 : parseFloat(currentMusicInfo.discStartTime);
-                var discEndTime = currentMusicInfo.discEndTime == null ? 0 : parseFloat(currentMusicInfo.discEndTime);
+                var discStartTime = currentMusicInfo.discStartTime === '' ? 0 : parseFloat(currentMusicInfo.discStartTime);
+                var discEndTime = currentMusicInfo.discEndTime === '' ? 0 : parseFloat(currentMusicInfo.discEndTime);
                 var currentMinutes = String(Math.floor((audio.currentTime - discStartTime) / 60)).padStart(2, '0');
                 var currentSeconds = String(Math.floor((audio.currentTime - discStartTime) % 60)).padStart(2, '0')
                 setCurrentTime(audio.currentTime - discStartTime)
@@ -236,7 +236,7 @@ function MusicControlPannel(props: IMusicControlPannel) {
                 if (audioRef.current !== null) {
                     var audio = audioRef.current;
                     audio.src = newMusic.qualityOption[0].url;
-                    if (newMusic.discStartTime != null) {
+                    if (newMusic.duration === 0) {
                         audio.currentTime = parseFloat(newMusic.discStartTime);
                     }
                     handlePlayButtonClick(true);
@@ -251,7 +251,7 @@ function MusicControlPannel(props: IMusicControlPannel) {
                 document.title = `${newMusic.title} - HeiMusic!`;
                 if (audioRef.current !== null) {
                     var audio = audioRef.current;
-                    if (newMusic.discStartTime != null) {
+                    if (newMusic.duration === 0) {
                         audio.currentTime = parseFloat(newMusic.discStartTime);
                     }
                     audio.src = newMusic.qualityOption[0].url;
@@ -407,7 +407,7 @@ function MusicControlPannel(props: IMusicControlPannel) {
             var nextMusic: IMusicInfo = musicList[nextIndex];
             setCurrentMusicInfo({ ...nextMusic, currentIndex: nextIndex, currentQuality: nextMusic.qualityOption[0] });
             audio.src = nextMusic.qualityOption[0].url;
-            if (nextMusic.discStartTime != null) {
+            if (nextMusic.duration === 0) {
                 audio.currentTime = parseFloat(nextMusic.discStartTime);
             }
             audio.play();
@@ -425,7 +425,7 @@ function MusicControlPannel(props: IMusicControlPannel) {
             var nextMusic: IMusicInfo = musicList[nextIndex];
             setCurrentMusicInfo({ ...nextMusic, currentIndex: nextIndex, currentQuality: nextMusic.qualityOption[0] });
             audio.src = nextMusic.qualityOption[0].url;
-            if (nextMusic.discStartTime != null) {
+            if (nextMusic.duration === 0) {
                 audio.currentTime = parseFloat(nextMusic.discStartTime);
             }
             audio.play();

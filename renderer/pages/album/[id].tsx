@@ -343,7 +343,7 @@ function MusicAlbum(props: MusicAlbumProps) {
                                     }
                                 </TableCell>
                                 <TableCell style={{ width: "45%" }} sx={{ borderBottom: "unset", textOverflow: "ellipsis", whiteSpace: "nowrap", overflowX: "hidden" }} title={row.artists.join(" / ")}>{row.artists.join(" / ")}</TableCell>
-                                <TableCell style={{ width: "10%" }} sx={{ borderBottom: "unset", textOverflow: "ellipsis", whiteSpace: "nowrap", overflowX: "hidden" }}>{timePretty(row.discStartTime == null ? row.duration : parseFloat(row.discEndTime) - parseFloat(row.discStartTime))}</TableCell>
+                                <TableCell style={{ width: "10%" }} sx={{ borderBottom: "unset", textOverflow: "ellipsis", whiteSpace: "nowrap", overflowX: "hidden" }}>{timePretty(row.duration === 0 ? parseFloat(row.discEndTime) - parseFloat(row.discStartTime) : row.duration )}</TableCell>
 
 
                             </TableRow>
