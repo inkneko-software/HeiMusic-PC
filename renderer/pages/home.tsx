@@ -24,6 +24,7 @@ interface IAlbumCard {
 }
 
 function AlbumCard(props: IAlbumCard) {
+    const theme = useTheme();
     const imgRef = React.useRef<HTMLImageElement>(null);
     const gridRef = React.useRef<HTMLDivElement>(null);
     const [width, setWidth] = React.useState(0);
@@ -65,11 +66,28 @@ function AlbumCard(props: IAlbumCard) {
 
         <Link href={`/album/${props.album.albumId}`}>
             <Grid ref={gridRef} item xs={3} sx={{ display: 'flex', flexDirection: 'column', flexShrink: '0' }}>
+
                 <Box sx={[{ borderRadius: '6%', display: 'flex', aspectRatio: '1 / 1' }, loaded && { display: 'none' },]}>
                     <Skeleton variant='rounded' sx={[{ width: '100%', height: '100%' }]} />
                 </Box>
-                <Box sx={[{ borderRadius: '6px', aspectRatio: '1 / 1', display: 'flex', overflow: 'hidden' }, !loaded && { display: 'none' },]}>
+                <Box sx={[{
+                    borderRadius: '6px',
+                    aspectRatio: '1 / 1',
+                    display: 'flex',
+                    overflow: 'hidden',
+                    position: 'relative',
+                    transition: 'transform 0.2s ease-in-out',
+                    ':hover': {
+                        transform: 'translateY(-10px)',
+                        cursor: 'pointer'
+                    },
+                    ":hover .album-cover-shadow": {
+                        visibility: 'unset'
+                    }
+                }, !loaded && { display: 'none' },]}>
                     <CardMedia ref={imgRef} sx={[{ margin: 'auto auto', objectFit: 'contain' }]} component='img' ></CardMedia>
+                    <Box className="album-cover-shadow" sx={{ display: 'flex', visibility: "hidden", position: 'absolute', top: '0px', left: '0px', boxShadow: 'inset 0px 95px 280px -106px black', width: '100%', height: '100%' }} >
+                    </Box>
                 </Box>
 
                 <Typography
@@ -83,6 +101,10 @@ function AlbumCard(props: IAlbumCard) {
                         '-webkit-line-clamp': '2',
                         lineHeight: '1.5em',
                         maxHeight: '3em',
+                        ':hover': {
+                            color: theme.palette.primary.main,
+                            cursor: 'pointer'
+                        }
                     }} >{props.album.title}</Typography>
 
             </Grid>
@@ -198,24 +220,24 @@ function Home() {
     }
 
     const handleFavorite = () => {
-        if (randomMusic.isFavorite){
+        if (randomMusic.isFavorite) {
             PlaylistControllerService.removeMusicFavorite(randomMusic.musicId)
-            .then(res => {
-                setRandomMusic(prev=>({...prev, isFavorite: !prev.isFavorite}))
-            })
-            .catch((error) => {
-                makeToast(error.message, "error", "bottom-left");
-            })
-        }else{
+                .then(res => {
+                    setRandomMusic(prev => ({ ...prev, isFavorite: !prev.isFavorite }))
+                })
+                .catch((error) => {
+                    makeToast(error.message, "error", "bottom-left");
+                })
+        } else {
             PlaylistControllerService.addMusicFavorite(randomMusic.musicId)
-            .then(res => {
-                setRandomMusic(prev=>({...prev, isFavorite: !prev.isFavorite}))
-            })
-            .catch((error) => {
-                makeToast(error.message, "error", "bottom-left");
-            })
+                .then(res => {
+                    setRandomMusic(prev => ({ ...prev, isFavorite: !prev.isFavorite }))
+                })
+                .catch((error) => {
+                    makeToast(error.message, "error", "bottom-left");
+                })
         }
-        
+
     }
 
     return (
