@@ -109,10 +109,11 @@ export interface IMusicInfo {
     albumId: number,
     albumTitle: string,
     cover: string,
+    isLargeTrackMusic: boolean,
     isFavorite?: boolean,
     duration?: number,
-    discStartTime?: string,
-    discEndTime?: string
+    discStartTime?: number,
+    discEndTime?: number
 }
 
 export interface IPlayingMusicInfo extends IMusicInfo {
@@ -155,7 +156,8 @@ function MusicControlPannel(props: IMusicControlPannel) {
             name: "SQ",
             url: "",
             color: "red"
-        }
+        },
+        isLargeTrackMusic: false
     });
     const [playbackMethod, setPlaybackMethod] = React.useState<'loop' | 'sequence' | 'random' | 'repeate'>("loop")
     const [musicList, setMusicList] = React.useState<IMusicInfo[]>([]);
@@ -175,11 +177,22 @@ function MusicControlPannel(props: IMusicControlPannel) {
                     audio.volume = config.volume / 100;
                 }
             })()
+
             audio.ontimeupdate = () => {
                 document.title = `${currentMusicInfo.title} - HeiMusic!`;
-                var duration = audio.duration;
-                if (currentMusicInfo.duration === 0) {
-                    duration = parseFloat(currentMusicInfo.discEndTime) - parseFloat(currentMusicInfo.discStartTime)
+                var duration;
+                var currentMinutes;
+                var currentSeconds;
+                if (currentMusicInfo.isLargeTrackMusic) {
+                    duration = currentMusicInfo.discEndTime - currentMusicInfo.discStartTime;
+                    currentMinutes = String(Math.floor((audio.currentTime - currentMusicInfo.discStartTime) / 60)).padStart(2, '0');
+                    currentSeconds = String(Math.floor((audio.currentTime - currentMusicInfo.discStartTime) % 60)).padStart(2, '0');
+                    setCurrentTime(audio.currentTime - currentMusicInfo.discStartTime);
+                } else {
+                    duration = audio.duration;
+                    currentMinutes = String(Math.floor(audio.currentTime / 60)).padStart(2, '0');
+                    currentSeconds = String(Math.floor(audio.currentTime % 60)).padStart(2, '0');
+                    setCurrentTime(audio.currentTime);
                 }
 
                 var durationMinutes = '00';
@@ -188,14 +201,10 @@ function MusicControlPannel(props: IMusicControlPannel) {
                     durationMinutes = String(Math.floor(duration / 60)).padStart(2, '0')
                     durationSeconds = String(Math.floor(duration % 60)).padStart(2, '0')
                 }
-                var discStartTime = currentMusicInfo.discStartTime === '' ? 0 : parseFloat(currentMusicInfo.discStartTime);
-                var discEndTime = currentMusicInfo.discEndTime === '' ? 0 : parseFloat(currentMusicInfo.discEndTime);
-                var currentMinutes = String(Math.floor((audio.currentTime - discStartTime) / 60)).padStart(2, '0');
-                var currentSeconds = String(Math.floor((audio.currentTime - discStartTime) % 60)).padStart(2, '0')
-                setCurrentTime(audio.currentTime - discStartTime)
-                setDuration(duration)
+                
+                setDuration(duration);
                 setTimeLabel(`${currentMinutes}:${currentSeconds} / ${durationMinutes}:${durationSeconds}`)
-                if (discEndTime !== 0 && audio.currentTime > discEndTime) {
+                if (currentMusicInfo.isLargeTrackMusic && audio.currentTime > currentMusicInfo.discEndTime && audio.duration !== 0) {
                     handleNextClick();
                 }
 
@@ -222,6 +231,9 @@ function MusicControlPannel(props: IMusicControlPannel) {
             }
 
             audio.onended = () => {
+                console.log(currentMusicInfo);
+                console.log(audio.duration);
+                console.log(audio.currentTime)
                 handleNextClick();
             }
 
@@ -236,8 +248,8 @@ function MusicControlPannel(props: IMusicControlPannel) {
                 if (audioRef.current !== null) {
                     var audio = audioRef.current;
                     audio.src = newMusic.qualityOption[0].url;
-                    if (newMusic.duration === 0) {
-                        audio.currentTime = parseFloat(newMusic.discStartTime);
+                    if (newMusic.isLargeTrackMusic) {
+                        audio.currentTime = newMusic.discStartTime;
                     }
                     handlePlayButtonClick(true);
                 }
@@ -251,8 +263,8 @@ function MusicControlPannel(props: IMusicControlPannel) {
                 document.title = `${newMusic.title} - HeiMusic!`;
                 if (audioRef.current !== null) {
                     var audio = audioRef.current;
-                    if (newMusic.duration === 0) {
-                        audio.currentTime = parseFloat(newMusic.discStartTime);
+                    if (newMusic.isLargeTrackMusic) {
+                        audio.currentTime = newMusic.discStartTime;
                     }
                     audio.src = newMusic.qualityOption[0].url;
                     handlePlayButtonClick(true);
@@ -399,6 +411,7 @@ function MusicControlPannel(props: IMusicControlPannel) {
 
     const handlePrevClick = () => {
         const audio = audioRef.current;
+        audio.currentTime = 0;
         if (playbackMethod === 'loop') {
             var nextIndex = currentMusicInfo.currentIndex - 1;
             if (nextIndex === -1) {
@@ -407,8 +420,8 @@ function MusicControlPannel(props: IMusicControlPannel) {
             var nextMusic: IMusicInfo = musicList[nextIndex];
             setCurrentMusicInfo({ ...nextMusic, currentIndex: nextIndex, currentQuality: nextMusic.qualityOption[0] });
             audio.src = nextMusic.qualityOption[0].url;
-            if (nextMusic.duration === 0) {
-                audio.currentTime = parseFloat(nextMusic.discStartTime);
+            if (nextMusic.isLargeTrackMusic) {
+                audio.currentTime = nextMusic.discStartTime;
             }
             audio.play();
             document.title = `${nextMusic.title} - HeiMusic!`;
@@ -418,6 +431,7 @@ function MusicControlPannel(props: IMusicControlPannel) {
     const handleNextClick = () => {
         const audio = audioRef.current;
         if (playbackMethod === 'loop') {
+            audio.currentTime = 0;
             var nextIndex = currentMusicInfo.currentIndex + 1;
             if (nextIndex === musicList.length) {
                 nextIndex = 0;
@@ -425,8 +439,8 @@ function MusicControlPannel(props: IMusicControlPannel) {
             var nextMusic: IMusicInfo = musicList[nextIndex];
             setCurrentMusicInfo({ ...nextMusic, currentIndex: nextIndex, currentQuality: nextMusic.qualityOption[0] });
             audio.src = nextMusic.qualityOption[0].url;
-            if (nextMusic.duration === 0) {
-                audio.currentTime = parseFloat(nextMusic.discStartTime);
+            if (nextMusic.isLargeTrackMusic) {
+                audio.currentTime = nextMusic.discStartTime;
             }
             audio.play();
             document.title = `${nextMusic.title} - HeiMusic!`;
@@ -460,7 +474,7 @@ function MusicControlPannel(props: IMusicControlPannel) {
     }
 
     const handleProgressSeek = (newProgress: number) => {
-        var offset = currentMusicInfo.discStartTime == null ? 0 : parseFloat(currentMusicInfo.discStartTime);
+        var offset = currentMusicInfo.isLargeTrackMusic ? currentMusicInfo.discStartTime : 0;
         audioRef.current.currentTime = newProgress + offset;
         audioRef.current.play();
         setCurrentTime(newProgress);

@@ -88,8 +88,8 @@ function MusicAlbum(props: MusicAlbumProps) {
                     musicId: music.musicId,
                     title: music.title,
                     artists: music.artistList.map(val => val.name),
-                    discStartTime: music.discStartTime,
-                    discEndTime: music.discEndTime,
+                    discStartTime: parseFloat(music.discStartTime),
+                    discEndTime: parseFloat(music.discEndTime),
                     qualityOption: [{
                         name: "SQ",
                         url: music.resourceUrl,
@@ -99,7 +99,8 @@ function MusicAlbum(props: MusicAlbumProps) {
                     albumTitle: albumInfo.title,
                     cover: albumInfo.frontCoverUrl,
                     duration: music.duration,
-                    isFavorite: music.isFavorite
+                    isFavorite: music.isFavorite,
+                    isLargeTrackMusic: music.discStartTime !== ''
                 }
             }))
         })()
@@ -343,7 +344,7 @@ function MusicAlbum(props: MusicAlbumProps) {
                                     }
                                 </TableCell>
                                 <TableCell style={{ width: "45%" }} sx={{ borderBottom: "unset", textOverflow: "ellipsis", whiteSpace: "nowrap", overflowX: "hidden" }} title={row.artists.join(" / ")}>{row.artists.join(" / ")}</TableCell>
-                                <TableCell style={{ width: "10%" }} sx={{ borderBottom: "unset", textOverflow: "ellipsis", whiteSpace: "nowrap", overflowX: "hidden" }}>{timePretty(row.duration === 0 ? parseFloat(row.discEndTime) - parseFloat(row.discStartTime) : row.duration )}</TableCell>
+                                <TableCell style={{ width: "10%" }} sx={{ borderBottom: "unset", textOverflow: "ellipsis", whiteSpace: "nowrap", overflowX: "hidden" }}>{timePretty(row.duration === 0 ? row.discEndTime - row.discStartTime : row.duration)}</TableCell>
 
 
                             </TableRow>
