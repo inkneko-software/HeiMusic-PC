@@ -67,7 +67,10 @@ function Playlist(props: PlaylistProps) {
                         albumTitle: music.albumTitle,
                         cover: music.albumCoverUrl,
                         duration: music.duration,
-                        isFavorite: music.isFavorite
+                        isFavorite: music.isFavorite,
+                        isLargeTrackMusic: music.discStartTime !== '',
+                        discStartTime: parseFloat(music.discStartTime),
+                        discEndTime: parseFloat(music.discEndTime)
                     }
                 }));
 
@@ -97,7 +100,10 @@ function Playlist(props: PlaylistProps) {
                         albumTitle: music.albumTitle,
                         cover: music.albumCoverUrl,
                         duration: music.duration,
-                        isFavorite: music.isFavorite
+                        isFavorite: music.isFavorite,
+                        isLargeTrackMusic: music.discStartTime !== '',
+                        discStartTime: parseFloat(music.discStartTime),
+                        discEndTime: parseFloat(music.discEndTime)
                     }
                 }));
 
