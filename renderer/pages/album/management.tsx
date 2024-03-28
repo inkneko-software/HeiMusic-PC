@@ -24,7 +24,7 @@ import EditNoteOutlinedIcon from '@mui/icons-material/EditNoteOutlined';
 import PlayCircleFilledWhiteOutlinedIcon from '@mui/icons-material/PlayCircleFilledWhiteOutlined';
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
 import MoreHorizIcon from '@mui/icons-material/MoreHoriz';
-import { IChangePlayListEvent } from "@components/MusicControlPannel/MusicControlPannel";
+import { IChangePlayListEvent, IMusicInfo } from "@components/MusicControlPannel/MusicControlPannel";
 function AlbumManagement() {
     const router = useRouter();
     const theme = useTheme()
@@ -86,13 +86,13 @@ function AlbumManagement() {
             try {
                 var albumInfo = (await AlbumControllerService.getAlbum(albumId)).data;
 
-                var playlist = (await AlbumControllerService.getAlbumMusicList(albumId)).data.map((music, index) => {
+                var playlist: IMusicInfo[] = (await AlbumControllerService.getAlbumMusicList(albumId)).data.map((music, index) => {
                     return {
                         musicId: music.musicId,
                         title: music.title,
                         artists: music.artistList.map(val => val.name),
-                        discStartTime: music.discStartTime,
-                        discEndTime: music.discEndTime,
+                        discStartTime: parseFloat(music.discStartTime),
+                        discEndTime: parseFloat(music.discEndTime),
                         qualityOption: [{
                             name: "SQ",
                             url: music.resourceUrl,
@@ -102,7 +102,8 @@ function AlbumManagement() {
                         albumTitle: albumInfo.title,
                         cover: albumInfo.frontCoverUrl,
                         duration: music.duration,
-                        isFavorite: music.isFavorite
+                        isFavorite: music.isFavorite,
+                        isLargeTrackMusic: music.discStartTime !== '',
                     }
                 });
 
@@ -254,7 +255,7 @@ function AlbumManagement() {
                                     <TableCell sx={{ width: "15%", borderBottom: "unset" }} align="center">
                                         <ImageSkeleton sx={{
                                             width: '32px', height: '32px', borderRadius: '6%', flex: "0 0 auto", marginLeft: "12px", imageRendering: "auto", objectFit: "contain"
-                                        }} src={album.frontCoverUrl !== null ? album.frontCoverUrl + "?s=@w32h32" : null} />
+                                        }} src={album.frontCoverUrl !== null ? album.frontCoverUrl + "?s=@w64h64" : null} />
 
                                         {/* <CardMedia sx={{
                                             width: '32px', height: '32px', borderRadius: '6%', flex: "0 0 auto", marginLeft: "12px", imageRendering: "auto", objectFit: "contain"
