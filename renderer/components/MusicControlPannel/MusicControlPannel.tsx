@@ -514,7 +514,7 @@ function MusicControlPannel(props: IMusicControlPannel) {
                                 cursor: 'pointer'
                             }
                         }}
-                        src={currentMusicInfo.cover !== null ? currentMusicInfo.cover + "?s=@w32h32" : null}
+                        src={currentMusicInfo.cover !== null ? currentMusicInfo.cover + "?s=@w64h64" : null}
                         onClick={() => setFullScreenMusicPannelOpen(true)} />
                     <Box sx={{ margin: "auto 0 auto 15px", display: "flex", flexDirection: "column", textAlign: "left", width: '30%', flexGrow: 1 }}>
                         <ScrollableTypography sx={{ cursor: 'pointer' }} onClick={() => router.push(`/album/${currentMusicInfo.albumId}`)}>{currentMusicInfo.title}</ScrollableTypography>
