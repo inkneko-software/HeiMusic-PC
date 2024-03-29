@@ -9,7 +9,7 @@ import DialogTitle from '@mui/material/DialogTitle';
 import Alert from '@mui/material/Alert'
 import Box from '@mui/material/Box'
 import Divider from '@mui/material/Divider'
-import InputBase from '@mui/material/InputBase'
+import InputBase, { InputBaseProps } from '@mui/material/InputBase'
 import InputLabel from '@mui/material/InputLabel'
 import Link from '@mui/material/Link'
 import Snackbar from '@mui/material/Snackbar'
@@ -22,12 +22,17 @@ import { AlertColor } from '@mui/material/Alert';
 
 import { AuthControllerService } from '../../api/codegen';
 
-function Input(props) {
+interface IInputProps extends InputBaseProps {
+    children?: React.ReactNode,
+    label: string
+}
+
+function Input(props: IInputProps) {
     const { children, label, placeholder, type, ...others } = props;
     return (
-        <Box sx={{ display: "flex", width: "400px" }}>
-            <Box sx={{ margin: 'auto 20px', width: "50px" }}>{label}</Box>
-            <InputBase sx={{ margin: '5px 10px' }} placeholder={placeholder} type={type} {...others}></InputBase>
+        <Box sx={{ display: "flex" }}>
+            <Box sx={{ margin: 'auto 20px', width: "50px", flex: '0 0 auto', '@media(max-width:600px)': { display: 'none' } }}>{label}</Box>
+            <InputBase sx={{ margin: '5px 10px', flex: '1 1 auto' }} placeholder={placeholder} type={type} {...others} ></InputBase>
             {children}
         </Box>
     )
@@ -65,15 +70,15 @@ function PasswordLogin(props) {
     }
 
     function Login() {
-        AuthControllerService.login({email: accountInput,password: password})
+        AuthControllerService.login({ email: accountInput, password: password })
             .then((json) => {
-                    notifyMessage("登录成功", "success")
-                    setInterval(() => { location.reload() }, 2000)
+                notifyMessage("登录成功", "success")
+                setInterval(() => { location.reload() }, 2000)
             })
             .catch((error) => {
                 notifyMessage(`${error.message}`, "warning")
             })
-        
+
     }
 
 
@@ -81,9 +86,28 @@ function PasswordLogin(props) {
     return (
         <>
             <Box sx={{ border: "1px solid #e3e3e3", borderRadius: 1 }}>
-                <Input label="账号" placeholder="请输入账号" value={accountInput} onChange={(event) => { setAccountInput(event.target.value); console.log(event) }} />
+                <Input
+                    label="账号"
+                    placeholder="请输入账号"
+                    value={accountInput}
+                    onChange={(event) => { setAccountInput(event.target.value); console.log(event) }}
+                    onKeyDown={event => {
+                        if (event.key === 'Enter') {
+                            Login()
+                        }
+                    }} />
                 <Divider sx={{ borderColor: "#e3e3e3" }} />
-                <Input label="密码" placeholder="请输入密码" type='password' value={password} onChange={(event) => { setPassword(event.target.value) }} />
+                <Input
+                    label="密码"
+                    placeholder="请输入密码"
+                    type='password'
+                    value={password}
+                    onChange={(event) => { setPassword(event.target.value) }}
+                    onKeyDown={event => {
+                        if (event.key === 'Enter') {
+                            Login()
+                        }
+                    }} />
             </Box>
             <Stack sx={{ marginTop: 2, display: "flex" }} direction='row' spacing={2}>
                 <Button variant='outlined' fullWidth onClick={switchToAuthLogin}>注册</Button>
@@ -147,10 +171,10 @@ function AuthCodeLogin(props) {
     }
 
     function AuthLogin() {
-        AuthControllerService.login({email: email, code: code})
+        AuthControllerService.login({ email: email, code: code })
             .then((json) => {
-                    notifyMessage("登录成功", "success")
-                    setInterval(() => { location.reload() }, 2000)
+                notifyMessage("登录成功", "success")
+                setInterval(() => { location.reload() }, 2000)
             })
             .catch((error) => {
                 notifyMessage(`${error.message}`, "warning")
@@ -160,10 +184,29 @@ function AuthCodeLogin(props) {
     return (
         <>
             <Box sx={{ border: "1px solid #e3e3e3", borderRadius: 1 }}>
-                <Input value={email} onChange={(event) => { setEmail(event.target.value) }} label="邮箱" placeholder="请输入账号" />
+                <Input
+                    value={email}
+                    onChange={(event) => { setEmail(event.target.value) }}
+                    label="邮箱"
+                    placeholder="请输入账号"
+                    onKeyDown={event => {
+                        if (event.key === 'Enter') {
+                            AuthLogin()
+                        }
+                    }} />
                 <Divider sx={{ borderColor: "#e3e3e3" }} />
-                <Input value={code} onChange={(event) => setCode(event.target.value)} label="验证码" placeholder="请输入验证码" type='numeric'>
-                    <Button variant="text" sx={{ margin: 'auto', cursor: "pointer", padding: 0 }} onClick={sendEmailRequest} disabled={countDown !== 0}>{countDown === 0 ? "获取验证码" : countDown + "s"}</Button>
+                <Input
+                    value={code}
+                    onChange={(event) => setCode(event.target.value)}
+                    label="验证码"
+                    placeholder="请输入验证码"
+                    type='numeric'
+                    onKeyDown={event => {
+                        if (event.key === 'Enter') {
+                            AuthLogin()
+                        }
+                    }}>
+                    <Button variant="text" sx={{ margin: 'auto 20px', cursor: "pointer", padding: 0, flex: '1 0 auto' }} onClick={sendEmailRequest} disabled={countDown !== 0}>{countDown === 0 ? "获取验证码" : countDown + "s"}</Button>
                 </Input>
             </Box>
             <Stack sx={{ marginTop: 2, display: "flex" }} direction='row' spacing={2}>
@@ -217,8 +260,8 @@ export default function LoginDialog(props) {
         setTabIndex(index)
     }
 
-    React.useEffect(()=>{
-        if (open === true){
+    React.useEffect(() => {
+        if (open === true) {
             setTabIndex(1);
         }
     }, [open])
@@ -227,7 +270,7 @@ export default function LoginDialog(props) {
     return (
         <Dialog className={styles['login-dialog']} sx={{ borderRadius: '9px' }} open={open} onClose={onClose}>
 
-            <DialogContent sx={{ margin: '40px 60px 20px 60px' }}>
+            <DialogContent sx={{ margin: '40px 60px 20px 60px', width: '460px', '@media(max-width:600px)': { margin: '10px 0px', width: '280px' } }}>
                 <Stack sx={{ margin: 'auto', justifyContent: 'center', marginBottom: 3 }} direction='row' spacing={2}>
                     <Tab tabIndex={1} currentIndex={tabIndex} text="验证登录" onClick={() => { changePanel(1) }} />
                     <Divider flexItem orientation='vertical' sx={{ borderColor: "#e3e3e3" }} />
@@ -243,11 +286,11 @@ export default function LoginDialog(props) {
                 </TabPanel>
 
                 <Stack sx={{ textAlign: 'center', marginTop: 5 }}>
-                    <Typography variant="overline" sx={{ color: 'gray' }}>未注册过墨云音乐的邮箱，将自动注册账号</Typography>
+                    <Typography variant="subtitle2" sx={{ color: 'gray' }}>未注册的邮箱，将自动注册账号</Typography>
                     {/* <Typography variant="overline" sx={{ color: 'gray' }}>登录或完成注册即代表你同意<Link className={styles["link"]} href="/">用户协议</Link>和<Link className={styles["link"]}>隐私政策</Link></Typography> */}
                 </Stack>
 
             </DialogContent>
-        </Dialog>
+        </Dialog >
     );
 }
