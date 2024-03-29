@@ -179,6 +179,9 @@ function Home() {
                         url: randomMusic.resourceUrl,
                         color: "red"
                     }],
+                    isLargeTrackMusic: randomMusic.discStartTime !== '',
+                    discStartTime: parseFloat(randomMusic.discStartTime),
+                    discEndTime: parseFloat(randomMusic.discEndTime)
                 }], startIndex: 0
             }
         });
@@ -206,6 +209,9 @@ function Home() {
                                 url: newRandomMusic.resourceUrl,
                                 color: "red"
                             }],
+                            isLargeTrackMusic: randomMusic.discStartTime !== '',
+                            discStartTime: parseFloat(randomMusic.discStartTime),
+                            discEndTime: parseFloat(randomMusic.discEndTime)
                         }], startIndex: 0
                     }
                 });
