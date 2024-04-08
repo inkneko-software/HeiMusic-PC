@@ -1,5 +1,5 @@
 import { createTheme } from '@mui/material/styles';
-import { red, grey } from '@mui/material/colors';
+import { red, grey, green } from '@mui/material/colors';
 
 export const lightMode = createTheme({
     palette: {
@@ -15,6 +15,9 @@ export const lightMode = createTheme({
         },
         error: {
             main: red.A400,
+        },
+        success:{
+            main: green.A200,
         },
         background: {
             default: '#fff',
@@ -70,6 +73,9 @@ export const darkMode = createTheme({
             main: "#2A2A2A",
             light: "#1E1E1E",
         },
+        success:{
+            main: green.A200,
+        },
         blueButton: {
             main: "#2196f3",
             contrastText: "#ffffff"
@@ -92,6 +98,10 @@ export const darkModeNeptune = createTheme({
         },
         error: {
             main: red.A400,
+        },
+        success:{
+            main: "#4eb353",
+            contrastText: "#fff",
         },
         text: {
             primary: "#fff",
