@@ -2,14 +2,15 @@
 /* tslint:disable */
 /* eslint-disable */
 
-export type Playlist = {
+import type { UserBasicVo } from './UserBasicVo';
+
+export type PlaylistVo = {
     playlistId?: number;
-    userId?: number;
+    uploader?: UserBasicVo;
     title?: string;
     description?: string;
     sequenceNumber?: number;
     coverUrl?: string;
     playCount?: number;
     createdAt?: string;
-    updatedAt?: string;
 };
