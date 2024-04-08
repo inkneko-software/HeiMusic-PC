@@ -1,6 +1,6 @@
 import React from "react"
 import Box from "@mui/material/Box"
-import { BoxProps } from "@mui/material"
+import { BoxProps, IconButton } from "@mui/material"
 import List from "@mui/material/List"
 import FavoriteOutlinedIcon from '@mui/icons-material/FavoriteOutlined';
 import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined';
@@ -11,11 +11,33 @@ import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import Collapse from '@mui/material/Collapse';
 import ExpandLess from '@mui/icons-material/ExpandLess';
 import ExpandMore from '@mui/icons-material/ExpandMore';
+import CameraOutlinedIcon from '@mui/icons-material/CameraOutlined';
+import TableViewOutlinedIcon from '@mui/icons-material/TableViewOutlined';
+import SettingsSuggestOutlinedIcon from '@mui/icons-material/SettingsSuggestOutlined';
+import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
+
+import WysiwygOutlinedIcon from '@mui/icons-material/WysiwygOutlined';
 
 import PannelList from './PannelList'
 import PannelItem, { StyledListItemButton } from './PannelItem'
 import RadioPannelList from "./RadioPannelList";
 import { useRouter } from "next/router";
+import { ApiError, PlaylistControllerService, PlaylistVo } from "@api/codegen";
+import NewPlaylisitDialog from "@components/NewPlaylistDialog";
+import { pushToast } from "@components/HeiMusicMainLayout";
+
+/**
+ * 刷新用户创建的播放列表
+ * 
+ * 通过以下方式调用
+ * 
+ * const event = new CustomEvent<IRefreshMyCreatedPlayListEvent>("left-panel::refreshMyCreatedPlaylist"});
+ * 
+ * document.dispatchEvent(event)
+ */
+export interface IRefreshMyCreatedPlayListEvent {
+}
+
 interface LeftPannelProps extends BoxProps {
     uid?: number;
 }
@@ -26,8 +48,11 @@ function LeftPannel(props: LeftPannelProps) {
 
     const [activeList, setActiveList] = React.useState("在线音乐")
     const [activeIndex, setActiveIndex] = React.useState(1)
+    //歌单列表的展开状态
     const [myMusicListOpen, setMyMusicListOpen] = React.useState(false);
-
+    //当前用户创建的歌单
+    const [myPlaylistList, setMyPlaylistList] = React.useState<PlaylistVo[]>([]);
+    const [createPlaylistDialogOpen, setCreatePlaylistDialogOpen] = React.useState(false);
     React.useEffect(() => {
         if (!router.isReady) {
             return;
@@ -35,11 +60,14 @@ function LeftPannel(props: LeftPannelProps) {
 
         var path = router.asPath;
 
-        if (path.startsWith("/home")) {
+        if (path.startsWith("/home") || path === '/') {
             //default state
-        } else if (path.startsWith("/album/management")) {
+        } else if (path.startsWith("/series")) {
             setActiveList("在线音乐");
             setActiveIndex(2);
+        } else if (path.startsWith("/album/management")) {
+            setActiveList("在线音乐");
+            setActiveIndex(3);
         } else if (path.startsWith("/songlist")) {
             const regex = path.match(/\/songlist\/(\d+)/);
             if (regex.length > 0) {
@@ -48,7 +76,7 @@ function LeftPannel(props: LeftPannelProps) {
                 setMyMusicListOpen(true);
 
             }
-        } else if (path.startsWith("/favoriate")){
+        } else if (path.startsWith("/favoriate")) {
             setActiveList("我的音乐");
             setActiveIndex(1);
         } else {
@@ -57,14 +85,29 @@ function LeftPannel(props: LeftPannelProps) {
         }
     }, [router.isReady, router.asPath])
 
-    const list: number[] = new Array;
-    for (var i = 1; i < 100; i++) {
-        list.push(i)
-    }
+    React.useEffect(() => {
+
+        const handleRefreshMyCreatedPlaylist = () => {
+            PlaylistControllerService.getCreatedPlaylistInfo()
+                .then(res => {
+                    setMyPlaylistList(res.data)
+                })
+                .catch((error: ApiError) => {
+                    pushToast(error.message)
+                })
+        }
+        document.addEventListener("left-panel::refreshMyCreatedPlaylist", handleRefreshMyCreatedPlaylist)
+        handleRefreshMyCreatedPlaylist();
+        return () => {
+            document.removeEventListener("left-panel::refreshMyCreatedPlaylist", handleRefreshMyCreatedPlaylist)
+        }
+    }, [])
+
+    
 
     return (
-        <Box  {...props}>
-            <List sx={{ margin: "12px 12px", paddingTop: "0px", marginTop: 0 }} >
+        <Box  {...props} >
+            <List sx={{ margin: "12px 12px", marginRight: '6px', paddingTop: "0px", marginTop: 0, }} >
                 <RadioPannelList value={{
                     activeIndex: activeIndex,
                     setActiveIndex: setActiveIndex,
@@ -79,7 +122,8 @@ function LeftPannel(props: LeftPannelProps) {
                             primaryTypographyProps={{ variant: "subtitle2", sx: { userSelect: "none" } }}
                         />
                         <PannelItem index={1} icon={<AutoAwesomeIcon />} text="推荐" href="/home" />
-                        <PannelItem index={2} icon={<LibraryMusicIcon />} text="专辑管理" href="/album/management" />
+                        <PannelItem index={2} icon={<LibraryMusicIcon />} text="音乐系列" href="/series/" />
+                        <PannelItem index={3} icon={<WysiwygOutlinedIcon />} text="专辑管理" href="/album/management" />
                     </PannelList>
                     <PannelList context={{ name: "我的音乐" }} key="我的音乐" >
                         <ListItemText
@@ -93,15 +137,27 @@ function LeftPannel(props: LeftPannelProps) {
                     </PannelList>
 
                     <PannelList context={{ name: "创建的歌单" }} key="创建的歌单">
-                        <StyledListItemButton onClick={() => setMyMusicListOpen(!myMusicListOpen)} >
+                        <StyledListItemButton disableRipple onClick={() => setMyMusicListOpen(!myMusicListOpen)}>
                             <ListItemText primary="创建的歌单" primaryTypographyProps={{ variant: "subtitle2" }} />
+                            <IconButton
+                                size='small'
+                                color='inherit'
+                                sx={{ padding: '0px 0px' }}
+                                disableRipple
+                                onClick={e => {
+                                    e.stopPropagation();
+                                    setCreatePlaylistDialogOpen(true)
+                                }}>
+                                <AddOutlinedIcon sx={{ fontSize: "1em" }} />
+                            </IconButton>
                             {myMusicListOpen ? <ExpandLess /> : <ExpandMore />}
                         </StyledListItemButton>
+                        <NewPlaylisitDialog open={createPlaylistDialogOpen} onClose={() => setCreatePlaylistDialogOpen(false)} />
                         <Collapse in={myMusicListOpen} timeout={1} unmountOnExit sx={{ marginBottom: "18px" }}>
                             {
-                                list.map((value, index) => {
+                                myPlaylistList.map((playlist, index) => {
                                     return (
-                                        <PannelItem index={value} key={index} text="VOCALOID" href={`/songlist/${value}`} />
+                                        <PannelItem index={playlist.playlistId} key={index} text={playlist.title} href={`/songlist/${playlist.playlistId}`} />
                                     )
                                 })
                             }
