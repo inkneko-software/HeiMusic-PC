@@ -19,8 +19,11 @@ import FavoriteBorderOutlinedIcon from '@mui/icons-material/FavoriteBorderOutlin
 import FavoriteOutlinedIcon from '@mui/icons-material/FavoriteOutlined';
 
 import { IChangePlayListEvent, IMusicInfo, IMusicQuality } from '../../components/MusicControlPannel/MusicControlPannel';
-import { AlbumControllerService, ArtistVo, PlaylistControllerService } from '../../api/codegen';
+import { AlbumControllerService, ApiError, ArtistVo, PlaylistControllerService } from '../../api/codegen';
 import { pushToast } from '@components/HeiMusicMainLayout';
+import useMusicContextMenu from '@components/MusicContextMenu';
+import { HeiMusicContext } from '../../lib/HeiMusicContext';
+import SpectrumIcon from '@components/Common/Icon/SpectrumIcon';
 
 interface PlaylistProps extends BoxProps {
     isUserFavoriteMusicList?: boolean,
@@ -28,6 +31,7 @@ interface PlaylistProps extends BoxProps {
 }
 
 function Playlist(props: PlaylistProps) {
+    const heiMusicContext = React.useContext(HeiMusicContext)
     const router = useRouter()
     const theme = useTheme()
     const { id } = router.query
@@ -119,27 +123,45 @@ function Playlist(props: PlaylistProps) {
             }
 
 
-            // var playlist = parseInt(id)
-            // var playlistInfo = await AlbumControllerService.getAlbum(albumId)
-            //     .then(res => {
-            //         //todo: status check
-            //         return res.data
-            //     })
 
-            // var playlist = await AlbumControllerService.getAlbumMusicList(albumId)
-            //     .then(res => {
-            //         //todo: status check
-            //         return res.data
-            //     })
+            var playlistId = parseInt(id as string)
+            PlaylistControllerService.getPlaylistInfo(playlistId)
+                .then(res => {
+                    setPlaylistInfo({
+                        playlistId: res.data.playlistId,
+                        title: res.data.title,
+                        author: res.data.uploader.username,
+                        cover: res.data.coverUrl,
+                        date: undefined,
+                        listenedCount: res.data.playCount,
+                    })
+                });
 
-            // setplaylistInfo({
-            //     albumId: playlistInfo.albumId,
-            //     title: playlistInfo.title,
-            //     artist: playlistInfo.artistList.map((artist, index) => { return artist.name }).join(" / "),
-            //     cover: playlistInfo.frontCoverUrl,
-            //     date: undefined,
-            //     listenedCount: 0,
-            // })
+            PlaylistControllerService.getPlaylistMusicList(playlistId)
+                .then(res => {
+                    setPlayList(res.data.map(music => {
+                        return {
+                            musicId: music.musicId,
+                            title: music.title,
+                            artists: music.artistList.map(val => val.name),
+                            qualityOption: [{
+                                name: "SQ",
+                                url: music.resourceUrl,
+                                color: "red"
+                            }],
+                            albumId: music.albumId,
+                            albumTitle: music.albumTitle,
+                            cover: music.albumCoverUrl,
+                            duration: music.duration,
+                            isFavorite: music.isFavorite,
+                            isLargeTrackMusic: music.discStartTime !== '',
+                            discStartTime: parseFloat(music.discStartTime),
+                            discEndTime: parseFloat(music.discEndTime)
+                        }
+                    }));
+                })
+
+
 
             // setPlayList(playlist.map((music, index) => {
             //     return {
@@ -159,7 +181,7 @@ function Playlist(props: PlaylistProps) {
             // }))
         })()
 
-    }, [])
+    }, [id])
 
     React.useEffect(() => {
         if (containerRef.current !== null && playlistInfoRef.current !== null) {
@@ -224,6 +246,20 @@ function Playlist(props: PlaylistProps) {
                 pushToast(error.message)
             })
     }
+
+    const handleRemovePlaylistMusic = (musicIdList: number[]) => {
+        PlaylistControllerService.removePlaylistMusic({ playlistId: playlistInfo.playlistId, musicIdList: musicIdList })
+            .then(res => {
+                setPlayList(prev => prev.filter(v => musicIdList.indexOf(v.musicId) === -1))
+                pushToast("已移除音乐", 'success')
+            })
+            .catch((error: ApiError) => {
+                pushToast(error.message)
+            })
+    }
+
+    //音乐右键菜单
+    const [MusicContextMenu, popupMusicContextMenu, musicMenuOpen, musicMenuInfo] = useMusicContextMenu({ musicList: playlist, menuType: props.isUserFavoriteMusicList || props.isDaily30MusicList ? 'favorite' : 'playlist', onPlaylistMusicDelete: handleRemovePlaylistMusic });
 
     return (
         <Box sx={{ height: '100%', width: '100%', overflowY: "auto" }} ref={containerRef}>
@@ -333,7 +369,20 @@ function Playlist(props: PlaylistProps) {
                     {
                         playlist.map((row, index) => (
                             <TableRow
-                                sx={{ userSelect: "none", ":hover": { background: "rgba(0,0,0,0.1)" } }}
+                                sx={[
+                                    {
+                                        userSelect: "none",
+                                        ":hover": {
+                                            background: "rgba(0,0,0,0.1)"
+                                        }
+                                    },
+                                    heiMusicContext.currentMusicInfo !== null && heiMusicContext.currentMusicInfo.albumId === row.albumId && heiMusicContext.currentMusicInfo.musicId === row.musicId && {
+                                        color: theme.palette.primary.main
+                                    },
+                                    musicMenuOpen && musicMenuInfo.musicId === row.musicId && {
+                                        background: "rgba(0,0,0,0.1)", color: theme.palette.primary.main
+                                    }
+                                ]}
                                 onDoubleClick={() => {
                                     const event = new CustomEvent<IChangePlayListEvent>("music-control-panel::changePlayList", {
                                         detail: {
@@ -342,7 +391,13 @@ function Playlist(props: PlaylistProps) {
                                         }
                                     });
                                     document.dispatchEvent(event)
-                                }}>
+                                }}
+                                onContextMenu={e => {
+                                    e.preventDefault();
+                                    popupMusicContextMenu({ left: e.clientX, top: e.clientY }, index)
+                                    //setMusicMenuInfo({ albumTitle: row.albumTitle, albumId: row.albumId, musicTitle: row.title, musicId: row.musicId, index: index, isFavorite: row.isFavorite });
+                                }}
+                            >
                                 <TableCell style={{ width: "5%" }} sx={{ borderBottom: "unset", textOverflow: "ellipsis", whiteSpace: "nowrap", overflowX: "hidden" }} onDoubleClick={e => e.stopPropagation()}>
                                     {
                                         row.isFavorite && <Button size="small" sx={{ padding: "0px 0px", width: "20px", height: "20px", minWidth: "unset" }} color="error" onClick={() => handleRemoveFavoriteMusic(row.musicId)} ><FavoriteOutlinedIcon sx={{ width: "18px", height: "18px" }} /></Button>
@@ -351,9 +406,17 @@ function Playlist(props: PlaylistProps) {
                                         !row.isFavorite && <Button size="small" sx={{ padding: "0px 0px", width: "20px", height: "20px", minWidth: "unset" }} color="error" onClick={() => handleAddFavoriteMusic(row.musicId)}><FavoriteBorderOutlinedIcon sx={{ width: "18px", height: "18px" }} /></Button>
                                     }
                                 </TableCell>
-                                <TableCell style={{ width: "45%" }} sx={{ borderBottom: "unset", textOverflow: "ellipsis", whiteSpace: "nowrap", overflowX: "hidden" }} title={row.title}>{row.title}</TableCell>
+                                <TableCell sx={{ borderBottom: "unset", textOverflow: "ellipsis", whiteSpace: "nowrap", overflowX: "hidden", display: 'flex' }} title={row.title}>
+                                    <Typography variant='body2' noWrap >{row.title}</Typography>
+                                    {
+                                        heiMusicContext.currentMusicInfo !== null && heiMusicContext.currentMusicInfo.albumId === row.albumId && heiMusicContext.currentMusicInfo.musicId === row.musicId &&
+                                        <Box sx={{ flex: '1 0 auto', margin: 'auto 0px auto 4px' }}>
+                                            <SpectrumIcon variant='small' />
+                                        </Box>
+                                    }
+                                </TableCell>
                                 <TableCell style={{ width: "25%" }} sx={{ borderBottom: "unset", textOverflow: "ellipsis", whiteSpace: "nowrap", overflowX: "hidden" }} title={row.artists.join(" / ")}>{row.artists.join(" / ")}</TableCell>
-                                <TableCell style={{ width: "25%" }} sx={{ borderBottom: "unset", textOverflow: "ellipsis", whiteSpace: "nowrap", overflowX: "hidden", cursor: 'pointer', ':hover':{ color: theme.palette.primary.main} }} onClick={()=>router.push(`/album/${row.albumId}`)}>{row.albumTitle}</TableCell>
+                                <TableCell style={{ width: "25%" }} sx={{ borderBottom: "unset", textOverflow: "ellipsis", whiteSpace: "nowrap", overflowX: "hidden", cursor: 'pointer', ':hover': { color: theme.palette.primary.main } }} onClick={() => router.push(`/album/${row.albumId}`)}>{row.albumTitle}</TableCell>
 
                             </TableRow>
                         ))
@@ -364,8 +427,10 @@ function Playlist(props: PlaylistProps) {
                 </Table>
             </TableContainer>
             <Box sx={[{ height: "96px", width: "100%", display: "flex" }, playlist.length !== 0 && { display: "none" }]}>
-                <Typography sx={{ margin: "auto auto" }} >当前专辑暂无音乐</Typography>
+                <Typography sx={{ margin: "auto auto" }} >当前歌单暂无音乐</Typography>
             </Box>
+            {/* 音乐菜单 */}
+            {MusicContextMenu}
         </Box >
     );
 }
