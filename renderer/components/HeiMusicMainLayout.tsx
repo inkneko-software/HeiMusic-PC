@@ -226,7 +226,7 @@ function HeiMusicMainLayout({ children }) {
                     </Box>
                 }
                 {
-                    <Box sx={{ width: '196px', display: 'flex', '@media(min-width:600px)': { display: 'none' } }} >
+                    <Box sx={{ display: 'flex', '@media(min-width:600px)': { display: 'none' } }} >
                         <Box sx={{ margin: 'auto auto auto 12px', display: 'flex' }}>
                             <Avatar src='/images/logo.jpg' onClick={() => setLeftPannelDrawerOpen(true)}></Avatar>
                         </Box>
@@ -235,8 +235,8 @@ function HeiMusicMainLayout({ children }) {
                 {/* 右侧状态栏 */}
                 <Box sx={{ flexGrow: 1, display: 'flex', background: theme.palette.pannelBackground.light }}>
                     {/* 导航前进与后退 */}
-                    <IconButton size="small" onClick={() => { router.back() }} sx={{ margin: "auto 0px", WebkitAppRegion: 'no-drag' }}><ChevronLeftOutlinedIcon /></IconButton>
-                    <IconButton size="small" onClick={() => { window.history.forward() }} sx={{ margin: "auto 0px", WebkitAppRegion: 'no-drag' }}><ChevronRightOutlinedIcon /></IconButton>
+                    <IconButton size="small" onClick={() => { router.back() }} sx={{ margin: "auto 0px", WebkitAppRegion: 'no-drag', '@media(max-width:600px)': { display: 'none' } }}><ChevronLeftOutlinedIcon /></IconButton>
+                    <IconButton size="small" onClick={() => { window.history.forward() }} sx={{ margin: "auto 0px", WebkitAppRegion: 'no-drag', '@media(max-width:600px)': { display: 'none' } }}><ChevronRightOutlinedIcon /></IconButton>
                     {/* 搜索框 */}
                     <Box sx={{ margin: "auto 12px", WebkitAppRegion: 'no-drag' }}>
                         <InputBase startAdornment={<SearchOutlinedIcon />} onKeyUp={e => { e.key === "Enter" && prompt.length !== 0 ? handleSearch() : null }} value={prompt} onChange={e => setPrompt(e.target.value)} size='small' placeholder='搜索音乐' sx={{ borderRadius: '12px', border: '1px grey solid', padding: '2px 12px', fontSize: '14px', "input": { padding: 0 } }} />
@@ -249,14 +249,15 @@ function HeiMusicMainLayout({ children }) {
                         }
                     </Box>
                     <Box sx={{ margin: 'auto 5px auto 0', WebkitAppRegion: 'no-drag' }}>
+                        {/* 更换皮肤按钮 */}
                         <HeiMusicThemeContext.Consumer>
                             {
                                 context => {
-                                    return <IconButton sx={{ color: theme.palette.text.primary }} onClick={() => { context.setMode(context.mode === 'light' ? 'dark' : 'light') }}><Skin fontSize='small' /></IconButton>
+                                    return <IconButton sx={{ color: theme.palette.text.primary, '@media(max-width:600px)': { display: 'none' } }} onClick={() => { context.setMode(context.mode === 'light' ? 'dark' : 'light') }}><Skin fontSize='small' /></IconButton>
                                 }
                             }
                         </HeiMusicThemeContext.Consumer>
-
+                        {/* 设置按钮 */}
                         <IconButton title='设置' ref={settingButtonRef} onClick={() => { setSettingMenuOpen(!settingMenuOpen) }} sx={{ color: theme.palette.text.primary }}><MenuIcon fontSize='small' /></IconButton>
                         <Popover
                             anchorEl={settingButtonRef.current}
@@ -319,12 +320,12 @@ function HeiMusicMainLayout({ children }) {
             </Box>
             {/* 左侧面板 与 右侧 */}
             <Box sx={{ display: 'flex', flexGrow: '1', height: "calc(100% - 64px)" }}>
-                <LeftPannel sx={[{ width: '196px', height: "calc(100%)", maxHeight: "calc(100%)", flex: '0 0 auto', overflowY: 'auto', display: 'flex', flexDirection: 'column', background: theme.palette.pannelBackground.main, ...customizedHiddenScrollBarStyle, ':hover':{...customizedScrollBarStyle}, '@media(max-width:600px)': { display: 'none' } }, ]} />
+                <LeftPannel sx={[{ width: '196px', height: "calc(100%)", maxHeight: "calc(100%)", flex: '0 0 auto', overflowY: 'auto', display: 'flex', flexDirection: 'column', background: theme.palette.pannelBackground.main, ...customizedHiddenScrollBarStyle, ':hover': { ...customizedScrollBarStyle }, '@media(max-width:600px)': { display: 'none' } },]} />
                 <Drawer variant='temporary' open={leftPannelDrawerOpen} onClose={() => setLeftPannelDrawerOpen(false)} sx={{ height: "calc(100%)" }}>
                     <LeftPannel sx={[{ width: '196px', height: "calc(100%)", maxHeight: "calc(100%)", flex: '0 0 auto', overflowY: 'auto', display: 'flex', flexDirection: 'column', background: theme.palette.pannelBackground.main }]} />
                 </Drawer>
                 {/* 上部视窗 与 下部播放器 */}
-                <Box sx={[{ width: "calc(100% - 196px)", display: 'flex', flexDirection: 'column', background: theme.palette.pannelBackground.light, '@media(max-width:600px)': { width: "calc(100%)" } } ]}>
+                <Box sx={[{ width: "calc(100% - 196px)", display: 'flex', flexDirection: 'column', background: theme.palette.pannelBackground.light, '@media(max-width:600px)': { width: "calc(100%)" } }]}>
                     {/* <MusicAlbum sx={{ flexGrow: 1 }} /> */}
                     <Box sx={{ flexGrow: 1, flexShrink: 1, height: 'calc(100% - 64px - 76px)' }}>{children}</Box>
                     <MusicControlPannel sx={{ height: '76px', flexShrink: 0 }} />
