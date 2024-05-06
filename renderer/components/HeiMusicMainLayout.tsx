@@ -95,7 +95,7 @@ function HeiMusicMainLayout({ children }) {
     //当前登录用户的信息
     const [userDetail, setUserDetail] = React.useState(null)
 
-    const matcheMobile = useMediaQuery(theme.breakpoints.down('sm'));
+    // const matcheMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const [leftPannelDrawerOpen, setLeftPannelDrawerOpen] = React.useState(false)
 
     React.useEffect(() => {
@@ -218,7 +218,7 @@ function HeiMusicMainLayout({ children }) {
             <Box sx={{ height: "64px", flex: '0 0 auto', width: '100%', display: 'flex', WebkitAppRegion: 'drag', userSelect: 'none' }}>
                 {/* 左侧logo */}
                 {
-                    !matcheMobile && <Box sx={{ width: '196px', background: theme.palette.pannelBackground.main, display: 'flex' }} >
+                    <Box sx={{ width: '196px', background: theme.palette.pannelBackground.main, display: 'flex', '@media(max-width:600px)': { display: 'none' } }} >
                         <Box sx={{ margin: 'auto auto auto 12px', display: 'flex' }}>
                             <Avatar src='/images/logo.jpg'></Avatar>
                             <Typography sx={{ margin: 'auto 0 auto 6px' }} variant="h6">HeiMusic!</Typography>
@@ -226,7 +226,7 @@ function HeiMusicMainLayout({ children }) {
                     </Box>
                 }
                 {
-                    matcheMobile && <Box sx={{ width: '196px', display: 'flex' }} >
+                    <Box sx={{ width: '196px', display: 'flex', '@media(min-width:600px)': { display: 'none' } }} >
                         <Box sx={{ margin: 'auto auto auto 12px', display: 'flex' }}>
                             <Avatar src='/images/logo.jpg' onClick={() => setLeftPannelDrawerOpen(true)}></Avatar>
                         </Box>
@@ -319,12 +319,12 @@ function HeiMusicMainLayout({ children }) {
             </Box>
             {/* 左侧面板 与 右侧 */}
             <Box sx={{ display: 'flex', flexGrow: '1', height: "calc(100% - 64px)" }}>
-                <LeftPannel sx={[{ width: '196px', height: "calc(100%)", maxHeight: "calc(100%)", flex: '0 0 auto', overflowY: 'auto', display: 'flex', flexDirection: 'column', background: theme.palette.pannelBackground.main, ...customizedHiddenScrollBarStyle, ':hover':{...customizedScrollBarStyle} }, matcheMobile && { display: 'none' }]} />
+                <LeftPannel sx={[{ width: '196px', height: "calc(100%)", maxHeight: "calc(100%)", flex: '0 0 auto', overflowY: 'auto', display: 'flex', flexDirection: 'column', background: theme.palette.pannelBackground.main, ...customizedHiddenScrollBarStyle, ':hover':{...customizedScrollBarStyle}, '@media(max-width:600px)': { display: 'none' } }, ]} />
                 <Drawer variant='temporary' open={leftPannelDrawerOpen} onClose={() => setLeftPannelDrawerOpen(false)} sx={{ height: "calc(100%)" }}>
                     <LeftPannel sx={[{ width: '196px', height: "calc(100%)", maxHeight: "calc(100%)", flex: '0 0 auto', overflowY: 'auto', display: 'flex', flexDirection: 'column', background: theme.palette.pannelBackground.main }]} />
                 </Drawer>
                 {/* 上部视窗 与 下部播放器 */}
-                <Box sx={[{ width: "calc(100% - 196px)", display: 'flex', flexDirection: 'column', background: theme.palette.pannelBackground.light }, matcheMobile && { width: "calc(100%)" }]}>
+                <Box sx={[{ width: "calc(100% - 196px)", display: 'flex', flexDirection: 'column', background: theme.palette.pannelBackground.light, '@media(max-width:600px)': { width: "calc(100%)" } } ]}>
                     {/* <MusicAlbum sx={{ flexGrow: 1 }} /> */}
                     <Box sx={{ flexGrow: 1, flexShrink: 1, height: 'calc(100% - 64px - 76px)' }}>{children}</Box>
                     <MusicControlPannel sx={{ height: '76px', flexShrink: 0 }} />
