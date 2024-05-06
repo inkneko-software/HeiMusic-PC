@@ -269,8 +269,8 @@ function Home() {
                 <Typography variant='h5' sx={{ marginBottom: '12px' }}>推荐</Typography>
                 <Grid container spacing={3} sx={{ display: 'flex', justifyContent: 'flex-start', marginBottom: '12px', userSelect: 'none' }} columns={{ xs: 12, lg: 15, xl: 24 }} >
                     {/* 随机推荐 */}
-                    <Grid item xs={6} lg={9} xl={9} sx={{ aspectRatio: { xs: "2 / 1", lg: "3 / 1", xl: "3 / 1" } }}>
-                        <Box sx={{ position: 'relative', backgroundColor: 'aqua', width: '100%', height: '100%', display: 'flex', borderRadius: '12px', overflow: 'hidden' }}>
+                    <Grid item xs={6} lg={9} xl={9} sx={{ aspectRatio: { xs: "2 / 1", lg: "3 / 1", xl: "3 / 1" }, display:'flex', flexDirection: 'column' }}>
+                        <Box sx={{ position: 'relative', backgroundColor: 'aqua', width: '100%', height: '100%', display: 'flex', borderRadius: '12px', overflow: 'hidden', flex: '0 1 auto' }}>
                             {/* 背景和文本 */}
                             <Box sx={{ position: 'absolute', top: '0px', left: '0px', boxShadow: 'inset 0px 95px 280px -106px black', width: '100%', height: '100%' }}>
                                 <Typography variant='h5' fontWeight={600} sx={{ position: 'absolute', top: '6px', left: '18px', color: '#e3e3e3', zIndex: 1 }}>
@@ -323,6 +323,7 @@ function Home() {
                                 '-webkit-line-clamp': '2',
                                 lineHeight: '1.5em',
                                 maxHeight: '3em',
+                                flex: '1 0 auto'
                             }} >猜你喜欢</Typography>
                     </Grid>
                     {/* 每日30首 */}
