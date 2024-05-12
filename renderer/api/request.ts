@@ -334,7 +334,7 @@ export const request = <T>(config: OpenAPIConfig, options: ApiRequestOptions): C
         } catch (error) {
             //网络错误
             pushToast("服务错误，请稍后尝试", "error", "bottom-left")
-            //reject(error);
+            reject(error);
         }
     });
 };
