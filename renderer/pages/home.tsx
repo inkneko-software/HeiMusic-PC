@@ -267,7 +267,7 @@ function Home() {
             <Box sx={[{ display: 'flex', flexDirection: 'column' }, firstLaunch && { display: 'none' }]}>
                 {/* 推荐 */}
                 <Typography variant='h5' sx={{ marginBottom: '12px' }}>推荐</Typography>
-                <Grid container spacing={3} sx={{ display: 'flex', justifyContent: 'flex-start', marginBottom: '12px', userSelect: 'none' }} columns={{ xs: 12, lg: 15, xl: 24 }} >
+                <Grid container spacing={3} sx={{ display: 'flex', justifyContent: 'flex-start', marginBottom: '12px', userSelect: 'none' }} columns={{ xs: 6, sm: 12, lg: 15, xl: 24 }} >
                     {/* 随机推荐 */}
                     <Grid item xs={6} lg={9} xl={9} sx={{ aspectRatio: { xs: "2 / 1", lg: "3 / 1", xl: "3 / 1" }, display: 'flex', flexDirection: 'column' }}>
                         <Box sx={{ position: 'relative', backgroundColor: 'aqua', width: '100%', height: '100%', display: 'flex', borderRadius: '12px', overflow: 'hidden', flex: '0 1 auto' }}>
@@ -396,7 +396,7 @@ function Home() {
                 {/* 最新上传 */}
                 <Typography variant='h5' sx={{ marginBottom: '12px' }}>最新上传</Typography>
                 <Typography sx={[recentUploadAlbum.length !== 0 && { display: 'none' }]}>暂无音乐</Typography>
-                <Grid container spacing={3} sx={{ display: 'flex', justifyContent: 'flex-start' }} columns={{ xs: 12, lg: 15, xl: 24 }} >
+                <Grid container spacing={3} sx={{ display: 'flex', justifyContent: 'flex-start' }} columns={{ xs: 12, sm: 12, lg: 15, xl: 24 }} >
                     {
                         recentUploadAlbum.map((album, index) => {
                             return <AlbumCard key={index} album={album} />
