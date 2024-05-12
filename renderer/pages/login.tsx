@@ -1,0 +1,163 @@
+import Link from '@components/Common/Link';
+import { Box, Button, TextField, Typography, IconButton, CircularProgress } from '@mui/material';
+import Remove from '@mui/icons-material/Remove'
+import Crop32 from '@mui/icons-material/Crop32'
+import Crop75OutlinedIcon from '@mui/icons-material/Crop75Outlined'
+import Close from '@mui/icons-material/Close'
+import Maximize from '@mui/icons-material/Maximize'
+import MenuIcon from '@mui/icons-material/Menu'
+import Popover from '@mui/material/Popover'
+import ErrorOutlineOutlinedIcon from '@mui/icons-material/ErrorOutlineOutlined';
+import { useTheme } from '@mui/styles';
+import { ApiError, AuthControllerService, UserControllerService, UserDetail } from '@api/codegen';
+import { pushToast } from '@components/HeiMusicMainLayout';
+import useToast from '@components/Common/Toast';
+import { useRouter } from 'next/router';
+import { useState, useEffect } from 'react';
+
+export interface LoginProps {
+    onLoginSuccess: (userDetail: UserDetail) => void,
+}
+
+const Login = (props: LoginProps) => {
+    const theme = useTheme();
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+    const [client, setClient] = useState(false);
+    const [Toast, makeToast] = useToast();
+    const [isNetworkError, setIsNetworkError] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
+    const [loginButtonDisabled, setLoginButtonDisabled] = useState(false);
+    const router = useRouter();
+
+    const onMinimizedClicked = () => {
+        window.electronAPI.windowManagement.minimize()
+    }
+
+    const onWindowedModeClicked = () => {
+        window.electronAPI.windowManagement.maximize()
+    }
+
+    const onCloseClicked = () => {
+        window.electronAPI.windowManagement.close()
+    }
+
+    const handleLogin = () => {
+        setLoginButtonDisabled(true);
+        AuthControllerService.login({ email: email, password: password })
+            .then(res => {
+                makeToast("登录成功", "success", 'bottom-right');
+                UserControllerService.nav()
+                    .then(res => {
+
+                        var handle = setInterval(
+                            () => {
+                                props.onLoginSuccess(res.data);
+                                clearInterval(handle)
+                            },
+                            1000
+                        );
+
+                    })
+
+            })
+            .catch((error: ApiError) => {
+                makeToast(error.message, 'error', 'bottom-right')
+                setLoginButtonDisabled(false);
+            })
+    }
+
+    const handleRetry = () => {
+        setIsNetworkError(false);
+        UserControllerService.nav()
+            .then(res => {
+                props.onLoginSuccess(res.data);
+            })
+            .catch(error => {
+                if (error instanceof TypeError || error instanceof ApiError && error.status !== 200 && error.status !== 403) {
+                    setIsNetworkError(true);
+                }
+            })
+    }
+
+    useEffect(() => {
+        if (typeof (window) !== 'undefined' && typeof (window.electronAPI) !== 'undefined') {
+            setClient(true)
+        }
+
+        UserControllerService.nav()
+            .then(res => {
+                props.onLoginSuccess(res.data);
+            })
+            .catch(error => {
+                if (error instanceof TypeError || error instanceof ApiError && error.status !== 200 && error.status !== 403) {
+                    setIsNetworkError(true);
+                } else {
+                    setIsLoading(false);
+                }
+            })
+
+    }, [])
+
+    return (
+        <Box sx={{ width: '100%', height: '100%', display: 'flex' }}>
+            {Toast}
+            <Box sx={{ flex: '1 0 auto', width: "65%", backgroundImage: 'url(/images/lxh-background03.jpg)', backgroundPosition: 'right bottom', backgroundSize: 'cover', '@media(max-width: 600px)': { display: 'none' } }}>
+            </Box>
+            <Box sx={{ flex: '1 0 auto', width: '35%', display: 'flex', flexDirection: 'column', '@media(max-width: 600px)': { width: '100%' } }}>
+
+                <Box sx={[{ margin: 'auto 0 auto 0', WebkitAppRegion: 'drag', display: 'none', justifyContent: 'flex-end' }, client && { display: 'flex' }]}>
+                    <IconButton sx={{ color: theme.palette.text.primary, WebkitAppRegion: 'no-drag' }} onClick={onMinimizedClicked}><Remove /> </IconButton>
+                    <IconButton sx={{ color: theme.palette.text.primary, WebkitAppRegion: 'no-drag' }} onClick={onWindowedModeClicked} >{<Crop75OutlinedIcon />} </IconButton>
+                    <IconButton sx={{ color: theme.palette.text.primary, WebkitAppRegion: 'no-drag' }} onClick={onCloseClicked}><Close /></IconButton>
+                </Box>
+                {
+                    !isLoading && !isNetworkError &&
+                    <Box sx={{ display: 'flex', flexDirection: 'column', margin: "auto auto", flexGrow: '1', justifyContent: 'center' }}>
+
+                        <Typography variant='h5' sx={{ margin: '12px 0px' }}>
+                            登录
+                        </Typography>
+                        <TextField placeholder='请输入账户邮箱' size='small' value={email} onChange={e => setEmail(e.target.value)}></TextField>
+                        <TextField placeholder='请输入账户密码' type='password' sx={{ marginTop: '12px' }} size='small' value={password} onChange={e => setPassword(e.target.value)} onKeyUp={e => { e.key === 'Enter' && handleLogin() }}></TextField>
+                        <Button sx={{ marginTop: '12px' }} variant='contained' onClick={handleLogin} disabled={loginButtonDisabled} >{loginButtonDisabled ? '登录中' : '登录'}</Button>
+                        <Box sx={{ display: 'flex' }}>
+                            <Button >注册账号</Button>
+                            <Button sx={{ marginLeft: 'auto' }}>找回密码</Button>
+                        </Box>
+                    </Box>
+
+                }
+                {
+                    isLoading && !isNetworkError &&
+                    <Box sx={{ display: 'flex', flexDirection: 'column', margin: "auto auto", flexGrow: '1', justifyContent: 'center', alignItems: 'center' }}>
+                        <CircularProgress />
+                        <Typography variant='subtitle2' sx={{ marginTop: '12px' }}>尝试获取登录信息...</Typography>
+                    </Box>
+
+                }
+                {
+                    isNetworkError &&
+                    <Box sx={{ display: 'flex', flexDirection: 'column', margin: "auto auto", flexGrow: '1', justifyContent: 'center', alignItems: 'center' }}>
+                        <ErrorOutlineOutlinedIcon />
+                        <Typography variant='subtitle2' sx={{ marginTop: '12px' }}>连接至服务器失败</Typography>
+                    </Box>
+
+                }
+
+                {
+                    isNetworkError &&
+                    <Button onClick={handleRetry}>重试</Button>
+                }
+
+
+            </Box>
+        </Box>
+    )
+}
+
+// Login.getLayout = function getLayout(page) {
+//     return page;
+// }
+
+export default Login;
