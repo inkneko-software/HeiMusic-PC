@@ -269,7 +269,7 @@ function Home() {
                 <Typography variant='h5' sx={{ marginBottom: '12px' }}>推荐</Typography>
                 <Grid container spacing={3} sx={{ display: 'flex', justifyContent: 'flex-start', marginBottom: '12px', userSelect: 'none' }} columns={{ xs: 12, lg: 15, xl: 24 }} >
                     {/* 随机推荐 */}
-                    <Grid item xs={6} lg={9} xl={9} sx={{ aspectRatio: { xs: "2 / 1", lg: "3 / 1", xl: "3 / 1" }, display:'flex', flexDirection: 'column' }}>
+                    <Grid item xs={6} lg={9} xl={9} sx={{ aspectRatio: { xs: "2 / 1", lg: "3 / 1", xl: "3 / 1" }, display: 'flex', flexDirection: 'column' }}>
                         <Box sx={{ position: 'relative', backgroundColor: 'aqua', width: '100%', height: '100%', display: 'flex', borderRadius: '12px', overflow: 'hidden', flex: '0 1 auto' }}>
                             {/* 背景和文本 */}
                             <Box sx={{ position: 'absolute', top: '0px', left: '0px', boxShadow: 'inset 0px 95px 280px -106px black', width: '100%', height: '100%' }}>
@@ -302,8 +302,26 @@ function Home() {
                             {
                                 randomMusic &&
                                 <Box sx={{ display: 'flex', flexDirection: 'column', margin: 'auto auto auto 0px', zIndex: '1' }}>
-                                    <Typography sx={{ color: '#ffffff' }}>{randomMusic.title}</Typography>
-                                    <Typography variant='body2' sx={{ color: '#e3e3e3' }}>{randomMusic.artistList.map(artist => artist.name).join('/')}</Typography>
+                                    <Typography sx={{
+                                        color: '#ffffff',
+                                        overflow: 'hidden',
+                                        textOverflow: 'ellipsis',
+                                        display: '-webkit-box',
+                                        '-webkit-box-orient': 'vertical',
+                                        '-webkit-line-clamp': '2',
+                                        lineHeight: '1.5em',
+                                        maxHeight: '3em',
+                                    }} >{randomMusic.title}</Typography>
+                                    <Typography variant='body2' sx={{
+                                        color: '#e3e3e3',
+                                        overflow: 'hidden',
+                                        textOverflow: 'ellipsis',
+                                        display: '-webkit-box',
+                                        '-webkit-box-orient': 'vertical',
+                                        '-webkit-line-clamp': '2',
+                                        lineHeight: '1.5em',
+                                        maxHeight: '3em',
+                                    }}>{randomMusic.artistList.map(artist => artist.name).join('/')}</Typography>
                                     <Box sx={{ marginLeft: '-4px' }}>
                                         <IconButton disableRipple sx={{ padding: '0px 0px', color: '#ffffff' }} onClick={handleNextRandomMusic}><SkipNext sx={{ fontSize: '1.5em' }} /></IconButton>
                                         <IconButton sx={{ padding: '0px 0px', color: '#ffffff' }} onClick={handleFavorite}>{randomMusic.isFavorite ? <FavoriteOutlinedIcon /> : <FavoriteBorderOutlinedIcon />}</IconButton>
