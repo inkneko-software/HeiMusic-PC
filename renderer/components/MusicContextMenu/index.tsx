@@ -428,7 +428,7 @@ export default function useMusicContextMenu(props: UseMusicContextMenuProps): [
                 onClose={() => setPlaylistMenuOpen(false)}
                 anchorEl={addButtonRef.current}
                 anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
-                sx={{ ".MuiPaper-root": { ...customizedScrollBarStyle } }}
+                sx={{ ".MuiPaper-root": { ...customizedScrollBarStyle },  WebkitAppRegion: 'no-drag' }}
             >
                 <Paper
                     sx={{ display: 'flex', flexDirection: 'column', width: "160px", backgroundColor: theme.palette.pannelBackground.main, }}
@@ -469,6 +469,7 @@ export default function useMusicContextMenu(props: UseMusicContextMenuProps): [
                         playlistInfoList.map((playlist, index) => {
                             return (
                                 <Button
+                                    key={index}
                                     sx={{ justifyContent: 'flex-start', padding: "6px 16px", ".MuiButton-endIcon": { marginLeft: 'auto', marginRight: '0px' } }}
                                     color='inherit'
                                     onClick={() => {
