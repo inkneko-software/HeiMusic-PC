@@ -263,6 +263,7 @@ function Playlist(props: PlaylistProps) {
 
     return (
         <Box sx={{ height: '100%', width: '100%', overflowY: "auto" }} ref={containerRef}>
+            {/* 歌单信息 */}
             <Box sx={{
                 marginTop: '20px',
                 width: "auto",
@@ -271,15 +272,24 @@ function Playlist(props: PlaylistProps) {
             }}
                 ref={playlistInfoRef}
             >
+                {/* 封面 */}
                 {
                     playlistInfo.cover &&
                     <CardMedia sx={{
-                        width: '160px', height: '160px', borderRadius: '6%', flex: "0 0 auto", imageRendering: "auto", border: "1px solid #e3e3e3", objectFit: "contain"
+                        width: '160px',
+                        height: '160px',
+                        borderRadius: '6%',
+                        flex: "0 0 auto",
+                        imageRendering: "auto",
+                        border: "1px solid #e3e3e3",
+                        objectFit: "contain",
+                        '@media(max-width: 600px)': { width: '90px', height: '90px' }
                     }} src={playlistInfo.cover} component="img" />
                 }
                 {/* <MusicNote sx={{
                     width: '180px', height: '180px', borderRadius: '6%', flex: "0 0 auto",  border: "1px solid #e3e3e3", fontSize: 72 
                 }}  /> */}
+                {/* 歌单标题，艺术家 */}
                 <Box sx={{
                     marginLeft: '20px',
                     marginRight: '20px',
@@ -289,16 +299,22 @@ function Playlist(props: PlaylistProps) {
                     display: 'flex',
                     flexDirection: 'column',
                 }}>
-                    <Typography fontWeight={600} variant='h5' noWrap title={playlistInfo.title} >{playlistInfo.title}</Typography>
-                    <Typography variant='body2' noWrap >{playlistInfo.author}</Typography>
+                    <Typography fontWeight={600} variant='h5' noWrap sx={{ '@media(max-width: 600px)': { fontSize: "1em" } }} title={playlistInfo.title}  >{playlistInfo.title}</Typography>
+                    <Typography variant='body2' noWrap sx={{ '@media(max-width: 600px)': { fontSize: "1em" } }}>{playlistInfo.author}</Typography>
                     {playlistInfo.date ? <Typography variant='caption' noWrap >{playlistInfo.date}</Typography> : null}
                     <Typography variant='caption' sx={{ marginTop: "12px" }} >{"播放量 " + playlistInfo.listenedCount}</Typography>
-                    <Box sx={{ marginTop: "auto" }}>
+                    <Box sx={{ marginTop: "auto", '@media(max-width: 600px)': { display: 'none' } }}>
                         <Button sx={{ width: "90px", height: "32px", marginRight: "30px" }} variant="contained" onClick={handlePlayAll} >播放全部</Button>
                         <Button sx={{ width: "90px", height: "32px", marginRight: "30px" }} variant="outlined">下载</Button>
                     </Box>
                 </Box>
             </Box>
+            {/* 移动端按钮 */}
+            <Box sx={{ display: 'flex', marginTop: "auto", '@media(min-width: 600px)': { display: 'none' } }}>
+                <Button sx={{ width: "90px", height: "32px", marginLeft: "14px", marginRight: 'auto' }} variant="contained" onClick={handlePlayAll} >播放全部</Button>
+                <Button sx={{ width: "90px", height: "32px", marginLeft: 'auto', marginRight: "14px" }} variant="outlined">下载</Button>
+            </Box>
+            {/* 歌单信息Lite */}
             <Box sx={[
                 {
                     marginTop: '20px',
@@ -333,17 +349,17 @@ function Playlist(props: PlaylistProps) {
                         display: 'flex',
                         flexFlow: 'column',
                     }}>
-                        <Typography fontWeight={600} variant='h5' noWrap >{playlistInfo.title}</Typography>
+                        <Typography fontWeight={600} variant='h5' noWrap sx={{ '@media(max-width: 600px)': { fontSize: "1em" } }}>{playlistInfo.title}</Typography>
 
                         <Box sx={{ margin: "14px 0px", fontSize: "14px", color: "gray" }}>{"播放量 " + playlistInfo.listenedCount}</Box>
                     </Box>
-                    <Box sx={{ marginTop: "auto" }}>
+                    <Box sx={{ marginTop: "auto", '@media(max-width: 600px)': { display: 'none' } }}>
                         <Button sx={{ width: "90px", height: "32px", marginRight: "30px" }} variant='contained'>播放全部</Button>
                         <Button className="album-brief-tool-bar-btn" variant='outlined'>下载</Button>
                     </Box>
                 </Box>
 
-                <TableContainer sx={{ width: "auto", padding: "0px 12px", }}>
+                <TableContainer sx={{ width: "auto", padding: "0px 12px", '@media(max-width: 600px)': { display: 'none' } }}>
                     <Table sx={{ tableLayout: "fixed", ".MuiTableCell-root": { padding: "0px 6px" } }}>
                         <TableHead>
                             <TableRow >
@@ -356,7 +372,8 @@ function Playlist(props: PlaylistProps) {
                     </Table>
                 </TableContainer>
             </Box>
-            <TableContainer sx={{ width: "auto", padding: "0px 12px", }}>
+            {/* 歌曲列表 */}
+            <TableContainer sx={{ width: "auto", padding: "0px 12px", '@media(max-width: 600px)': { display: 'none' } }}>
                 <Table sx={{ tableLayout: "fixed", ".MuiTableCell-root": { padding: "14px 6px" } }}>
                     <TableHead>
                         <TableRow >
@@ -422,8 +439,77 @@ function Playlist(props: PlaylistProps) {
                         ))
 
                     }
+                </Table>
+            </TableContainer>
+            {/* 歌曲列表移动端适配 */}
+            <TableContainer sx={{ width: "auto", padding: "0px 12px", '@media(min-width: 600px)': { display: 'none' } }}>
+                <Table sx={{ tableLayout: "fixed", ".MuiTableCell-root": { padding: "8px 6px" } }}>
+                    <TableHead>
+                        <TableRow >
+                            <TableCell style={{ width: "10%" }} sx={{ borderBottom: "unset" }}></TableCell>
+                            <TableCell style={{ width: "45%" }} sx={{ borderBottom: "unset" }}>歌曲</TableCell>
+                            <TableCell style={{ width: "45%" }} sx={{ borderBottom: "unset" }}>专辑</TableCell>
+                        </TableRow>
+                    </TableHead>
+                    {
+                        playlist.map((row, index) => (
+                            <TableRow
+                                sx={[
+                                    {
+                                        userSelect: "none",
+                                        ":hover": {
+                                            background: "rgba(0,0,0,0.1)"
+                                        }
+                                    },
+                                    heiMusicContext.currentMusicInfo !== null && heiMusicContext.currentMusicInfo.albumId === row.albumId && heiMusicContext.currentMusicInfo.musicId === row.musicId && {
+                                        color: theme.palette.primary.main
+                                    },
+                                    musicMenuOpen && musicMenuInfo.musicId === row.musicId && {
+                                        background: "rgba(0,0,0,0.1)", color: theme.palette.primary.main
+                                    }
+                                ]}
+                                onDoubleClick={() => {
+                                    const event = new CustomEvent<IChangePlayListEvent>("music-control-panel::changePlayList", {
+                                        detail: {
+                                            playlist: playlist,
+                                            startIndex: index
+                                        }
+                                    });
+                                    document.dispatchEvent(event)
+                                }}
+                                onContextMenu={e => {
+                                    e.preventDefault();
+                                    popupMusicContextMenu({ left: e.clientX, top: e.clientY }, index)
+                                    //setMusicMenuInfo({ albumTitle: row.albumTitle, albumId: row.albumId, musicTitle: row.title, musicId: row.musicId, index: index, isFavorite: row.isFavorite });
+                                }}
+                            >
+                                <TableCell style={{ width: "10%" }} sx={{ borderBottom: "unset", textOverflow: "ellipsis", whiteSpace: "nowrap", overflowX: "hidden", verticalAlign: 'top' }} onDoubleClick={e => e.stopPropagation()}>
+                                    {
+                                        row.isFavorite && <Button size="small" sx={{ padding: "0px 0px", width: "20px", height: "20px", minWidth: "unset" }} color="error" onClick={() => handleRemoveFavoriteMusic(row.musicId)} ><FavoriteOutlinedIcon sx={{ width: "18px", height: "18px" }} /></Button>
+                                    }
+                                    {
+                                        !row.isFavorite && <Button size="small" sx={{ padding: "0px 0px", width: "20px", height: "20px", minWidth: "unset" }} color="error" onClick={() => handleAddFavoriteMusic(row.musicId)}><FavoriteBorderOutlinedIcon sx={{ width: "18px", height: "18px" }} /></Button>
+                                    }
+                                </TableCell>
+                                <TableCell sx={{ borderBottom: "unset", textOverflow: "ellipsis", whiteSpace: "nowrap", overflowX: "hidden", display: 'flex', flexDirection: 'column' }} title={row.title}>
+                                    <Box sx={{ display: 'flex' }}>
+                                        <Typography variant='body2' noWrap >{row.title}</Typography>
+                                        {
+                                            heiMusicContext.currentMusicInfo !== null && heiMusicContext.currentMusicInfo.albumId === row.albumId && heiMusicContext.currentMusicInfo.musicId === row.musicId &&
+                                            <Box sx={{ flex: '1 0 auto', margin: 'auto 0px auto 4px' }}>
+                                                <SpectrumIcon variant='small' />
+                                            </Box>
+                                        }
+                                    </Box>
+                                    <Typography variant='body2' noWrap sx={{ color: '#b1b1b1' }}>{row.artists.join(" / ")}</Typography>
 
+                                </TableCell>
+                                <TableCell style={{ width: "45%" }} sx={{ verticalAlign: 'top', borderBottom: "unset", textOverflow: "ellipsis", whiteSpace: "nowrap", overflowX: "hidden", cursor: 'pointer', ':hover': { color: theme.palette.primary.main } }} onClick={() => router.push(`/album/${row.albumId}`)}>{row.albumTitle}</TableCell>
 
+                            </TableRow>
+                        ))
+
+                    }
                 </Table>
             </TableContainer>
             <Box sx={[{ height: "96px", width: "100%", display: "flex" }, playlist.length !== 0 && { display: "none" }]}>
