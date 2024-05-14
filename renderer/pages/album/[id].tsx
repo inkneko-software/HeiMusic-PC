@@ -255,7 +255,7 @@ function MusicAlbum(props: MusicAlbumProps) {
                 <TableContainer sx={{ width: "auto", padding: "0px 12px", }}>
                     <Table sx={{ tableLayout: "fixed", ".MuiTableCell-root": { padding: "0px 6px" } }}>
                         <TableHead>
-                            <TableRow >
+                            <TableRow key={-1}>
                                 <TableCell style={{ width: "5%" }} sx={{ borderBottom: "unset" }}></TableCell>
                                 <TableCell style={{ width: "45%" }} sx={{ borderBottom: "unset" }}>歌曲</TableCell>
                                 <TableCell style={{ width: "40%" }} sx={{ borderBottom: "unset" }}>歌手</TableCell>
@@ -279,6 +279,7 @@ function MusicAlbum(props: MusicAlbumProps) {
                     {
                         playlist.map((row, index) => (
                             <TableRow
+                                key={row.musicId}
                                 sx={[
                                     {
                                         userSelect: "none",
