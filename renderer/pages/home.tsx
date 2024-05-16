@@ -301,7 +301,7 @@ function Home() {
                             {/* 音乐信息与操作 */}
                             {
                                 randomMusic &&
-                                <Box sx={{ display: 'flex', flexDirection: 'column', margin: 'auto auto auto 0px', zIndex: '1' }}>
+                                <Box sx={{ display: 'flex', flexDirection: 'column', margin: 'auto 18px auto 0px', zIndex: '1' }}>
                                     <Typography sx={{
                                         color: '#ffffff',
                                         overflow: 'hidden',
