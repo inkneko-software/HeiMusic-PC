@@ -1,4 +1,3 @@
-import React from 'react'
 import Box from '@mui/material/Box'
 import CardMedia from '@mui/material/CardMedia';
 import Grid from '@mui/material/Grid';
@@ -18,6 +17,7 @@ import { IChangePlayListEvent } from '@components/MusicControlPannel/MusicContro
 import { useRouter } from 'next/router';
 import FavoriteBorderOutlinedIcon from '@mui/icons-material/FavoriteBorderOutlined';
 import FavoriteOutlinedIcon from '@mui/icons-material/FavoriteOutlined';
+import { useRef, useState, useEffect } from 'react';
 
 interface IAlbumCard {
     album: AlbumVo
@@ -25,12 +25,14 @@ interface IAlbumCard {
 
 function AlbumCard(props: IAlbumCard) {
     const theme = useTheme();
-    const imgRef = React.useRef<HTMLImageElement>(null);
-    const gridRef = React.useRef<HTMLDivElement>(null);
-    const [width, setWidth] = React.useState(0);
-    const [loaded, setLoaded] = React.useState(false)
+    const imgRef = useRef<HTMLImageElement>(null);
+    const gridRef = useRef<HTMLDivElement>(null);
+    const [width, setWidth] = useState(0);
+    const [loaded, setLoaded] = useState(false)
 
-    // React.useEffect(() => {
+
+
+    // useEffect(() => {
     //     if (gridRef.current !== null) {
     //         setWidth(gridRef.current.clientWidth - 24)
     //         // 性能过低
@@ -45,7 +47,7 @@ function AlbumCard(props: IAlbumCard) {
     //     }
     // }, [gridRef])
 
-    React.useEffect(() => {
+    useEffect(() => {
         if (imgRef.current !== null) {
             if (props.album.frontCoverUrl === null) {
                 imgRef.current.src = '/images/lxh_sign_400x400.png';
@@ -85,7 +87,7 @@ function AlbumCard(props: IAlbumCard) {
                         visibility: 'unset'
                     }
                 }, !loaded && { display: 'none' },]}>
-                    <CardMedia ref={imgRef} sx={[{  objectFit: 'cover' }]} component='img' ></CardMedia>
+                    <CardMedia ref={imgRef} sx={[{ objectFit: 'cover' }]} component='img' ></CardMedia>
                     <Box className="album-cover-shadow" sx={{ display: 'flex', visibility: "hidden", position: 'absolute', top: '0px', left: '0px', boxShadow: 'inset 0px 95px 280px -106px black', width: '100%', height: '100%' }} >
                     </Box>
                 </Box>
@@ -117,16 +119,20 @@ function Home() {
     const theme = useTheme();
     const router = useRouter();
 
-    const [firstLaunch, setFirstLaunch] = React.useState(false);
-    const [newUploadList, setNewUploadList] = React.useState([]);
+    const [firstLaunch, setFirstLaunch] = useState(false);
+    const [newUploadList, setNewUploadList] = useState([]);
     const [Toast, makeToast] = useToast()
-    const [recentUploadAlbum, setRecentUploadAlbum] = React.useState<AlbumVo[]>([]);
+    const [recentUploadAlbum, setRecentUploadAlbum] = useState<AlbumVo[]>([]);
 
     //随机音乐
-    const [randomMusic, setRandomMusic] = React.useState<MusicVo>(undefined);
+    const [randomMusic, setRandomMusic] = useState<MusicVo>(undefined);
+    const canvasRef = useRef<HTMLCanvasElement>(null);
+    const coverRef = useRef<HTMLImageElement>(null);
+    const [randomMusicBackgroundColor, setRandomMusicBackgroundColor] = useState("#e3e3e3")
+
     //每日30首封面
-    const [daily30Cover, setDaily30Cover] = React.useState(undefined);
-    React.useEffect(() => {
+    const [daily30Cover, setDaily30Cover] = useState(undefined);
+    useEffect(() => {
         AlbumControllerService.getRecentUpload(1, 16)
             .then(res => {
                 setRecentUploadAlbum(res.data)
@@ -160,6 +166,38 @@ function Home() {
 
 
     }, [])
+
+    //选取背景色
+    const handleRandomMusicCoverLoaded = () => {
+        if (canvasRef.current !== null && coverRef.current !== null && randomMusic) {
+            var img = coverRef.current;
+            var canvas = canvasRef.current;
+            var ctx = canvas.getContext('2d');
+
+            // 将图像绘制到Canvas上
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+            // //取1000个点位的颜色，取平均值
+            // var r = 0;
+            // var g = 0;
+            // var b = 0;
+            // for (var y = 0; y < canvas.height; y += canvas.height / 5) {
+            //     for (var x = 0; x < canvas.width; x += canvas.width / 5) {
+            //         console.log(x, y)
+            //         var pixelData = ctx.getImageData(x, y, 1, 1).data;
+            //         r += pixelData[0];
+            //         g += pixelData[1];
+            //         b += pixelData[2]
+            //     }
+            // }
+
+            // // 解析像素数据，获取颜色信息
+            // var color = `rgb(${r / 25}, ${g / 25}, ${b / 25})`;
+
+            var pixelData = ctx.getImageData(canvas.width / 5, canvas.height / 5, 1, 1).data;
+            setRandomMusicBackgroundColor(`rgb(${pixelData[0]},${pixelData[1]},${pixelData[2]})`)
+        }
+    }
 
     const handlePlayRandomMusic = () => {
 
@@ -270,7 +308,8 @@ function Home() {
                 <Grid container spacing={3} sx={{ display: 'flex', justifyContent: 'flex-start', marginBottom: '12px', userSelect: 'none' }} columns={{ xs: 6, sm: 12, lg: 15, xl: 24 }} >
                     {/* 随机推荐 */}
                     <Grid item xs={6} lg={9} xl={9} sx={{ aspectRatio: { xs: "2 / 1", lg: "3 / 1", xl: "3 / 1" }, display: 'flex', flexDirection: 'column' }}>
-                        <Box sx={{ position: 'relative', backgroundColor: 'aqua', width: '100%', height: '100%', display: 'flex', borderRadius: '12px', overflow: 'hidden', flex: '0 1 auto' }}>
+
+                        <Box sx={{ position: 'relative', backgroundColor: randomMusicBackgroundColor, width: '100%', height: '100%', display: 'flex', borderRadius: '12px', overflow: 'hidden', flex: '0 1 auto' }}>
                             {/* 背景和文本 */}
                             <Box sx={{ position: 'absolute', top: '0px', left: '0px', boxShadow: 'inset 0px 95px 280px -106px black', width: '100%', height: '100%' }}>
                                 <Typography variant='h5' fontWeight={600} sx={{ position: 'absolute', top: '6px', left: '18px', color: '#e3e3e3', zIndex: 1 }}>
@@ -283,9 +322,10 @@ function Home() {
                             {
                                 randomMusic &&
                                 <Box sx={{ margin: '24px 18px 24px 36px', height: 'calc(100% - 24px - 24px)', aspectRatio: '1 / 1', position: 'relative', ':hover .random-music-playback-btn': { display: 'flex', background: 'rgba(0,0,0,0.5)' } }}>
-                                    <CardMedia className="random-music-cover" sx={[{ position: 'absolute', top: 0, left: 0, objectFit: 'contain', height: '100%', width: 'unset', aspectRatio: '1 / 1', borderRadius: '6px' }]} component='img' src={randomMusic.albumCoverUrl || "/images/lxh_sign_400x400.png"} >
+                                    <CardMedia component='img' crossOrigin='anonymous' onLoad={handleRandomMusicCoverLoaded} ref={coverRef} id="random-music-cover" className="random-music-cover" sx={[{ position: 'absolute', top: 0, left: 0, objectFit: 'cover', height: '100%', width: 'unset', aspectRatio: '1 / 1', borderRadius: '6px' }]} src={randomMusic.albumCoverUrl || "/images/lxh_sign_400x400.png"} >
 
                                     </CardMedia>
+                                    <canvas style={{ display: 'none' }} ref={canvasRef} />
                                     <Box className="random-music-playback-btn" sx={{ position: 'absolute', top: 0, left: 0, height: '100%', width: 'unset', aspectRatio: '1 / 1', display: 'none', borderRadius: '6px' }}>
                                         <IconButton
                                             disableRipple
@@ -347,7 +387,7 @@ function Home() {
                     {/* 每日30首 */}
                     <Grid item xs={3} sx={{ display: 'flex', flexDirection: 'column', flexShrink: '0' }} onClick={() => { router.push("/daily30") }}>
                         <Box sx={[{ borderRadius: '6px', aspectRatio: '1 / 1', display: 'flex', overflow: 'hidden', position: 'relative' }]}>
-                            <CardMedia sx={[{ margin: 'auto auto', objectFit: 'contain' }]} component='img' src={daily30Cover || "/images/lxh_sign_400x400.png"} ></CardMedia>
+                            <CardMedia sx={[{ objectFit: 'cover' }]} component='img' src={daily30Cover || "/images/lxh_sign_400x400.png"} ></CardMedia>
                             <Box sx={{ position: 'absolute', top: '0px', left: '0px', boxShadow: 'inset 0px 95px 280px -106px black', width: '100%', height: '100%' }}>
                                 <Typography variant='h5' fontWeight={600} sx={{ position: 'absolute', top: '6px', left: '18px', color: '#e3e3e3' }}>
                                     Daily
