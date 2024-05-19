@@ -201,7 +201,7 @@ function MusicControlPannel(props: IMusicControlPannel) {
                     durationMinutes = String(Math.floor(duration / 60)).padStart(2, '0')
                     durationSeconds = String(Math.floor(duration % 60)).padStart(2, '0')
                 }
-                
+
                 setDuration(duration);
                 setTimeLabel(`${currentMinutes}:${currentSeconds} / ${durationMinutes}:${durationSeconds}`)
                 if (currentMusicInfo.isLargeTrackMusic && audio.currentTime > currentMusicInfo.discEndTime && audio.duration !== 0) {
@@ -491,8 +491,11 @@ function MusicControlPannel(props: IMusicControlPannel) {
     return (
         <Box {...props} sx={{ ...(props.sx), display: "flex", flexDirection: "column" }}>
             <audio ref={audioRef} />
+            {/* 进度条 */}
             <MusicSlider size="small" max={duration} value={currentTime} onChangeCommitted={(event, value: number) => handleProgressSeek(value)} />
+            {/* 音乐信息与控制面板 */}
             <Box sx={{ display: "flex", margin: "auto 0px", flexGrow: "1", paddingBottom: '4px' }}>
+                {/* 音乐信息 */}
                 <Box sx={{ display: "flex", marginLeft: "20px", width: "30%", textAlign: "left", '@media(max-width:600px)': { flexGrow: '1' } }}>
                     {/* <Avatar
                         variant="square"
@@ -521,11 +524,17 @@ function MusicControlPannel(props: IMusicControlPannel) {
                         <ScrollableTypography sx={{ fontSize: "12px", color: "#a1a1a1" }} noWrap>{currentMusicInfo.artists.join(' / ')}</ScrollableTypography>
                     </Box>
                 </Box>
+                {/* 控制面板 */}
                 <Box sx={{ flexGrow: "1", margin: "auto auto", textAlign: "center", '@media(max-width:600px)': { display: 'none' } }} >
+                    {/* 播放模式 */}
                     <IconButton sx={{ color: theme.palette.text.primary }} onClick={handleLoopOptionClick}><Repeat style={{ fontSize: 24 }} /></IconButton>
+                    {/* 上一曲 */}
                     <IconButton sx={{ color: theme.palette.text.primary }} onClick={handlePrevClick} ><SkipPrevious style={{ fontSize: 34 }} /></IconButton>
+                    {/* 播放 */}
                     <IconButton color="primary" onClick={() => { handlePlayButtonClick() }} >{playBtnIcon}</IconButton>
+                    {/* 下一曲 */}
                     <IconButton sx={{ color: theme.palette.text.primary }} onClick={handleNextClick} ><SkipNext style={{ fontSize: 34 }} /></IconButton>
+                    {/* 音量 */}
                     <VolumePannel
                         open={volumePanelOpen}
                         value={volume}
@@ -544,13 +553,25 @@ function MusicControlPannel(props: IMusicControlPannel) {
                     </IconButton>
 
                 </Box>
+                {/* 控制面板的移动端适配 */}
                 <Box sx={{ margin: "auto 12px auto auto", textAlign: "center", '@media(min-width:600px)': { display: 'none' } }}>
-                    <IconButton color="primary" onClick={() => { handlePlayButtonClick() }} >{playBtnIcon}</IconButton>
+                  .  <IconButton color="primary" onClick={() => { handlePlayButtonClick() }} >{playBtnIcon}</IconButton>
                     <IconButton sx={{ margin: "auto 8px auto 0px" }} onClick={() => setPlaylistOpen(true)}><QueueMusic /></IconButton>
                 </Box>
-                <Box sx={{ margin: "auto 0", width: "30%", textAlign: "right", display: "flex", '@media(max-width:600px)': { display: 'none' } }}>
-                    <Typography sx={{ margin: "auto 12px auto 0px", flexGrow: "1", userSelect: "none", color: theme.palette.text.secondary }} variant="subtitle2">{timeLabel}</Typography>
-                    <Button sx={[currentMusicInfo.currentQuality.name === null && { display: 'none' }, { color: currentMusicInfo.currentQuality.color, border: `1px solid ${currentMusicInfo.currentQuality.color}`, padding: '0px 0px', margin: 'auto 8px auto 0px', minWidth: '32px', minHeight: '0px', lineHeight: 'normal' }]} size='small' >{currentMusicInfo.currentQuality.name}</Button>
+                {/* 时间、音质、收藏、播放列表 */}
+                <Box sx={{ margin: "auto 0px", width: "30%", textAlign: "right", display: "flex", '@media(max-width:600px)': { display: 'none' } }}>
+                    {/* 时间信息 */}
+                    <Typography sx={{ margin: "auto 4px", flexGrow: "1", userSelect: "none", color: theme.palette.text.secondary }} variant="subtitle2">{timeLabel}</Typography>
+                    {/* 收藏 */}
+                    {
+                        currentMusicInfo.isFavorite && <Button size="small" sx={{ padding: "0px 0px", width: "20px", height: "20px", margin: 'auto 4px', minWidth: "unset" }} color="error" onClick={handleRemoveFavoriteMusic} ><FavoriteOutlinedIcon sx={{ width: "18px", height: "18px" }} /></Button>
+                    }
+                    {
+                        !currentMusicInfo.isFavorite && <Button size="small" sx={{ padding: "0px 0px", width: "20px", height: "20px", margin: 'auto 4px', minWidth: "unset" }} color="error" onClick={handleAddFavoriteMusic}><FavoriteBorderOutlinedIcon sx={{ width: "18px", height: "18px" }} /></Button>
+                    }
+                    {/* 音质 */}
+                    <Button sx={[currentMusicInfo.currentQuality.name === null && { display: 'none' }, { color: currentMusicInfo.currentQuality.color, border: `1px solid ${currentMusicInfo.currentQuality.color}`, padding: '0px 0px', margin: 'auto 4px', minWidth: '32px', minHeight: '0px', lineHeight: 'normal' }]} size='small' >{currentMusicInfo.currentQuality.name}</Button>
+                    {/* 播放列表按钮 */}
                     <IconButton sx={{ margin: "auto 8px auto 0px" }} onClick={() => setPlaylistOpen(true)}><QueueMusic /></IconButton>
                 </Box>
             </Box>
