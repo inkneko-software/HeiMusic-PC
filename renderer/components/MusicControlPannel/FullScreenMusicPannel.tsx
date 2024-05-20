@@ -186,7 +186,7 @@ export default function FullScreenMusicPannel(props: IFullScreenMusicPannelProps
                             }
                         }
 
-                    }} src={props.currentMusicInfo.cover || "/images/akari.jpg"} component="img"></CardMedia>
+                    }} src={props.currentMusicInfo.cover ? props.currentMusicInfo.cover + "?s=@w300h300" : "/images/lxh_sign_400x400.png"} component="img"></CardMedia>
                 </Box>
                 {/* 右侧音乐信息 */}
                 <Box sx={{
