@@ -322,7 +322,7 @@ function Home() {
                             {
                                 randomMusic &&
                                 <Box sx={{ margin: '24px 18px 24px 36px', height: 'calc(100% - 24px - 24px)', aspectRatio: '1 / 1', position: 'relative', ':hover .random-music-playback-btn': { display: 'flex', background: 'rgba(0,0,0,0.5)' } }}>
-                                    <CardMedia component='img' crossOrigin='anonymous' onLoad={handleRandomMusicCoverLoaded} ref={coverRef} id="random-music-cover" className="random-music-cover" sx={[{ position: 'absolute', top: 0, left: 0, objectFit: 'cover', height: '100%', width: 'unset', aspectRatio: '1 / 1', borderRadius: '6px' }]} src={randomMusic.albumCoverUrl || "/images/lxh_sign_400x400.png"} >
+                                    <CardMedia component='img' crossOrigin='anonymous' onLoad={handleRandomMusicCoverLoaded} ref={coverRef} id="random-music-cover" className="random-music-cover" sx={[{ position: 'absolute', top: 0, left: 0, objectFit: 'cover', height: '100%', width: 'unset', aspectRatio: '1 / 1', borderRadius: '6px' }]} src={randomMusic.albumCoverUrl ? randomMusic.albumCoverUrl + "?s=@w300h300" : "/images/lxh_sign_400x400.png"} >
 
                                     </CardMedia>
                                     <canvas style={{ display: 'none' }} ref={canvasRef} />
@@ -387,7 +387,7 @@ function Home() {
                     {/* 每日30首 */}
                     <Grid item xs={3} sx={{ display: 'flex', flexDirection: 'column', flexShrink: '0' }} onClick={() => { router.push("/daily30") }}>
                         <Box sx={[{ borderRadius: '6px', aspectRatio: '1 / 1', display: 'flex', overflow: 'hidden', position: 'relative' }]}>
-                            <CardMedia sx={[{ objectFit: 'cover' }]} component='img' src={daily30Cover || "/images/lxh_sign_400x400.png"} ></CardMedia>
+                            <CardMedia sx={[{ objectFit: 'cover' }]} component='img' src={daily30Cover ? daily30Cover + "?s=@w300h300" : "/images/lxh_sign_400x400.png"} ></CardMedia>
                             <Box sx={{ position: 'absolute', top: '0px', left: '0px', boxShadow: 'inset 0px 95px 280px -106px black', width: '100%', height: '100%' }}>
                                 <Typography variant='h5' fontWeight={600} sx={{ position: 'absolute', top: '6px', left: '18px', color: '#e3e3e3' }}>
                                     Daily
