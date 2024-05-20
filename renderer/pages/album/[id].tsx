@@ -184,9 +184,9 @@ function MusicAlbum(props: MusicAlbumProps) {
                 ref={albumInfoRef}
             >
                 <CardMedia sx={{
-                    width: '160px', height: '160px', borderRadius: '6%', flex: "0 0 auto", imageRendering: "auto", border: "1px solid #e3e3e3", objectFit: "contain",
+                    width: '160px', height: '160px', borderRadius: '6%', flex: "0 0 auto", imageRendering: "auto", border: "1px solid #e3e3e3", objectFit: "cover",
                     '@media(max-width: 600px)': { width: '80px', height: '80px' }
-                }} src={albumInfo.cover || "/images/akari.jpg"} component="img"></CardMedia>
+                }} src={albumInfo.cover ? albumInfo.cover + "?s=@w300h300" : "/images/lxh_sign_400x400.png"} component="img"></CardMedia>
                 {/* <MusicNote sx={{
                     width: '180px', height: '180px', borderRadius: '6%', flex: "0 0 auto",  border: "1px solid #e3e3e3", fontSize: 72 
                 }}  /> */}
@@ -237,8 +237,8 @@ function MusicAlbum(props: MusicAlbumProps) {
             ]}>
                 <Box sx={{ display: "flex", padding: "0px 12px 10px 12px", }}>
                     <CardMedia sx={{
-                        width: '90px', height: '90px', borderRadius: '6%', flex: "0 0 auto", imageRendering: "auto", border: "1px solid #e3e3e3", objectFit: "contain"
-                    }} src={albumInfo.cover || "/images/akari.jpg"} component="img"></CardMedia>
+                        width: '90px', height: '90px', borderRadius: '6%', flex: "0 0 auto", imageRendering: "auto", border: "1px solid #e3e3e3", objectFit: "cover"
+                    }} src={albumInfo.cover ? albumInfo.cover + "?s=@w300h300" : "/images/lxh_sign_400x400.png"} component="img"></CardMedia>
                     <Box sx={{
                         marginLeft: '20px',
                         width: "auto",
@@ -251,13 +251,13 @@ function MusicAlbum(props: MusicAlbumProps) {
                         <Typography variant='body2' noWrap >{albumInfo.artist}</Typography>
                         <Box sx={{ margin: "14px 0px", fontSize: "14px", color: "gray" }}>{"播放量 " + albumInfo.listenedCount}</Box>
                     </Box>
-                    <Box sx={{ marginTop: "auto",'@media(max-width: 600px)': { display: 'none' } }}>
+                    <Box sx={{ marginTop: "auto", '@media(max-width: 600px)': { display: 'none' } }}>
                         <Button sx={{ width: "90px", height: "32px", marginRight: "30px" }} variant='contained'>播放全部</Button>
                         <Button className="album-brief-tool-bar-btn" variant='outlined'>下载</Button>
                     </Box>
                 </Box>
 
-                <TableContainer sx={{ width: "auto", padding: "0px 12px", '@media(max-width: 600px)': { display: 'none' }}}>
+                <TableContainer sx={{ width: "auto", padding: "0px 12px", '@media(max-width: 600px)': { display: 'none' } }}>
                     <Table sx={{ tableLayout: "fixed", ".MuiTableCell-root": { padding: "0px 6px" } }}>
                         <TableHead>
                             <TableRow key={-1}>
@@ -344,7 +344,7 @@ function MusicAlbum(props: MusicAlbumProps) {
             </TableContainer>
             {/* 音乐列表(移动端) */}
             <TableContainer sx={{ width: "auto", padding: "0px 12px", '@media(min-width: 600px)': { display: 'none' } }}>
-                <Table sx={{ tableLayout: "fixed", ".MuiTableCell-root": { padding: "14px 6px" }, '@media(max-width: 600px)':{".MuiTableCell-root": { padding: "8px 6px" }} }}>
+                <Table sx={{ tableLayout: "fixed", ".MuiTableCell-root": { padding: "14px 6px" }, '@media(max-width: 600px)': { ".MuiTableCell-root": { padding: "8px 6px" } } }}>
                     <TableHead>
                         <TableRow >
                             <TableCell style={{ width: "10%" }} sx={{ borderBottom: "unset" }}></TableCell>
