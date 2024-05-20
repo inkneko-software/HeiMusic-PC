@@ -46,7 +46,7 @@ export interface UseMusicContextMenuProps {
  */
 export default function useMusicContextMenu(props: UseMusicContextMenuProps): [
     React.ReactNode,
-    (anchorPosition: IMusicContextMenuAnchorPostion, index: number ) => void,
+    (anchorPosition: IMusicContextMenuAnchorPostion, index: number) => void,
     boolean,
     IMusicContextMenuMusicInfo
 ] {
@@ -350,7 +350,7 @@ export default function useMusicContextMenu(props: UseMusicContextMenuProps): [
                     color='inherit'
                     startIcon={<PlaylistAddRoundedIcon />}
                     endIcon={<NavigateNextRoundedIcon />}
-                    onClick={() => { }}
+                    onClick={e => { e.stopPropagation(); }}
                     onMouseEnter={() => {
                         if (closeHandle !== null) {
                             clearTimeout(closeHandle);
@@ -414,7 +414,7 @@ export default function useMusicContextMenu(props: UseMusicContextMenuProps): [
                         sx={{ justifyContent: 'flex-start', padding: "6px 16px" }}
                         color='inherit'
                         startIcon={<DeleteSweepOutlinedIcon />}
-                        onClick={ () => props.onPlaylistMusicDelete([musicMenuInfo.musicId])}
+                        onClick={() => props.onPlaylistMusicDelete([musicMenuInfo.musicId])}
                         size='small'
                     >
                         从歌单中删除
@@ -425,15 +425,17 @@ export default function useMusicContextMenu(props: UseMusicContextMenuProps): [
             {/* 二级菜单 */}
             <Popover
                 open={playlistMenuOpen}
-                onClose={() => setPlaylistMenuOpen(false)}
+                onClose={() => {
+                    setPlaylistMenuOpen(false);
+                    setCreatePlaylistDialogOpen(false);
+                }}
                 anchorEl={addButtonRef.current}
                 anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
-                sx={{ ".MuiPaper-root": { ...customizedScrollBarStyle },  WebkitAppRegion: 'no-drag' }}
+                sx={{ ".MuiPaper-root": { ...customizedScrollBarStyle }, WebkitAppRegion: 'no-drag' }}
             >
                 <Paper
                     sx={{ display: 'flex', flexDirection: 'column', width: "160px", backgroundColor: theme.palette.pannelBackground.main, }}
                     onMouseEnter={() => setPlaylistMenuOpen(true)}
-                    onMouseLeave={() => setPlaylistMenuOpen(false)}
                 >
                     {/* 添加歌单对话框 */}
                     <NewPlaylisitDialog
@@ -470,7 +472,7 @@ export default function useMusicContextMenu(props: UseMusicContextMenuProps): [
                             return (
                                 <Button
                                     key={index}
-                                    sx={{ justifyContent: 'flex-start', padding: "6px 16px", ".MuiButton-endIcon": { marginLeft: 'auto', marginRight: '0px' } }}
+                                    sx={{ justifyContent: 'flex-start', padding: "6px 16px", ".MuiButton-endIcon": { marginLeft: 'auto', marginRight: '0px' }, textTransform: 'none' }}
                                     color='inherit'
                                     onClick={() => {
                                         PlaylistControllerService.addPlaylistMusic({ playlistId: playlist.playlistId, musicIdList: [musicMenuInfo.musicId] })
