@@ -10,3 +10,9 @@ files:
       - package.json
       - app
 publish: null
+linux:
+  target:
+    - target: deb
+      arch: x64
+    # - target: rpm
+    #   arch: x64
