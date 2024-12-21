@@ -17,7 +17,8 @@ export default function SpectrumIcon(props: ISpectrumIconProps) {
                 height: '100%',
                 backgroundColor: theme.palette.primary.main,
                 margin: '0px 1px',
-                animation: `0.5s linear ${duration}s infinite normal wave_slide`
+                animation: `0.5s linear ${duration}s infinite normal wave_slide`,
+                transformOrigin: 'top',
             }} />
         )
     }
@@ -46,13 +47,13 @@ export default function SpectrumIcon(props: ISpectrumIconProps) {
                 overflow: 'hidden',
                 '@keyframes wave_slide': {
                     '0%': {
-                        height: '100%'
+                        transform: 'scaleY(1)'
                     },
                     '50%': {
-                        height: '20%'
+                        transform: 'scaleY(0.2)'
                     },
                     '100%': {
-                        height: '100%'
+                        transform: 'scaleY(1)'
                     }
                 }
             }}>
