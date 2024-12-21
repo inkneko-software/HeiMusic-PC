@@ -27,6 +27,7 @@ import { pushToast } from '@components/HeiMusicMainLayout';
 import SpectrumIcon from '@components/Common/Icon/SpectrumIcon';
 import { HeiMusicContext } from '../../lib/HeiMusicContext';
 import useMusicContextMenu from '@components/MusicContextMenu';
+import GpsFixedOutlinedIcon from '@mui/icons-material/GpsFixedOutlined';
 
 interface MusicAlbumProps extends BoxProps {
 
@@ -170,10 +171,25 @@ function MusicAlbum(props: MusicAlbumProps) {
             })
     }
 
+    const handleScrollToCurrentPlaying = () => {
+        if (heiMusicContext.currentMusicInfo) {
+            var idPrefix = window.matchMedia("(min-width: 600px)").matches ? "music-id-" : "mobile-row-music-id-";
+            var currentMusicRow = document.getElementById(`${idPrefix}${heiMusicContext.currentMusicInfo.musicId}`);
+            if (currentMusicRow) {
+                currentMusicRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                //向下移动时。若弹出简略专辑信息，会导致高度发生变化，导致移动到的位置不准确。
+                //通过移动两次来解决这个问题
+                var handle = setInterval(()=>{
+                    currentMusicRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    clearInterval(handle);
+                }, 300);
+            }
+        }
+    };
 
 
     return (
-        <Box sx={{ height: '100%', width: '100%', overflowY: "auto" }} ref={containerRef}>
+        <Box sx={{ height: '100%', width: '100%', overflowY: "auto", position: 'relative' }} ref={containerRef}>
             {/* 专辑信息 */}
             <Box sx={{
                 marginTop: '20px',
@@ -284,6 +300,7 @@ function MusicAlbum(props: MusicAlbumProps) {
                     {
                         playlist.map((row, index) => (
                             <TableRow
+                                id={`music-id-${row.musicId}`}
                                 key={row.musicId}
                                 sx={[
                                     {
@@ -355,6 +372,7 @@ function MusicAlbum(props: MusicAlbumProps) {
                     {
                         playlist.map((row, index) => (
                             <TableRow
+                                id={`mobile-row-music-id-${row.musicId}`}
                                 key={row.musicId}
                                 sx={[
                                     {
@@ -422,6 +440,29 @@ function MusicAlbum(props: MusicAlbumProps) {
             </Box>
             {/* 音乐菜单 */}
             {MusicContextMenu}
+            <Box
+                sx={
+                    [
+                        heiMusicContext.currentMusicInfo.albumId !== albumInfo.albumId && {
+                            display: 'none'
+                        },
+                        {
+                            position: 'fixed',
+                            bottom: '80px',
+                            right: '16px',
+                            zIndex: 1000,
+                        },
+                    ]
+                }
+            >
+                <IconButton
+                    color="primary"
+                    onClick={handleScrollToCurrentPlaying}
+                >
+                    <GpsFixedOutlinedIcon />
+                </IconButton>
+            </Box>
+
         </Box >
     );
 }
