@@ -4,3 +4,9 @@ node_modules
 app
 dist
 .vscode
+
+# TypeScript incremental build cache
+*.tsbuildinfo
+
+# API 端点本地配置（模板见 api-server.json.example）
+api-server.json
