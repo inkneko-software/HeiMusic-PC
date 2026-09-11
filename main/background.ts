@@ -325,9 +325,9 @@ app.on('window-all-closed', () => {
 
 /**
  * app:// 协议处理器（生产态）——"壳层代理"：
- * - 后端前缀（/api、/public）：代理到配置的 apiHost，注入鉴权 Cookie，捕获 Set-Cookie，
- *   转发请求体与 Range 等请求头。渲染层的 API 请求与媒体资源因此统一使用相对路径，
- *   对 app:// 而言均为同源请求，彻底不涉及 CORS（与网页端 nginx 反代、开发态 next rewrites 同一约定）。
+ * - 后端前缀（/api、/public）：307 重定向到配置的 apiHost。渲染层的 API 请求与媒体
+ *   资源统一使用相对路径（与网页端 nginx 反代、开发态 next rewrites 同一约定），
+ *   鉴权 Cookie 由 webRequest 钩子按 apiHost/* 过滤器注入。
  * - 其余路径：本地静态文件（app/ 目录），映射逻辑与原 electron-serve 一致。
  * 注意：前缀表需与网页端 nginx 的反代 location 保持一致。
  */
@@ -354,28 +354,11 @@ app.on("ready", () => {
     protocol.handle('app', async (request) => {
         const url = new URL(request.url);
         if (BACKEND_PATH_PREFIXES.some(prefix => url.pathname.startsWith(prefix))) {
-            const headers = new Headers(request.headers);
-            headers.set('Cookie', `userId=${heiMusicConfig.userId}; sessionId=${heiMusicConfig.sessionId}`);
-            const init: any = { method: request.method, headers };
-            if (request.method !== 'GET' && request.method !== 'HEAD') {
-                //转发请求体（JSON / FormData 上传），duplex 为流式 body 的必需参数
-                init.body = request.body;
-                init.duplex = 'half';
-            }
-            const response = await net.fetch(heiMusicConfig.apiHost + url.pathname + url.search, init);
-            //捕获登录等接口的 Set-Cookie 并持久化（与下方 onHeadersReceived 钩子逻辑一致）
-            const setCookies: string[] = (response.headers as any).getSetCookie?.() ?? [];
-            setCookies.forEach(value => {
-                if (value.startsWith("sessionId")) {
-                    heiMusicConfig.sessionId = value.split(";")[0].split("=")[1];
-                    saveConfig();
-                }
-                if (value.startsWith("userId")) {
-                    heiMusicConfig.userId = value.split(";")[0].split("=")[1];
-                    saveConfig();
-                }
-            });
-            return response;
+            // 307 重定向到后端而非主进程流式代理：媒体下载、取消、连接管理全部交还
+            // Chromium 原生网络栈。实测主进程代理的流在渲染层取消（如切歌）时不会
+            // 中断上游下载，多次切歌每首泄漏一条连接，占满单主机连接上限（6）后
+            // 所有请求被阻塞。鉴权 Cookie 由下方 webRequest 钩子按 apiHost/* 注入。
+            return Response.redirect(heiMusicConfig.apiHost + url.pathname + url.search, 307);
         }
         const filePath = path.join(appDir, decodeURIComponent(url.pathname));
         const resolvedPath = await resolveStaticFile(filePath);
