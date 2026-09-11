@@ -14,6 +14,10 @@ import type { OnCancel } from '@api/codegen/core/CancelablePromise';
 import type { OpenAPIConfig } from '@api/codegen/core/OpenAPI';
 import { pushToast } from '@components/HeiMusicMainLayout';
 
+import { Capacitor } from '@capacitor/core';
+import { NATIVE_API_BASE } from '../../../lib/apiServer';
+import { ensureApiBase } from '../../../lib/mediaUrl';
+
 const isDefined = <T>(value: T | null | undefined): value is Exclude<T, null | undefined> => {
     return value !== undefined && value !== null;
 };
@@ -275,12 +279,6 @@ const catchErrorCodes = (options: ApiRequestOptions, result: ApiResult): void =>
 };
 
 
-var heiMusicConfig: HeiMusicConfig = null;
-if (typeof (window) !== "undefined" && typeof (window.electronAPI) !== "undefined") {
-    window.electronAPI.config.onChange((e, v) => {
-        heiMusicConfig = v;
-    })
-}
 /**
  * Request method
  * @param config The OpenAPI configuration object
@@ -291,18 +289,12 @@ if (typeof (window) !== "undefined" && typeof (window.electronAPI) !== "undefine
 export const request = <T>(config: OpenAPIConfig, options: ApiRequestOptions): CancelablePromise<T> => {
     return new CancelablePromise(async (resolve, reject, onCancel) => {
         try {
-            if (typeof (window) !== "undefined" && typeof (window.electronAPI) === "undefined") {
-                //网页端
-                config.BASE = "" //默认网页端使用的api服务器与当前网站地址相同
-            } else {
-                //客户端
-                if (heiMusicConfig === null) {
-                    await window.electronAPI.config.get().then(res => {
-                        heiMusicConfig = res;
-                    })
-                }
-                config.BASE = heiMusicConfig.apiHost
-            }
+
+            // Capacitor 原生：写死的 API 端点（lib/apiServer.ts），fetch 由 CapacitorHttp
+            //   原生网络层发出，无 CORS，媒体相对路径由 MainActivity 的壳层代理转发
+            // 网页端：空串（同源，nginx 反代）；开发态：dev server 的 rewrites 反代
+            // Electron：配置的 apiHost（媒体走 app:// 壳层代理，API 直连靠后端 CORS 白名单）
+            config.BASE = Capacitor.isNativePlatform() ? NATIVE_API_BASE : await ensureApiBase();
 
             const url = getUrl(config, options);
             const formData = getFormData(options);
@@ -325,7 +317,7 @@ export const request = <T>(config: OpenAPIConfig, options: ApiRequestOptions): C
                 catchErrorCodes(options, result);
 
                 //处理后端抛出的业务错误信息
-                if (responseBody !== undefined && responseBody.code !== undefined && responseBody.code !== 0){
+                if (responseBody !== undefined && responseBody.code !== undefined && responseBody.code !== 0) {
                     reject(new ApiError(options, result, responseBody.message))
                 }
 

@@ -1,5 +1,5 @@
-import { app, ipcMain, session, protocol, nativeImage, globalShortcut } from 'electron';
-import serve from 'electron-serve';
+import { app, ipcMain, session, protocol, nativeImage, globalShortcut, net } from 'electron';
+import { pathToFileURL } from 'url';
 import { createWindow } from './helpers';
 import path from 'path';
 import os from "os"
@@ -13,7 +13,12 @@ var configPath = path.join(os.homedir(), ".heimusic/", "heimusic.json");
 var heiMusicConfig: HeiMusicConfig = null;
 
 if (isProd) {
-    serve({ directory: 'app' });
+    // app:// 协议由本文件统一接管（静态文件 + 后端代理，处理器见文件末尾），
+    // stream 特权用于 <audio> 的 Range 流式请求
+    protocol.registerSchemesAsPrivileged([{
+        scheme: 'app',
+        privileges: { standard: true, secure: true, supportFetchAPI: true, stream: true, corsEnabled: true, allowServiceWorkers: true }
+    }]);
 } else {
     app.setPath('userData', `${app.getPath('userData')} (development)`);
     configPath = path.join(os.homedir(), ".heimusic/", "heimusic_dev.json");
@@ -318,10 +323,66 @@ app.on('window-all-closed', () => {
 });
 
 
+/**
+ * app:// 协议处理器（生产态）——"壳层代理"：
+ * - 后端前缀（/api、/public）：代理到配置的 apiHost，注入鉴权 Cookie，捕获 Set-Cookie，
+ *   转发请求体与 Range 等请求头。渲染层的 API 请求与媒体资源因此统一使用相对路径，
+ *   对 app:// 而言均为同源请求，彻底不涉及 CORS（与网页端 nginx 反代、开发态 next rewrites 同一约定）。
+ * - 其余路径：本地静态文件（app/ 目录），映射逻辑与原 electron-serve 一致。
+ * 注意：前缀表需与网页端 nginx 的反代 location 保持一致。
+ */
+const BACKEND_PATH_PREFIXES = ['/api', '/public'];
+
+async function resolveStaticFile(filePath: string): Promise<string> {
+    try {
+        const result = await fs.promises.stat(filePath);
+        if (result.isFile()) {
+            return filePath;
+        }
+        if (result.isDirectory()) {
+            return resolveStaticFile(path.join(filePath, 'index.html'));
+        }
+    } catch (_) { }
+    return null;
+}
+
 app.on("ready", () => {
-    protocol.registerFileProtocol("app", (request, callback) => {
-        const filePath = request.url.replace("app:///", "");
-        const decodedPath = decodeURI(filePath);
-        callback(decodedPath);
+    if (!isProd) {
+        return; // 开发态渲染层直接加载 dev server（http://localhost），/api 由 next rewrites 反代
+    }
+    const appDir = path.join(app.getAppPath(), 'app');
+    protocol.handle('app', async (request) => {
+        const url = new URL(request.url);
+        if (BACKEND_PATH_PREFIXES.some(prefix => url.pathname.startsWith(prefix))) {
+            const headers = new Headers(request.headers);
+            headers.set('Cookie', `userId=${heiMusicConfig.userId}; sessionId=${heiMusicConfig.sessionId}`);
+            const init: any = { method: request.method, headers };
+            if (request.method !== 'GET' && request.method !== 'HEAD') {
+                //转发请求体（JSON / FormData 上传），duplex 为流式 body 的必需参数
+                init.body = request.body;
+                init.duplex = 'half';
+            }
+            const response = await net.fetch(heiMusicConfig.apiHost + url.pathname + url.search, init);
+            //捕获登录等接口的 Set-Cookie 并持久化（与下方 onHeadersReceived 钩子逻辑一致）
+            const setCookies: string[] = (response.headers as any).getSetCookie?.() ?? [];
+            setCookies.forEach(value => {
+                if (value.startsWith("sessionId")) {
+                    heiMusicConfig.sessionId = value.split(";")[0].split("=")[1];
+                    saveConfig();
+                }
+                if (value.startsWith("userId")) {
+                    heiMusicConfig.userId = value.split(";")[0].split("=")[1];
+                    saveConfig();
+                }
+            });
+            return response;
+        }
+        const filePath = path.join(appDir, decodeURIComponent(url.pathname));
+        const resolvedPath = await resolveStaticFile(filePath);
+        const fileExtension = path.extname(filePath);
+        if (resolvedPath || !fileExtension || fileExtension === '.html' || fileExtension === '.asar') {
+            return net.fetch(pathToFileURL(resolvedPath ?? path.join(appDir, 'index.html')).toString());
+        }
+        return new Response(null, { status: 404 });
     });
 });
