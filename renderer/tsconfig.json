@@ -18,7 +18,8 @@
       ],
       "@api/*": [
         "./api/*"
-      ],
-    }
+      ]
+    },
+    "moduleResolution": "node"
   }
 }

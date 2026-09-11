@@ -13,6 +13,9 @@
     "openapi": "openapi -i http://localhost/v3/api-docs/default -o renderer/api/codegen --request renderer/api/request.ts"
   },
   "dependencies": {
+    "@capacitor/android": "^8.5.1",
+    "@capacitor/cli": "^8.5.1",
+    "@capacitor/core": "^8.5.1",
     "@emotion/react": "^11.10.5",
     "@emotion/styled": "^11.10.5",
     "@fontsource/roboto": "^4.5.8",

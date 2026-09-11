@@ -1,4 +1,6 @@
 import { MusicDto, Response, ResponseListMusic, ResponseMusic } from "@api/codegen";
+import { Capacitor } from "@capacitor/core";
+import { NATIVE_API_BASE } from "../../lib/apiServer";
 
 var heiMusicConfig: HeiMusicConfig = null;
 if (typeof (window) !== "undefined" && typeof (window.electronAPI) !== "undefined") {
@@ -9,7 +11,10 @@ if (typeof (window) !== "undefined" && typeof (window.electronAPI) !== "undefine
 
 export async function addMusic(title: string, file: Blob, translateTitle?: string, artistList?: Array<string>, onprogress?: (loaded: number, total: number) => void): Promise<ResponseMusic> {
     var host: string = "";
-    if (typeof (window) !== "undefined" && typeof (window.electronAPI) !== "undefined") {
+    if (Capacitor.isNativePlatform()) {
+        //原生：写死端点（lib/apiServer.ts），XHR 由 CapacitorHttp 原生层发出，无 CORS
+        host = NATIVE_API_BASE;
+    } else if (typeof (window) !== "undefined" && typeof (window.electronAPI) !== "undefined") {
         //客户端
         if (heiMusicConfig === null) {
             await window.electronAPI.config.get().then(res => {
@@ -60,7 +65,10 @@ export async function addMusic(title: string, file: Blob, translateTitle?: strin
 
 export async function addMusicFromCue(dto: MusicDto[], msuicfile: File, onprogress?: (loaded: number, total: number) => void): Promise<ResponseListMusic> {
     var host: string = "";
-    if (typeof (window) !== "undefined" && typeof (window.electronAPI) !== "undefined") {
+    if (Capacitor.isNativePlatform()) {
+        //原生：写死端点（lib/apiServer.ts），XHR 由 CapacitorHttp 原生层发出，无 CORS
+        host = NATIVE_API_BASE;
+    } else if (typeof (window) !== "undefined" && typeof (window.electronAPI) !== "undefined") {
         //客户端
         if (heiMusicConfig === null) {
             await window.electronAPI.config.get().then(res => {
