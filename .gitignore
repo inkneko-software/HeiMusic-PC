@@ -1,8 +1,9 @@
 node_modules
 *.log
 .next
-app
-dist
+# 锚定到仓库根目录：不锚定的 app/dist 会误伤 android/app 等子目录
+/app
+/dist
 .vscode
 
 # TypeScript incremental build cache
