@@ -75,6 +75,7 @@ export default function Search() {
                             result.map(music => {
                                 return (
                                     <TableRow
+                                        key={music.musicId}
                                         onDoubleClick={() => handlePlay(music)}
                                         sx={[{ ':hover': { background: theme.palette.pannelBackground.main } }/*, albumMenuOpen && albumMenuInfo.albumId === album.albumId && { background: theme.palette.pannelBackground.main }*/]}>
                                         <TableCell sx={{ width: '30%' }}>

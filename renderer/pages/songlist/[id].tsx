@@ -386,6 +386,7 @@ function Playlist(props: PlaylistProps) {
                     {
                         playlist.map((row, index) => (
                             <TableRow
+                                key={row.musicId}
                                 sx={[
                                     {
                                         userSelect: "none",
@@ -454,6 +455,7 @@ function Playlist(props: PlaylistProps) {
                     {
                         playlist.map((row, index) => (
                             <TableRow
+                                key={row.musicId}
                                 sx={[
                                     {
                                         userSelect: "none",

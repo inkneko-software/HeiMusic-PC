@@ -391,6 +391,7 @@ function AlbumEdit() {
                             {
                                 musicDialog.music && musicDialog.music.artists.map((artist, index) => {
                                     return <Chip
+                                        key={artist.artistId}
                                         label={artist.name}
                                         sx={{ margin: "0px 2px 2px 0px" }}
                                         avatar={<Avatar>{artist.name.charAt(0)}</Avatar>}
@@ -484,6 +485,7 @@ function AlbumEdit() {
                         {
                             albumArtists.map((value, index) => {
                                 return <Chip 
+                                key={value.artistId}
                                 label={value.name} 
                                 sx={{ margin: "0px 2px 2px 0px" }} 
                                 avatar={<Avatar>{value.name.charAt(0)}</Avatar>} 

@@ -1,0 +1,7 @@
+{
+  "extends": ["next/core-web-vitals"],
+  "rules": {
+    // 存量代码尚未清理，先以告警级别运行（循序渐进），清理后可恢复默认
+    "@next/next/no-img-element": "warn"
+  }
+}

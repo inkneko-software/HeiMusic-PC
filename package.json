@@ -10,6 +10,8 @@
     "dev": "nextron",
     "build": "nextron build",
     "postinstall": "electron-builder install-app-deps",
+    "typecheck": "tsc --noEmit -p tsconfig.main.json && tsc --noEmit -p renderer/tsconfig.json",
+    "lint": "cd renderer && next lint",
     "openapi": "openapi -i http://localhost/v3/api-docs/default -o renderer/api/codegen --request renderer/api/request.ts"
   },
   "dependencies": {
@@ -37,6 +39,8 @@
     "@types/node": "^16.11.7",
     "electron": "^29.0.0",
     "electron-builder": "^23.3.3",
+    "eslint": "^8.57.1",
+    "eslint-config-next": "^12.2.5",
     "next": "^12.2.5",
     "nextron": "^8.2.0",
     "openapi-typescript-codegen": "^0.24.0",

@@ -49,4 +49,6 @@ function Link(props: LinkProps) {
   );
 }
 
-export default React.forwardRef<HTMLAnchorElement, LinkProps>((props, ref) => <Link {...props} innerRef={ref} />);
+const TopLevelLink = (props: LinkProps, ref: React.Ref<HTMLAnchorElement>) => <Link {...props} innerRef={ref as React.Ref<HTMLAnchorElement>} />;
+TopLevelLink.displayName = "TopLevelLink";
+export default React.forwardRef(TopLevelLink);

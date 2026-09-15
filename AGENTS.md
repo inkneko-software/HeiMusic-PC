@@ -31,7 +31,7 @@ renderer/                     渲染层（Next.js）
     home.tsx / index.tsx      首页（index 转发 home）
     login.tsx / init.tsx      登录 / 创建根账户
     album/{[id],management,upload}.tsx  album/edit/[albumId].tsx
-    artist/[id[.tsx  series/index.tsx  songlist/[id].tsx
+    artist/[id].tsx  series/index.tsx  songlist/[id].tsx
     search/index.tsx  favoriate.tsx  daily30.tsx  userDetail.tsx
     settings/player/{home,layout}.tsx
     _app.tsx                  全局 Provider + 登录门禁 + 布局分发

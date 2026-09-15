@@ -13,7 +13,6 @@ import { NextPage } from 'next';
 
 
 declare module '@mui/styles/defaultTheme' {
-    // eslint-disable-next-line @typescript-eslint/no-empty-interface
     interface DefaultTheme extends Theme { }
 }
 
@@ -26,7 +25,7 @@ type AppPropsWithLayout = AppProps & {
 }
 
 
-export default function (props: AppProps) {
+export default function MyApp(props: AppProps) {
     const { Component, pageProps }: AppPropsWithLayout = props;
     const [noLogin, setNoLogin] = React.useState(true);
     const [currentMusicInfo, setCurrentMusicInfo] = React.useState<ICurrentMusicInfo>(null);
