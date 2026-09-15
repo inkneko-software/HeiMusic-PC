@@ -20,7 +20,7 @@ export default function ImageSkeleton(props: CardMediaProps<'img'>) {
                 setLoaded(true);
             })
         }
-    }, []);
+    }, [props.src]);
 
     return (
         <>

@@ -212,7 +212,10 @@ function MusicInfoDialog(props: IMusicInfoDialogProps) {
     const [addArtistDialogOpen, setAddArtistDialogOpen] = React.useState(false)
 
     React.useEffect(() => {
+        // 仅在对话框打开状态翻转时重置编辑副本。有意不依赖 props.music：
+        // 父级在编辑过程中更新音乐对象会用旧值覆盖用户未保存的输入
         setMusic({ ...props.music })
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [props.open])
 
     return (

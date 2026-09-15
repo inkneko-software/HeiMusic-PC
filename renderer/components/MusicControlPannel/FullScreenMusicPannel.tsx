@@ -147,7 +147,8 @@ export default function FullScreenMusicPannel(props: IFullScreenMusicPannelProps
         lyricLines[lyricLines.length - 1].duration = props.duration - lyricLines[lyricLines.length - 1].startTime;
         setLyrics(lyricLines);
         console.log(lyricLines)
-    }, [])
+        // duration 变化即切歌（当前为占位歌词，切歌后需按新时长修正末行持续时间）
+    }, [props.duration])
 
 
     return (

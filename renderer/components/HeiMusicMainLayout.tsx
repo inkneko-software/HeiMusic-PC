@@ -124,7 +124,7 @@ function HeiMusicMainLayout({ children }) {
                     makeToast(error.message, 'error', "bottom-left")
                 }
             })
-    }, [])
+    }, [makeToast])
 
     const onMinimizedClicked = () => {
         window.electronAPI.windowManagement.minimize()

@@ -63,7 +63,7 @@ function AlbumCard(props: IAlbumCard) {
                 setLoaded(true);
             })
         }
-    }, [imgRef.current]);
+    }, [props.album.frontCoverUrl]);
     return (
 
         <Link href={`/album/${props.album.albumId}`}>
@@ -165,7 +165,7 @@ function Home() {
             })
 
 
-    }, [])
+    }, [makeToast])
 
     //选取背景色
     const handleRandomMusicCoverLoaded = () => {

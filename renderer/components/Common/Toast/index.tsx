@@ -47,7 +47,9 @@ export default function useToast(): [JSX.Element, (message: string, variant?: To
         }
     }, [snackPack, notifyState]);
 
-    function makeToast(message: string, variant: ToastVairant = "success", pos: ToastPositionVariant = "center") {
+    // useCallback 固定函数身份：调用方（home、HeiMusicMainLayout 等）需要在
+    // useEffect 依赖中引用它，不固定会导致挂载效果在每次渲染后重跑
+    const makeToast = React.useCallback(function makeToast(message: string, variant: ToastVairant = "success", pos: ToastPositionVariant = "center") {
         var actualPos: SnackbarOrigin;
         switch (pos) {
             case 'top-left':
@@ -83,7 +85,7 @@ export default function useToast(): [JSX.Element, (message: string, variant?: To
             variant: variant,
             anchorOrigin: actualPos
         }]);
-    }
+    }, [])
 
     function notifyMessageClose(event, reason) {
         if (reason !== 'clickaway') {

@@ -97,7 +97,9 @@ const Login = (props: LoginProps) => {
                 }
             })
 
-    }, [])
+    // 登录门禁探测（_app 渲染 Login 时执行一次）；props 变化仅由父级状态翻转引起，
+    // 重新探测 nav 为幂等请求，无副作用
+    }, [props])
 
     return (
         <Box sx={{ width: '100%', height: '100%', display: 'flex' }}>

@@ -45,7 +45,9 @@ const CoverInput = (({ width = "128px", height = "128px", radius = "6%", cover, 
             <input ref={coverFileRef} name="cover" type="file" hidden />
             {/* 放大预览对话框 */}
             <Dialog open={previewCoverDialogOpen} onClose={() => setPreviewCoverDialogOpen(false)}>
-                <img src={coverPreviewLink} onClick={() => setPreviewCoverDialogOpen(false)} />
+                {/* 本地 blob: 预览图，next/image 无法优化，禁用规则 */}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={coverPreviewLink} alt="封面预览" onClick={() => setPreviewCoverDialogOpen(false)} />
             </Dialog>
             {/* 选择后的直接预览 */}
             <Box sx={[{ height: height, width: width, position: "relative", }, cover === null && { display: "none" }]}>

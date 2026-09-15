@@ -126,7 +126,9 @@ interface IMusicControlPannel extends BoxProps {
 }
 
 function MusicControlPannel(props: IMusicControlPannel) {
-    const heiMusicContext = React.useContext(HeiMusicContext);
+    // 仅解构 setter（useState 的 setter 身份稳定），避免依赖整个 context 对象
+    // 导致 effect 反复重跑；本组件与 _app 双向同步播放状态
+    const { setCurrentMusicInfo: setGlobalMusicInfo } = React.useContext(HeiMusicContext);
     const router = useRouter();
     const theme = useTheme();
     const audioRef = React.useRef<HTMLAudioElement>(null)
@@ -165,8 +167,122 @@ function MusicControlPannel(props: IMusicControlPannel) {
 
     const [fullScreenMusicPannelOpen, setFullScreenMusicPannelOpen] = React.useState(false);
 
+    const handlePlayButtonClick = React.useCallback((newList: boolean = false) => {
+        if (musicList.length === 0 && newList == false) {
+            return;
+        }
+
+        //fixme: 按钮在事件未完成时被按下
+        var handle = null;
+        var sourceVolume = audioRef.current.volume;
+        if (handle !== null) {
+            clearInterval(handle);
+            audioRef.current.volume = sourceVolume
+        }
+
+
+        if (audioRef.current.paused) {
+            //设置主进程小窗口按钮
+            if (typeof (window) !== "undefined" && typeof (window.electronAPI) !== "undefined") {
+                window.electronAPI.thumbnail.playing();
+            }
+
+            if (audioRef.current.src === '') {
+                const nextMusic = musicList[0];
+                setCurrentMusicInfo({ ...nextMusic, currentIndex: 0, currentQuality: nextMusic.qualityOption[0] });
+                audioRef.current.src = nextMusic.qualityOption[0].url;
+                document.title = `${nextMusic.title} - HeiMusic!`;
+            }
+            audioRef.current.play();
+            var counter = 0;
+            sourceVolume = audioRef.current.volume;
+            audioRef.current.volume = 0;
+            handle = setInterval(() => {
+                var volumeIncrement = sourceVolume / 10
+                if (audioRef.current.volume + volumeIncrement > sourceVolume) {
+                    audioRef.current.volume = sourceVolume;
+                } else {
+                    audioRef.current.volume += volumeIncrement;
+                }
+                counter += 1;
+                if (counter === 10) {
+                    audioRef.current.volume = sourceVolume;
+                    clearInterval(handle);
+                    handle = null;
+                }
+            }, 100)
+
+        } else {
+            if (typeof (window) !== "undefined" && typeof (window.electronAPI) !== "undefined") {
+                window.electronAPI.thumbnail.paused();
+            }
+
+            var counter = 0;
+            sourceVolume = audioRef.current.volume;
+            handle = setInterval(() => {
+                var volumeDecrement = sourceVolume / 10;
+                if (audioRef.current.volume - volumeDecrement < 0) {
+                    audioRef.current.volume = 0;
+                } else {
+                    audioRef.current.volume -= sourceVolume / 10
+                }
+                counter += 1;
+                if (counter === 10) {
+                    audioRef.current.volume = 0;
+                    clearInterval(handle);
+                    audioRef.current.pause();
+                    audioRef.current.volume = sourceVolume;
+                    handle = null;
+                }
+            }, 100)
+
+        }
+    }, [musicList])
+
+    const handleLoopOptionClick = () => {
+
+    }
+
+    const handlePrevClick = React.useCallback(() => {
+        const audio = audioRef.current;
+        audio.currentTime = 0;
+        if (playbackMethod === 'loop') {
+            var nextIndex = currentMusicInfo.currentIndex - 1;
+            if (nextIndex === -1) {
+                nextIndex = musicList.length - 1;
+            }
+            var nextMusic: IMusicInfo = musicList[nextIndex];
+            setCurrentMusicInfo({ ...nextMusic, currentIndex: nextIndex, currentQuality: nextMusic.qualityOption[0] });
+            audio.src = nextMusic.qualityOption[0].url;
+            if (nextMusic.isLargeTrackMusic) {
+                audio.currentTime = nextMusic.discStartTime;
+            }
+            audio.play();
+            document.title = `${nextMusic.title} - HeiMusic!`;
+        }
+    }, [playbackMethod, currentMusicInfo, musicList])
+
+    const handleNextClick = React.useCallback(() => {
+        const audio = audioRef.current;
+        if (playbackMethod === 'loop') {
+            audio.currentTime = 0;
+            var nextIndex = currentMusicInfo.currentIndex + 1;
+            if (nextIndex === musicList.length) {
+                nextIndex = 0;
+            }
+            var nextMusic: IMusicInfo = musicList[nextIndex];
+            setCurrentMusicInfo({ ...nextMusic, currentIndex: nextIndex, currentQuality: nextMusic.qualityOption[0] });
+            audio.src = nextMusic.qualityOption[0].url;
+            if (nextMusic.isLargeTrackMusic) {
+                audio.currentTime = nextMusic.discStartTime;
+            }
+            audio.play();
+            document.title = `${nextMusic.title} - HeiMusic!`;
+        }
+    }, [playbackMethod, currentMusicInfo, musicList])
+
     React.useEffect(() => {
-        heiMusicContext.setCurrentMusicInfo({ musicId: currentMusicInfo.musicId, albumId: currentMusicInfo.albumId });
+        setGlobalMusicInfo({ musicId: currentMusicInfo.musicId, albumId: currentMusicInfo.albumId });
         if (audioRef.current !== null) {
             const audio = audioRef.current;
             //获取音量配置
@@ -331,121 +447,9 @@ function MusicControlPannel(props: IMusicControlPannel) {
             }
         }
 
-    }, [audioRef.current, currentMusicInfo, musicList])
-
-    const handlePlayButtonClick = (newList: boolean = false) => {
-        if (musicList.length === 0 && newList == false) {
-            return;
-        }
-
-        //fixme: 按钮在事件未完成时被按下
-        var handle = null;
-        var sourceVolume = audioRef.current.volume;
-        if (handle !== null) {
-            clearInterval(handle);
-            audioRef.current.volume = sourceVolume
-        }
+    }, [currentMusicInfo, musicList, playbackMethod, handlePlayButtonClick, handlePrevClick, handleNextClick, setGlobalMusicInfo])
 
 
-        if (audioRef.current.paused) {
-            //设置主进程小窗口按钮
-            if (typeof (window) !== "undefined" && typeof (window.electronAPI) !== "undefined") {
-                window.electronAPI.thumbnail.playing();
-            }
-
-            if (audioRef.current.src === '') {
-                const nextMusic = musicList[0];
-                setCurrentMusicInfo({ ...nextMusic, currentIndex: 0, currentQuality: nextMusic.qualityOption[0] });
-                audioRef.current.src = nextMusic.qualityOption[0].url;
-                document.title = `${nextMusic.title} - HeiMusic!`;
-            }
-            audioRef.current.play();
-            var counter = 0;
-            sourceVolume = audioRef.current.volume;
-            audioRef.current.volume = 0;
-            handle = setInterval(() => {
-                var volumeIncrement = sourceVolume / 10
-                if (audioRef.current.volume + volumeIncrement > sourceVolume) {
-                    audioRef.current.volume = sourceVolume;
-                } else {
-                    audioRef.current.volume += volumeIncrement;
-                }
-                counter += 1;
-                if (counter === 10) {
-                    audioRef.current.volume = sourceVolume;
-                    clearInterval(handle);
-                    handle = null;
-                }
-            }, 100)
-
-        } else {
-            if (typeof (window) !== "undefined" && typeof (window.electronAPI) !== "undefined") {
-                window.electronAPI.thumbnail.paused();
-            }
-
-            var counter = 0;
-            sourceVolume = audioRef.current.volume;
-            handle = setInterval(() => {
-                var volumeDecrement = sourceVolume / 10;
-                if (audioRef.current.volume - volumeDecrement < 0) {
-                    audioRef.current.volume = 0;
-                } else {
-                    audioRef.current.volume -= sourceVolume / 10
-                }
-                counter += 1;
-                if (counter === 10) {
-                    audioRef.current.volume = 0;
-                    clearInterval(handle);
-                    audioRef.current.pause();
-                    audioRef.current.volume = sourceVolume;
-                    handle = null;
-                }
-            }, 100)
-
-        }
-    }
-
-    const handleLoopOptionClick = () => {
-
-    }
-
-    const handlePrevClick = () => {
-        const audio = audioRef.current;
-        audio.currentTime = 0;
-        if (playbackMethod === 'loop') {
-            var nextIndex = currentMusicInfo.currentIndex - 1;
-            if (nextIndex === -1) {
-                nextIndex = musicList.length - 1;
-            }
-            var nextMusic: IMusicInfo = musicList[nextIndex];
-            setCurrentMusicInfo({ ...nextMusic, currentIndex: nextIndex, currentQuality: nextMusic.qualityOption[0] });
-            audio.src = nextMusic.qualityOption[0].url;
-            if (nextMusic.isLargeTrackMusic) {
-                audio.currentTime = nextMusic.discStartTime;
-            }
-            audio.play();
-            document.title = `${nextMusic.title} - HeiMusic!`;
-        }
-    }
-
-    const handleNextClick = () => {
-        const audio = audioRef.current;
-        if (playbackMethod === 'loop') {
-            audio.currentTime = 0;
-            var nextIndex = currentMusicInfo.currentIndex + 1;
-            if (nextIndex === musicList.length) {
-                nextIndex = 0;
-            }
-            var nextMusic: IMusicInfo = musicList[nextIndex];
-            setCurrentMusicInfo({ ...nextMusic, currentIndex: nextIndex, currentQuality: nextMusic.qualityOption[0] });
-            audio.src = nextMusic.qualityOption[0].url;
-            if (nextMusic.isLargeTrackMusic) {
-                audio.currentTime = nextMusic.discStartTime;
-            }
-            audio.play();
-            document.title = `${nextMusic.title} - HeiMusic!`;
-        }
-    }
 
     const handleVolumeChange = (value) => {
         setVolume(value);

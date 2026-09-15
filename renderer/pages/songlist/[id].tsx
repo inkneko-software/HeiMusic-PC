@@ -181,7 +181,7 @@ function Playlist(props: PlaylistProps) {
             // }))
         })()
 
-    }, [id])
+    }, [id, props.isUserFavoriteMusicList, props.isDaily30MusicList])
 
     React.useEffect(() => {
         if (containerRef.current !== null && playlistInfoRef.current !== null) {
