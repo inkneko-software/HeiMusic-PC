@@ -18,18 +18,19 @@ export class PlaylistControllerService {
 
     /**
      * 更新歌单信息
-     * @param requestBody 
+     * @param dto 
      * @returns ResponseObject OK
      * @throws ApiError
      */
     public static updatePlaylistInfo(
-requestBody?: UpdatePlaylistInfoDto,
+dto: UpdatePlaylistInfoDto,
 ): CancelablePromise<ResponseObject> {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/api/v1/playlist/updatePlaylistInfo',
-            body: requestBody,
-            mediaType: 'application/json',
+            query: {
+                'dto': dto,
+            },
         });
     }
 

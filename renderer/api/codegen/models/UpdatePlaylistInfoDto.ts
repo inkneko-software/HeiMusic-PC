@@ -19,5 +19,8 @@ export type UpdatePlaylistInfoDto = {
      * 序号
      */
     sequenceNumber?: number;
+    /**
+     * 封面图片文件
+     */
     coverFile?: Blob;
 };

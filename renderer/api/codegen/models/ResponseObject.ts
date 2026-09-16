@@ -5,5 +5,5 @@
 export type ResponseObject = {
     code?: number;
     message?: string;
-    data?: Record<string, any>;
+    data?: any;
 };

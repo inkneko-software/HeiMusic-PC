@@ -3,7 +3,10 @@
 /* eslint-disable */
 
 /**
- * This file is used to customize api host, which allows the client to use the configured apiHost in HeiMusicConfig.
+ * openapi-typescript-codegen 的自定义 request 模板（package.json 的 `--request` 参数）。
+ * 每次 `npm run openapi` 会被原样复制到 renderer/api/codegen/core/request.ts，
+ * 因此 import 必须使用对模板位置（renderer/api/）与生成位置（renderer/api/codegen/core/）
+ * 都成立的 alias 路径。
  */
 
 import { ApiError } from '@api/codegen/core/ApiError';
@@ -15,8 +18,8 @@ import type { OpenAPIConfig } from '@api/codegen/core/OpenAPI';
 import { pushToast } from '@components/HeiMusicMainLayout';
 
 import { Capacitor } from '@capacitor/core';
-import { NATIVE_API_BASE } from '../../../lib/apiServer';
-import { ensureApiBase } from '../../../lib/mediaUrl';
+import { NATIVE_API_BASE } from '@api/../lib/apiServer';
+import { ensureApiBase } from '@api/../lib/mediaUrl';
 
 const isDefined = <T>(value: T | null | undefined): value is Exclude<T, null | undefined> => {
     return value !== undefined && value !== null;
@@ -217,9 +220,10 @@ export const sendRequest = async (
         signal: controller.signal,
     };
 
-    if (config.WITH_CREDENTIALS) {
-        request.credentials = config.CREDENTIALS;
-    }
+    //登录态依赖 userId/sessionId 双 cookie，所有请求无条件携带。
+    //不读 config.WITH_CREDENTIALS：OpenAPI.ts 每次重新生成都会回退为
+    //生成器默认值 false，Electron 直连 apiHost 的跨源请求会因此丢 cookie
+    request.credentials = 'include';
 
     onCancel(() => controller.abort());
 

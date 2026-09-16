@@ -14,6 +14,50 @@ import { request as __request } from '../core/request';
 export class AuthControllerService {
 
     /**
+     * 修改密码
+     * 在已登录状态下通过旧密码验证修改密码，不依赖邮件验证码。修改成功会以新会话覆盖登录态cookie
+     * @param oldPassword 当前密码
+     * @param newPassword 新密码
+     * @returns ResponseObject OK
+     * @throws ApiError
+     */
+    public static updatePassword(
+oldPassword: string,
+newPassword: string,
+): CancelablePromise<ResponseObject> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/auth/updatePassword',
+            query: {
+                'oldPassword': oldPassword,
+                'newPassword': newPassword,
+            },
+        });
+    }
+
+    /**
+     * 修改绑定邮箱
+     * 邮箱为登录标识，修改前需验证当前密码。自动创建的root账户首次登录后应将占位邮箱换成真实邮箱
+     * @param email 新邮箱
+     * @param password 当前密码
+     * @returns ResponseObject OK
+     * @throws ApiError
+     */
+    public static updateEmail(
+email: string,
+password: string,
+): CancelablePromise<ResponseObject> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/auth/updateEmail',
+            query: {
+                'email': email,
+                'password': password,
+            },
+        });
+    }
+
+    /**
      * @param email 
      * @returns Response OK
      * @throws ApiError

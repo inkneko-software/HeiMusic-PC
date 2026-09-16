@@ -14,6 +14,9 @@ export type UpdateAlbumInfoDto = {
      * 专辑标题
      */
     title?: string;
+    /**
+     * 封面
+     */
     cover?: Blob;
     /**
      * 欲设置的专辑艺术家列表
