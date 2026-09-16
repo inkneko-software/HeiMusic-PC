@@ -5,7 +5,6 @@ import Skeleton from '@mui/material/Skeleton';
 import Typography from '@mui/material/Typography';
 // import Link from '../components/Common/Link';
 import Link from 'next/link';
-import MuiLink from '@mui/material/Link';
 import useToast from '../components/Common/Toast';
 import { AlbumControllerService, AlbumVo, ApiError, MusicVo, PlaylistControllerService } from '../api/codegen';
 import { useTheme } from '@mui/styles'
@@ -299,8 +298,8 @@ function Home() {
             </Box> */}
             <Box sx={[{ display: 'none' }, firstLaunch && { display: 'flex', flexDirection: 'column' }]}>
                 <Typography sx={{ marginBottom: '24px', userSelect: 'none' }}>欢迎使用HeiMusic!</Typography>
-                <Typography sx={{ marginBottom: '24px', userSelect: 'none' }}>第一次使用请设置<Link href='/init'><MuiLink>管理账户</MuiLink></Link></Typography>
-                <Typography sx={{ marginBottom: '24px', userSelect: 'none' }}>设置完成后，可通过左侧专辑管理按钮进行音乐导入</Typography>
+                <Typography sx={{ marginBottom: '24px', userSelect: 'none' }}>管理员账户由服务端自动创建，初始密码见服务端日志</Typography>
+                <Typography sx={{ marginBottom: '24px', userSelect: 'none' }}>可通过左侧专辑管理按钮进行音乐导入</Typography>
             </Box>
             <Box sx={[{ display: 'flex', flexDirection: 'column' }, firstLaunch && { display: 'none' }]}>
                 {/* 推荐 */}

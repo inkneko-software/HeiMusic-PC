@@ -20,7 +20,7 @@ import Typography from '@mui/material/Typography'
 import styles from "./LoginDialog.module.css"
 import { AlertColor } from '@mui/material/Alert';
 
-import { AuthControllerService } from '../../api/codegen';
+import { ApiError, AuthControllerService } from '../../api/codegen';
 
 interface IInputProps extends InputBaseProps {
     children?: React.ReactNode,
@@ -49,6 +49,16 @@ function PasswordLogin(props) {
 
     const [accountInput, setAccountInput] = React.useState("")
     const [password, setPassword] = React.useState("")
+    //密码连续失败被锁定（业务码1007）时的剩余秒数
+    const [lockCountdown, setLockCountdown] = React.useState(0)
+
+    React.useEffect(() => {
+        if (lockCountdown <= 0) {
+            return;
+        }
+        const timer = setTimeout(() => setLockCountdown(lockCountdown - 1), 1000);
+        return () => clearTimeout(timer);
+    }, [lockCountdown])
 
     const [notifyState, setNotifyState] = React.useState<NotifyState>({
         open: false,
@@ -70,6 +80,9 @@ function PasswordLogin(props) {
     }
 
     function Login() {
+        if (lockCountdown > 0) {
+            return;
+        }
         AuthControllerService.login({ email: accountInput, password: password })
             .then((json) => {
                 notifyMessage("登录成功", "success")
@@ -77,6 +90,10 @@ function PasswordLogin(props) {
             })
             .catch((error) => {
                 notifyMessage(`${error.message}`, "warning")
+                //1007：同一邮箱连续失败次数过多，后端锁定15分钟
+                if (error instanceof ApiError && error.body?.code === 1007) {
+                    setLockCountdown(15 * 60)
+                }
             })
 
     }
@@ -111,7 +128,7 @@ function PasswordLogin(props) {
             </Box>
             <Stack sx={{ marginTop: 2, display: "flex" }} direction='row' spacing={2}>
                 <Button variant='outlined' fullWidth onClick={switchToAuthLogin}>注册</Button>
-                <Button variant='contained' fullWidth onClick={Login}>登录</Button>
+                <Button variant='contained' fullWidth onClick={Login} disabled={lockCountdown > 0}>{lockCountdown > 0 ? `${Math.ceil(lockCountdown / 60)}分钟后可重试` : '登录'}</Button>
             </Stack>
             <Snackbar open={notifyState.open} autoHideDuration={3000} onClose={notifyMessageClose} anchorOrigin={{ "vertical": "bottom", "horizontal": "center" }}>
                 <Alert severity={notifyState.variant}>
@@ -177,7 +194,12 @@ function AuthCodeLogin(props) {
                 setInterval(() => { location.reload() }, 2000)
             })
             .catch((error) => {
-                notifyMessage(`${error.message}`, "warning")
+                //1002：验证码错误；连续输错5次后验证码作废，正确码也过不了，引导重新获取
+                if (error instanceof ApiError && error.body?.code === 1002) {
+                    notifyMessage("验证码错误或已失效，请重新获取验证码", "warning")
+                } else {
+                    notifyMessage(`${error.message}`, "warning")
+                }
             })
     }
 

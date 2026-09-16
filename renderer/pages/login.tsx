@@ -28,6 +28,11 @@ const Login = (props: LoginProps) => {
     const [isNetworkError, setIsNetworkError] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [loginButtonDisabled, setLoginButtonDisabled] = useState(false);
+    //密码连续失败被锁定（业务码1007）时的剩余秒数
+    const [lockCountdown, setLockCountdown] = useState(0);
+    //当前正在连接的API服务器（Electron为配置的apiHost，其余环境为页面origin）
+    const [currentApiHost, setCurrentApiHost] = useState("");
+    const [apiHostInput, setApiHostInput] = useState("");
     const router = useRouter();
 
     const onMinimizedClicked = () => {
@@ -43,6 +48,9 @@ const Login = (props: LoginProps) => {
     }
 
     const handleLogin = () => {
+        if (lockCountdown > 0) {
+            return;
+        }
         setLoginButtonDisabled(true);
         AuthControllerService.login({ email: email, password: password })
             .then(res => {
@@ -64,8 +72,20 @@ const Login = (props: LoginProps) => {
             .catch((error: ApiError) => {
                 makeToast(error.message, 'error', 'bottom-right')
                 setLoginButtonDisabled(false);
+                //1007：同一邮箱连续失败次数过多，后端锁定15分钟
+                if (error.body?.code === 1007) {
+                    setLockCountdown(15 * 60);
+                }
             })
     }
+
+    useEffect(() => {
+        if (lockCountdown <= 0) {
+            return;
+        }
+        const timer = setTimeout(() => setLockCountdown(lockCountdown - 1), 1000);
+        return () => clearTimeout(timer);
+    }, [lockCountdown]);
 
     const handleRetry = () => {
         setIsNetworkError(false);
@@ -80,9 +100,25 @@ const Login = (props: LoginProps) => {
             })
     }
 
+    const handleSaveApiHost = () => {
+        if (apiHostInput.trim() === "") {
+            return;
+        }
+        window.electronAPI.config.set("apiHost", apiHostInput.trim());
+        //保存并重启应用，重启后自动用新地址重新连接
+        window.electronAPI.config.saveAndReload();
+    }
+
     useEffect(() => {
         if (typeof (window) !== 'undefined' && typeof (window.electronAPI) !== 'undefined') {
             setClient(true)
+            window.electronAPI.config.get().then(config => {
+                setCurrentApiHost(config.apiHost);
+                setApiHostInput(config.apiHost);
+            })
+        } else if (typeof (window) !== 'undefined') {
+            //网页端API与页面同源（由nginx反代），无可配置的apiHost
+            setCurrentApiHost(window.location.origin);
         }
 
         UserControllerService.nav()
@@ -122,7 +158,7 @@ const Login = (props: LoginProps) => {
                         </Typography>
                         <TextField placeholder='请输入账户邮箱' size='small' value={email} onChange={e => setEmail(e.target.value)}></TextField>
                         <TextField placeholder='请输入账户密码' type='password' sx={{ marginTop: '12px' }} size='small' value={password} onChange={e => setPassword(e.target.value)} onKeyUp={e => { e.key === 'Enter' && handleLogin() }}></TextField>
-                        <Button sx={{ marginTop: '12px' }} variant='contained' onClick={handleLogin} disabled={loginButtonDisabled} >{loginButtonDisabled ? '登录中' : '登录'}</Button>
+                        <Button sx={{ marginTop: '12px' }} variant='contained' onClick={handleLogin} disabled={loginButtonDisabled || lockCountdown > 0} >{lockCountdown > 0 ? `尝试次数过多，${Math.ceil(lockCountdown / 60)}分钟后可重试` : loginButtonDisabled ? '登录中' : '登录'}</Button>
                         <Box sx={{ display: 'flex' }}>
                             <Button >注册账号</Button>
                             <Button sx={{ marginLeft: 'auto' }}>找回密码</Button>
@@ -135,6 +171,7 @@ const Login = (props: LoginProps) => {
                     <Box sx={{ display: 'flex', flexDirection: 'column', margin: "auto auto", flexGrow: '1', justifyContent: 'center', alignItems: 'center' }}>
                         <CircularProgress />
                         <Typography variant='subtitle2' sx={{ marginTop: '12px' }}>尝试获取登录信息...</Typography>
+                        <Typography variant='subtitle2' sx={{ color: 'text.secondary', wordBreak: 'break-all' }}>正在连接：{currentApiHost}</Typography>
                     </Box>
 
                 }
@@ -143,6 +180,14 @@ const Login = (props: LoginProps) => {
                     <Box sx={{ display: 'flex', flexDirection: 'column', margin: "auto auto", flexGrow: '1', justifyContent: 'center', alignItems: 'center' }}>
                         <ErrorOutlineOutlinedIcon />
                         <Typography variant='subtitle2' sx={{ marginTop: '12px' }}>连接至服务器失败</Typography>
+                        <Typography variant='subtitle2' sx={{ color: 'text.secondary', wordBreak: 'break-all' }}>当前服务器：{currentApiHost}</Typography>
+                        {
+                            client &&
+                            <Box sx={{ display: 'flex', marginTop: '12px', width: '90%' }}>
+                                <TextField size='small' sx={{ flexGrow: '1' }} value={apiHostInput} onChange={e => setApiHostInput(e.target.value)} placeholder='API服务器，如 http://192.168.1.100:8080' spellCheck={false} />
+                                <Button variant='outlined' sx={{ marginLeft: '8px', flex: '0 0 auto' }} onClick={handleSaveApiHost}>保存并重连</Button>
+                            </Box>
+                        }
                     </Box>
 
                 }
