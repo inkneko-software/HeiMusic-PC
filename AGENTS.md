@@ -117,7 +117,7 @@ npx cap copy android     # 把 app/ 同步进 android/app/src/main/assets/public
 - 配置对象保存在**主进程内存**中，通过 IPC 读写：`config::get` / `config::set` / `config::save` / `config::saveAndReload` / `config::onChange`。
 - 类型定义：`main/types/config.d.ts` 的 `HeiMusicConfig`。
 - Electron 会话 Cookie（`userId`、`sessionId`）由主进程 `webRequest` 钩子自动注入与捕获（`main/background.ts`），渲染层无需手动处理。
-- Android 端 API 端点来自仓库根目录 `api-server.json`（**不入库，需先按 `api-server.json.example` 创建**），由 `renderer/lib/apiServer.ts` 与 `app/build.gradle` 双端读取，务必保持一致。
+- 网页端开发态的 `/api`、`/public` 转发端点与 Android 端 API 端点均来自仓库根目录 `api-server.json`（**不入库，需先按 `api-server.json.example` 创建**），由 `renderer/next.config.js`（dev rewrites）、`renderer/lib/apiServer.ts` 与 `android/app/build.gradle` 三处读取同一份文件，务必保持一致。
 
 ### 4.3 IPC 与跨组件通信
 
@@ -126,6 +126,7 @@ npx cap copy android     # 把 app/ 同步进 android/app/src/main/assets/public
 - **非 Electron 环境必须判空**：`typeof window.electronAPI !== 'undefined'`。
 - 渲染层内部跨组件通信使用 DOM `CustomEvent`，已存在的事件名：
   - `main::pushToast` — 全局 Toast，推荐直接调用 `pushToast(message, variant?, position?)`（从 `@components/HeiMusicMainLayout` 导出）。
+  - `user::profileUpdated` — 用户设置页保存资料/更新头像成功后派发，主布局监听并重新拉取 nav 刷新右上角头像与用户名。
   - `music-control-panel::changePlayList` / `::play` / `::enqueue` / `::enqueueNext` — 见 `MusicControlPannel.tsx` 顶部接口注释。
 
 ### 4.4 登录门禁与布局

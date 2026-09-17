@@ -36,11 +36,12 @@ export type { ResponseObject } from './models/ResponseObject';
 export type { ResponsePlaylist } from './models/ResponsePlaylist';
 export type { ResponsePlaylistVo } from './models/ResponsePlaylistVo';
 export type { ResponseString } from './models/ResponseString';
-export type { ResponseUserDetail } from './models/ResponseUserDetail';
+export type { ResponseUserDetailVo } from './models/ResponseUserDetailVo';
 export type { UpdateAlbumInfoDto } from './models/UpdateAlbumInfoDto';
 export type { UpdatePlaylistInfoDto } from './models/UpdatePlaylistInfoDto';
+export type { UpdateUserInfoDto } from './models/UpdateUserInfoDto';
 export type { UserBasicVo } from './models/UserBasicVo';
-export type { UserDetail } from './models/UserDetail';
+export type { UserDetailVo } from './models/UserDetailVo';
 
 export { AlbumControllerService } from './services/AlbumControllerService';
 export { ArtistControllerService } from './services/ArtistControllerService';

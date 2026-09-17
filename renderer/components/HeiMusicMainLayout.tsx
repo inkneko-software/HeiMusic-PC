@@ -32,6 +32,7 @@ import MusicControlPannel from './MusicControlPannel/MusicControlPannel'
 import Skin from './Common/Icon/Skin'
 
 import { HeiMusicThemeContext } from '../lib/HeiMusicThemeProvider'
+import { resolveAvatarUrl } from '../lib/avatar'
 import { useTheme } from '@mui/styles'
 import OnCloseDialog from './OnCloseDialog'
 import SearchOutlinedIcon from '@mui/icons-material/SearchOutlined';
@@ -98,20 +99,9 @@ function HeiMusicMainLayout({ children }) {
     // const matcheMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const [leftPannelDrawerOpen, setLeftPannelDrawerOpen] = React.useState(false)
 
-    React.useEffect(() => {
-        if (window.electronAPI !== undefined) {
-            void window.electronAPI.config.get().then((value) => {
-                setHeiMusicConfig(value)
-            })
-        }
-
-        const handleToast = (event: CustomEvent<IHeimusicToastEvent>) => {
-            makeToast(event.detail.message, event.detail.variant || "error", event.detail.position || "bottom-left");
-        }
-
-        window.addEventListener("main::pushToast", handleToast)
-
-        // 读取登录状态
+    //读取当前登录用户信息；个人资料/头像在用户设置页更新后
+    //通过 user::profileUpdated 事件触发重新拉取
+    const refreshUserDetail = React.useCallback(() => {
         UserControllerService.nav()
             .then(res => {
                 setUserDetail({ avatarUrl: res.data.avatarUrl, username: res.data.username === null ? `用户[${res.data.userId}]` : res.data.username })
@@ -125,6 +115,32 @@ function HeiMusicMainLayout({ children }) {
                 }
             })
     }, [makeToast])
+
+    React.useEffect(() => {
+        if (window.electronAPI !== undefined) {
+            void window.electronAPI.config.get().then((value) => {
+                setHeiMusicConfig(value)
+            })
+        }
+
+        const handleToast = (event: CustomEvent<IHeimusicToastEvent>) => {
+            makeToast(event.detail.message, event.detail.variant || "error", event.detail.position || "bottom-left");
+        }
+
+        const handleProfileUpdated = () => {
+            refreshUserDetail()
+        }
+
+        window.addEventListener("main::pushToast", handleToast)
+        window.addEventListener("user::profileUpdated", handleProfileUpdated)
+
+        refreshUserDetail()
+
+        return () => {
+            window.removeEventListener("main::pushToast", handleToast)
+            window.removeEventListener("user::profileUpdated", handleProfileUpdated)
+        }
+    }, [makeToast, refreshUserDetail])
 
     const onMinimizedClicked = () => {
         window.electronAPI.windowManagement.minimize()
@@ -245,7 +261,7 @@ function HeiMusicMainLayout({ children }) {
                         {
                             userDetail === null
                                 ? <Button onClick={() => { setLoginDialogOpen(true) }} size="small" >点击登录</Button>
-                                : <Box sx={{ display: 'flex' }}><Avatar src={userDetail.avatarUrl} sx={{ width: '24px', height: '24px' }} /><Typography sx={{ margin: 'auto 8px', maxWidth: '160px' }} noWrap>{userDetail.username}</Typography></Box>
+                                : <Box sx={{ display: 'flex' }}><Avatar src={resolveAvatarUrl(userDetail.avatarUrl)} sx={{ width: '24px', height: '24px' }} /><Typography sx={{ margin: 'auto 8px', maxWidth: '160px' }} noWrap>{userDetail.username}</Typography></Box>
                         }
                     </Box>
                     <Box sx={{ margin: 'auto 5px auto 0', WebkitAppRegion: 'no-drag' }}>

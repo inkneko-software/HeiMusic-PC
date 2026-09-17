@@ -9,14 +9,14 @@ import MenuIcon from '@mui/icons-material/Menu'
 import Popover from '@mui/material/Popover'
 import ErrorOutlineOutlinedIcon from '@mui/icons-material/ErrorOutlineOutlined';
 import { useTheme } from '@mui/styles';
-import { ApiError, AuthControllerService, UserControllerService, UserDetail } from '@api/codegen';
+import { ApiError, AuthControllerService, UserControllerService, UserDetailVo } from '@api/codegen';
 import { pushToast } from '@components/HeiMusicMainLayout';
 import useToast from '@components/Common/Toast';
 import { useRouter } from 'next/router';
 import { useState, useEffect } from 'react';
 
 export interface LoginProps {
-    onLoginSuccess: (userDetail: UserDetail) => void,
+    onLoginSuccess: (userDetail: UserDetailVo) => void,
 }
 
 const Login = (props: LoginProps) => {

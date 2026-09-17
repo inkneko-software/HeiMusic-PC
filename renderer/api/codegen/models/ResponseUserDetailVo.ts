@@ -2,10 +2,10 @@
 /* tslint:disable */
 /* eslint-disable */
 
-import type { UserDetail } from './UserDetail';
+import type { UserDetailVo } from './UserDetailVo';
 
-export type ResponseUserDetail = {
+export type ResponseUserDetailVo = {
     code?: number;
     message?: string;
-    data?: UserDetail;
+    data?: UserDetailVo;
 };
