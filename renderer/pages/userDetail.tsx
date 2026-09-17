@@ -1,6 +1,10 @@
-import { Box, Button, Divider, FormControlLabel, Tab, Tabs, Radio, RadioGroup, TextField, Typography } from "@mui/material"
+import { Box, Button, Divider, FormControlLabel, Paper, Tab, Tabs, Radio, RadioGroup, TextField, Typography } from "@mui/material"
+import { useTheme } from "@mui/material/styles"
 import Avatar from "@mui/material/Avatar"
 import * as React from "react"
+import LockOutlinedIcon from "@mui/icons-material/LockOutlined"
+import MailOutlineOutlinedIcon from "@mui/icons-material/MailOutlineOutlined"
+import PhotoCameraOutlinedIcon from "@mui/icons-material/PhotoCameraOutlined"
 import { ApiError, AuthControllerService, UserControllerService } from "@api/codegen"
 import type { UserDetailVo } from "@api/codegen"
 import { uploadAvatar } from "@api/upload/avatar"
@@ -22,6 +26,47 @@ function toLocalDateString(date: Date): string {
     return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
 }
 
+interface IFormFieldProps {
+    label: string
+    children: React.ReactNode
+    helperText?: React.ReactNode
+}
+
+/**
+ * 表单字段：标签统一放在控件上方，
+ * 避免单行控件与多行控件混排时出现基线对齐偏差
+ */
+function FormField(props: IFormFieldProps) {
+    return (
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            <Typography variant='subtitle2' sx={{ color: 'text.secondary' }}>{props.label}</Typography>
+            {props.children}
+            {props.helperText !== undefined && props.helperText !== null &&
+                <Typography variant='caption' sx={{ color: 'text.secondary' }}>{props.helperText}</Typography>
+            }
+        </Box>
+    )
+}
+
+interface ISectionHeaderProps {
+    icon: React.ReactNode
+    title: string
+    description: string
+}
+
+/** 账户安全页签内的分组标题 */
+function SectionHeader(props: ISectionHeaderProps) {
+    return (
+        <Box>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                {props.icon}
+                <Typography variant='subtitle1' sx={{ fontWeight: 600 }}>{props.title}</Typography>
+            </Box>
+            <Typography variant='caption' sx={{ color: 'text.secondary' }}>{props.description}</Typography>
+        </Box>
+    )
+}
+
 /**
  * 用户设置：个人资料与账户安全两个页签
  * 个人资料对应后端 /api/v1/user/updateUserInfo 与 /api/v1/user/updateAvatar；
@@ -30,6 +75,21 @@ function toLocalDateString(date: Date): string {
  */
 export default function UserDetail() {
     const [Toast, makeToast] = useToast()
+    const theme = useTheme()
+
+    /** 卡片式分组：与主题 pannelBackground 保持一致，兼容浅色/深色/壁纸主题 */
+    const cardSx = {
+        borderRadius: '12px',
+        padding: '24px',
+        backgroundColor: theme.palette.pannelBackground.main,
+    }
+
+    /** 只读输入框：通过底色与可编辑项区分 */
+    const readOnlyInputSx = {
+        '& .MuiOutlinedInput-root': {
+            backgroundColor: theme.palette.action.hover,
+        },
+    }
 
     //页签：0 个人资料，1 账户安全
     const [tab, setTab] = React.useState(0)
@@ -182,139 +242,176 @@ export default function UserDetail() {
     }
 
     return (
-        <Box sx={{ width: '100%', height: '100%', padding: '12px 12px', overflowY: 'auto', overflowX: 'hidden' }}>
+        <Box sx={{ width: '100%', height: '100%', padding: '16px 12px', overflowY: 'auto', overflowX: 'hidden' }}>
             {Toast}
-            <Typography variant='h5' sx={{ marginBottom: '8px' }}>用户设置</Typography>
-            <Tabs value={tab} onChange={(_, value) => setTab(value)}>
-                <Tab label="个人资料" />
-                <Tab label="账户安全" />
-            </Tabs>
-            <Divider />
+            <Box sx={{ maxWidth: '880px', margin: '0 auto' }}>
+                {/* 页头 */}
+                <Box sx={{ marginBottom: '12px' }}>
+                    <Typography variant='h5'>用户设置</Typography>
+                    <Typography variant='body2' sx={{ marginTop: '4px', color: 'text.secondary' }}>管理个人资料与账户安全</Typography>
+                </Box>
 
-            {/* 个人资料 */}
-            {
-                tab === 0 &&
-                <Box sx={{ maxWidth: '560px' }}>
-                    {/* 头像与上传入口 */}
-                    <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', margin: '16px 0px' }}>
-                        <Avatar src={resolveAvatarUrl(avatarUrl)} sx={{ width: '88px', height: '88px' }} />
-                        <Box sx={{ marginLeft: '16px' }}>
-                            <Button
-                                variant='outlined'
-                                size='small'
-                                disabled={uploadingAvatar || !profileLoaded}
-                                onClick={() => avatarInputRef.current?.click()}
+                <Tabs
+                    value={tab}
+                    onChange={(_, value) => setTab(value)}
+                    sx={{
+                        minHeight: '40px',
+                        marginBottom: '20px',
+                        '& .MuiTab-root': { minHeight: '40px', padding: '6px 12px' },
+                        '& .MuiTabs-indicator': { height: '3px', borderRadius: '3px' },
+                    }}
+                >
+                    <Tab label="个人资料" />
+                    <Tab label="账户安全" />
+                </Tabs>
+
+                {/* 个人资料 */}
+                {
+                    tab === 0 &&
+                    <Paper variant='outlined' sx={{ ...cardSx, padding: 0, overflow: 'hidden' }}>
+                        <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' } }}>
+                            {/* 左侧：头像与上传入口 */}
+                            <Box
+                                sx={{
+                                    flex: '0 0 auto',
+                                    width: { xs: '100%', sm: '240px' },
+                                    padding: '24px',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    alignItems: 'center',
+                                    gap: '12px',
+                                    borderRight: { xs: 'none', sm: `1px solid ${theme.palette.divider}` },
+                                    borderBottom: { xs: `1px solid ${theme.palette.divider}`, sm: 'none' },
+                                }}
                             >
-                                {uploadingAvatar ? '处理中' : '更换头像'}
-                            </Button>
-                            {/* 隐藏的文件选择框，由按钮触发 */}
-                            <input
-                                ref={avatarInputRef}
-                                type='file'
-                                accept='image/jpeg,image/png,image/webp,image/gif'
-                                hidden
-                                onChange={handleAvatarFileSelected}
-                            />
-                            <Typography variant='caption' sx={{ display: 'block', marginTop: '4px' }}>支持 JPG / PNG / WebP / GIF，最大 10MB</Typography>
-                            <Typography variant='caption' sx={{ display: 'block' }}>自动裁剪为正方形并压缩，每小时限 5 次</Typography>
-                        </Box>
-                    </Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center', margin: '4px 0px' }}>
-                        <Typography sx={{ minWidth: '30%' }} variant='subtitle2'>邮箱</Typography>
-                        <TextField sx={{ flexGrow: '1' }} size='small' value={email} InputProps={{ readOnly: true }} spellCheck={false} />
-                    </Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center', margin: '4px 0px' }}>
-                        <Typography sx={{ minWidth: '30%' }} variant='subtitle2'>用户名</Typography>
-                        <TextField sx={{ flexGrow: '1' }} size='small' placeholder='未设置' value={username} onChange={e => setUsername(e.target.value)} />
-                    </Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center', margin: '4px 0px' }}>
-                        <Typography sx={{ minWidth: '30%' }} variant='subtitle2'>性别</Typography>
-                        <RadioGroup sx={{ flexGrow: '1' }} row value={gender} onChange={e => setGender(e.target.value)}>
-                            {GENDER_OPTIONS.map(option => (
-                                <FormControlLabel key={option.value} value={option.value} control={<Radio size='small' />} label={option.label} />
-                            ))}
-                        </RadioGroup>
-                    </Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center', margin: '4px 0px' }}>
-                        <Typography sx={{ minWidth: '30%' }} variant='subtitle2'>生日</Typography>
-                        <TextField
-                            sx={{ flexGrow: '1' }}
-                            size='small'
-                            type='date'
-                            value={birth}
-                            onChange={e => setBirth(e.target.value)}
-                            InputLabelProps={{ shrink: true }}
-                            inputProps={{ max: today }}
-                        />
-                    </Box>
-                    <Box sx={{ display: 'flex', alignItems: 'flex-start', margin: '4px 0px' }}>
-                        <Typography sx={{ minWidth: '30%', paddingTop: '6px' }} variant='subtitle2'>个性签名</Typography>
-                        <TextField sx={{ flexGrow: '1' }} size='small' placeholder='未设置' value={sign} onChange={e => setSign(e.target.value)} multiline minRows={2} maxRows={4} />
-                    </Box>
-                    <Button
-                        sx={{ marginTop: '12px' }}
-                        variant='contained'
-                        size='small'
-                        onClick={handleUpdateProfile}
-                        disabled={savingProfile || !profileLoaded}
-                    >
-                        {savingProfile ? '提交中' : '保存资料'}
-                    </Button>
-                </Box>
-            }
+                                <Avatar src={resolveAvatarUrl(avatarUrl)} sx={{ width: '96px', height: '96px' }} />
+                                <Button
+                                    variant='outlined'
+                                    size='small'
+                                    startIcon={<PhotoCameraOutlinedIcon />}
+                                    disabled={uploadingAvatar || !profileLoaded}
+                                    onClick={() => avatarInputRef.current?.click()}
+                                >
+                                    {uploadingAvatar ? '处理中' : '更换头像'}
+                                </Button>
+                                {/* 隐藏的文件选择框，由按钮触发 */}
+                                <input
+                                    ref={avatarInputRef}
+                                    type='file'
+                                    accept='image/jpeg,image/png,image/webp,image/gif'
+                                    hidden
+                                    onChange={handleAvatarFileSelected}
+                                />
+                                <Box sx={{ textAlign: 'center' }}>
+                                    <Typography variant='caption' sx={{ display: 'block', color: 'text.secondary' }}>支持 JPG / PNG / WebP / GIF，最大 10MB</Typography>
+                                    <Typography variant='caption' sx={{ display: 'block', color: 'text.secondary' }}>自动裁剪为正方形并压缩，每小时限 5 次</Typography>
+                                </Box>
+                            </Box>
 
-            {/* 账户安全 */}
-            {
-                tab === 1 &&
-                <Box sx={{ maxWidth: '560px' }}>
-                    <Box sx={{ marginTop: '16px' }}>
-                        <Typography>修改密码</Typography>
-                        <Divider sx={{ margin: '2px 0px' }} />
-                        <Box sx={{ display: 'flex', alignItems: 'center', margin: '4px 0px' }}>
-                            <Typography sx={{ minWidth: '30%' }} variant='subtitle2'>旧密码</Typography>
-                            <TextField sx={{ flexGrow: '1' }} size='small' type='password' value={oldPassword} onChange={e => setOldPassword(e.target.value)} />
+                            {/* 右侧：资料表单 */}
+                            <Box sx={{ flexGrow: 1, minWidth: 0, padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                                <FormField label='邮箱' helperText='邮箱用于登录与找回密码，如需更换请前往「账户安全」'>
+                                    <TextField size='small' value={email} InputProps={{ readOnly: true }} spellCheck={false} sx={readOnlyInputSx} />
+                                </FormField>
+                                <FormField label='用户名'>
+                                    <TextField size='small' placeholder='未设置' value={username} onChange={e => setUsername(e.target.value)} />
+                                </FormField>
+                                <FormField label='性别'>
+                                    <RadioGroup row value={gender} onChange={e => setGender(e.target.value)}>
+                                        {GENDER_OPTIONS.map(option => (
+                                            <FormControlLabel key={option.value} value={option.value} control={<Radio size='small' />} label={option.label} />
+                                        ))}
+                                    </RadioGroup>
+                                </FormField>
+                                <FormField label='生日'>
+                                    <TextField
+                                        size='small'
+                                        type='date'
+                                        value={birth}
+                                        onChange={e => setBirth(e.target.value)}
+                                        InputLabelProps={{ shrink: true }}
+                                        inputProps={{ max: today }}
+                                    />
+                                </FormField>
+                                <FormField label='个性签名'>
+                                    <TextField size='small' placeholder='未设置' value={sign} onChange={e => setSign(e.target.value)} multiline minRows={3} maxRows={5} />
+                                </FormField>
+                                <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+                                    <Button
+                                        variant='contained'
+                                        onClick={handleUpdateProfile}
+                                        disabled={savingProfile || !profileLoaded}
+                                    >
+                                        {savingProfile ? '提交中' : '保存资料'}
+                                    </Button>
+                                </Box>
+                            </Box>
                         </Box>
-                        <Box sx={{ display: 'flex', alignItems: 'center', margin: '4px 0px' }}>
-                            <Typography sx={{ minWidth: '30%' }} variant='subtitle2'>新密码</Typography>
-                            <TextField sx={{ flexGrow: '1' }} size='small' type='password' value={newPassword} onChange={e => setNewPassword(e.target.value)} />
-                        </Box>
-                        <Box sx={{ display: 'flex', alignItems: 'center', margin: '4px 0px' }}>
-                            <Typography sx={{ minWidth: '30%' }} variant='subtitle2'>确认新密码</Typography>
-                            <TextField sx={{ flexGrow: '1' }} size='small' type='password' value={newPasswordConfirm} onChange={e => setNewPasswordConfirm(e.target.value)} />
-                        </Box>
-                        <Button
-                            sx={{ marginTop: '12px' }}
-                            variant='contained'
-                            size='small'
-                            onClick={handleUpdatePassword}
-                            disabled={updatingPassword}
-                        >
-                            {updatingPassword ? '提交中' : '修改密码'}
-                        </Button>
+                    </Paper>
+                }
+
+                {/* 账户安全 */}
+                {
+                    tab === 1 &&
+                    <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, alignItems: 'flex-start', gap: '24px' }}>
+                        {/* 修改密码 */}
+                        <Paper variant='outlined' sx={{ ...cardSx, flex: 1, width: '100%' }}>
+                            <SectionHeader
+                                icon={<LockOutlinedIcon color='primary' fontSize='small' />}
+                                title='修改密码'
+                                description='修改成功后，其他设备上的登录状态将失效，需要重新登录'
+                            />
+                            <Divider sx={{ margin: '16px 0px' }} />
+                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                                <FormField label='旧密码'>
+                                    <TextField size='small' type='password' value={oldPassword} onChange={e => setOldPassword(e.target.value)} />
+                                </FormField>
+                                <FormField label='新密码'>
+                                    <TextField size='small' type='password' value={newPassword} onChange={e => setNewPassword(e.target.value)} />
+                                </FormField>
+                                <FormField label='确认新密码'>
+                                    <TextField size='small' type='password' value={newPasswordConfirm} onChange={e => setNewPasswordConfirm(e.target.value)} />
+                                </FormField>
+                                <Button
+                                    variant='contained'
+                                    onClick={handleUpdatePassword}
+                                    disabled={updatingPassword}
+                                >
+                                    {updatingPassword ? '提交中' : '修改密码'}
+                                </Button>
+                            </Box>
+                        </Paper>
+
+                        {/* 修改绑定邮箱 */}
+                        <Paper variant='outlined' sx={{ ...cardSx, flex: 1, width: '100%' }}>
+                            <SectionHeader
+                                icon={<MailOutlineOutlinedIcon color='primary' fontSize='small' />}
+                                title='修改绑定邮箱'
+                                description='更换后请使用新邮箱登录，原邮箱将不再可用'
+                            />
+                            <Divider sx={{ margin: '16px 0px' }} />
+                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                                <FormField label='当前邮箱'>
+                                    <TextField size='small' value={email} InputProps={{ readOnly: true }} spellCheck={false} sx={readOnlyInputSx} />
+                                </FormField>
+                                <FormField label='新邮箱'>
+                                    <TextField size='small' value={newEmail} onChange={e => setNewEmail(e.target.value)} spellCheck={false} />
+                                </FormField>
+                                <FormField label='当前密码'>
+                                    <TextField size='small' type='password' value={emailPassword} onChange={e => setEmailPassword(e.target.value)} />
+                                </FormField>
+                                <Button
+                                    variant='contained'
+                                    onClick={handleUpdateEmail}
+                                    disabled={updatingEmail}
+                                >
+                                    {updatingEmail ? '提交中' : '修改邮箱'}
+                                </Button>
+                            </Box>
+                        </Paper>
                     </Box>
-                    <Box sx={{ marginTop: '24px' }}>
-                        <Typography>修改绑定邮箱</Typography>
-                        <Divider sx={{ margin: '2px 0px' }} />
-                        <Box sx={{ display: 'flex', alignItems: 'center', margin: '4px 0px' }}>
-                            <Typography sx={{ minWidth: '30%' }} variant='subtitle2'>新邮箱</Typography>
-                            <TextField sx={{ flexGrow: '1' }} size='small' value={newEmail} onChange={e => setNewEmail(e.target.value)} spellCheck={false} />
-                        </Box>
-                        <Box sx={{ display: 'flex', alignItems: 'center', margin: '4px 0px' }}>
-                            <Typography sx={{ minWidth: '30%' }} variant='subtitle2'>当前密码</Typography>
-                            <TextField sx={{ flexGrow: '1' }} size='small' type='password' value={emailPassword} onChange={e => setEmailPassword(e.target.value)} />
-                        </Box>
-                        <Button
-                            sx={{ marginTop: '12px' }}
-                            variant='contained'
-                            size='small'
-                            onClick={handleUpdateEmail}
-                            disabled={updatingEmail}
-                        >
-                            {updatingEmail ? '提交中' : '修改邮箱'}
-                        </Button>
-                    </Box>
-                </Box>
-            }
+                }
+            </Box>
         </Box>
     )
 }
