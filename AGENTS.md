@@ -44,7 +44,7 @@ renderer/                     渲染层（Next.js）
     Common/                   通用组件（Toast、Icon、Input、ImageSkeleton…）
   lib/
     mediaUrl.ts               非 Electron 下的 API 基址 + ensureApiBase()
-    apiServer.ts              Capacitor 原生端点（读根目录 api-server.json）
+    apiServer.ts              Capacitor 原生端点（读构建期内联的 process.env.NATIVE_API_BASE）
     HeiMusicContext.tsx       当前播放音乐等跨组件 Context
     HeiMusicThemeProvider.tsx / theme.ts
   api/
@@ -117,7 +117,7 @@ npx cap copy android     # 把 app/ 同步进 android/app/src/main/assets/public
 - 配置对象保存在**主进程内存**中，通过 IPC 读写：`config::get` / `config::set` / `config::save` / `config::saveAndReload` / `config::onChange`。
 - 类型定义：`main/types/config.d.ts` 的 `HeiMusicConfig`。
 - Electron 会话 Cookie（`userId`、`sessionId`）由主进程 `webRequest` 钩子自动注入与捕获（`main/background.ts`），渲染层无需手动处理。
-- 网页端开发态的 `/api`、`/public` 转发端点与 Android 端 API 端点均来自仓库根目录 `api-server.json`（**不入库，需先按 `api-server.json.example` 创建**），由 `renderer/next.config.js`（dev rewrites）、`renderer/lib/apiServer.ts` 与 `android/app/build.gradle` 三处读取同一份文件，务必保持一致。
+- 网页端开发态的 `/api`、`/public` 转发端点与 Android 端 API 端点均来自仓库根目录 `api-server.json`（**不入库，本地需按 `api-server.json.example` 创建**）：`renderer/next.config.js` 读它做两件事——dev rewrites 转发、构建期经 `env` 把 `NATIVE_API_BASE` 内联进渲染层；`android/app/build.gradle` 读它注入 `BuildConfig.API_SERVER`。渲染层（`renderer/lib/apiServer.ts`）只读 `process.env.NATIVE_API_BASE`，**不直接 import 该文件**，因此网页镜像（Docker）构建不依赖它；文件缺失时回落 `http://localhost:8081`。
 
 ### 4.3 IPC 与跨组件通信
 
@@ -149,7 +149,7 @@ npx cap copy android     # 把 app/ 同步进 android/app/src/main/assets/public
 
 ## 6. 注意事项
 
-- `renderer/lib/apiServer.ts` 直接 `import api-server.json`，**仓库根目录缺少该文件会导致渲染层构建失败**；本地开发先复制模板。
+- 渲染层不直接 import 根目录 `api-server.json`（值由 `renderer/next.config.js` 构建期内联为 `process.env.NATIVE_API_BASE`，见 4.2）；该文件仅本地开发转发与 Android 构建需要，缺失时前者回落 `http://localhost:8081`、后者注入 `UNCONFIGURED`，均不影响网页镜像构建。
 - `capacitor.config.ts` 的 `DEV` 开关：为 `true` 时 WebView 加载 dev server（`http://10.0.2.2:8888`，真机需改局域网 IP）；**打包 release 前必须改回 `false`**，否则 APK 会指向开发机。
 - Electron 生产态同时注册了 `app://` 特权协议与静态文件处理器（`main/background.ts` 末尾），静态资源根目录为打包后的 `app/`；`/api`、`/public` 走 307 重定向而非主进程流式代理——这是为了避免切歌时连接泄漏耗尽单主机连接上限，**不要改回主进程代理**。
 - `android/app/build/`、`app/`、`dist/`、`node_modules/` 均为产物或依赖，不要手改或提交（`.gitignore` 已锚定根目录的 `/app` 与 `/dist`）。

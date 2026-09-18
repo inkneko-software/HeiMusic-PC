@@ -12,6 +12,12 @@ try {
 }
 
 module.exports = {
+  // 构建期把 API 端点内联进渲染层（renderer/lib/apiServer.ts 经
+  // process.env.NATIVE_API_BASE 读取），渲染层因此无需直接 import 根目录的
+  // api-server.json，网页镜像（Docker）构建不依赖该本地文件
+  env: {
+    NATIVE_API_BASE: apiServer,
+  },
   webpack: (config, { isServer }) => {
     config.resolve.alias['@components'] = path.join(__dirname, 'components');
     config.resolve.alias['@api'] = path.join(__dirname, 'api');

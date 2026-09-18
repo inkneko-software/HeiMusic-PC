@@ -10,7 +10,7 @@ if (keystorePropertiesFile.exists()) {
 }
 
 // API 端点：仓库根目录 api-server.json（不入库，模板见 api-server.json.example），
-// 与前端 renderer/lib/apiServer.ts 读取同一份文件
+// 与 renderer/next.config.js（构建期经 env 内联给渲染层）读取同一份文件
 def apiServerFile = rootProject.file("../api-server.json")
 def apiServer = "UNCONFIGURED"
 if (apiServerFile.exists()) {
