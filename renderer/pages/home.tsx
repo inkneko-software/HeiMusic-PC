@@ -1,22 +1,318 @@
 import Box from '@mui/material/Box'
 import CardMedia from '@mui/material/CardMedia';
-import Grid from '@mui/material/Grid';
 import Skeleton from '@mui/material/Skeleton';
 import Typography from '@mui/material/Typography';
-// import Link from '../components/Common/Link';
+import Avatar from '@mui/material/Avatar';
+import Button from '@mui/material/Button';
 import Link from 'next/link';
 import useToast from '../components/Common/Toast';
 import { AlbumControllerService, AlbumVo, ApiError, MusicVo, PlaylistControllerService } from '../api/codegen';
 import { useTheme } from '@mui/styles'
 import { IconButton } from '@mui/material';
 import SkipNext from "@mui/icons-material/SkipNext"
-import PlayCircleFilled from "@mui/icons-material/PlayCircleFilled"
-import PauseCircleFilled from "@mui/icons-material/PauseCircleFilled"
+import PlayArrowRoundedIcon from "@mui/icons-material/PlayArrowRounded"
+import ArrowForwardRoundedIcon from "@mui/icons-material/ArrowForwardRounded"
+import MusicNoteRoundedIcon from "@mui/icons-material/MusicNoteRounded"
+import QueueMusicRoundedIcon from "@mui/icons-material/QueueMusicRounded"
+import AutoAwesomeRoundedIcon from "@mui/icons-material/AutoAwesomeRounded"
+import LibraryMusicOutlinedIcon from "@mui/icons-material/LibraryMusicOutlined"
 import { IChangePlayListEvent } from '@components/MusicControlPannel/MusicControlPannel';
 import { useRouter } from 'next/router';
 import FavoriteBorderOutlinedIcon from '@mui/icons-material/FavoriteBorderOutlined';
 import FavoriteOutlinedIcon from '@mui/icons-material/FavoriteOutlined';
-import { useRef, useState, useEffect } from 'react';
+import { ReactNode, useRef, useState, useEffect } from 'react';
+
+/** 封面为空时的兜底图 */
+const DEFAULT_COVER = '/images/lxh_sign_400x400.png';
+
+/** 首页封面统一请求 w300h300 压缩图，避免大图拖慢首屏 */
+const coverUrlOf = (url?: string | null) => (url ? `${url}?s=@w300h300` : DEFAULT_COVER);
+
+/** 多行截断样式（-webkit-box 方案）。sx 走 emotion，属性名必须用驼峰 */
+const clampLines = (lines: number) => ({
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    display: '-webkit-box',
+    WebkitBoxOrient: 'vertical',
+    WebkitLineClamp: lines,
+    lineHeight: 1.5,
+    maxHeight: `${lines * 1.5}em`,
+} as const);
+
+/** 专辑网格：按可用宽度自动铺满，避免固定列数在超宽屏留下大面积空白 */
+const albumGridSx = {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
+    gap: { xs: '14px', sm: '20px', lg: '24px' },
+} as const;
+
+/**
+ * 分区标题：强调色竖条 + 标题 + 说明文案 + 右侧操作
+ */
+function SectionTitle(props: { title: string, caption?: string, action?: ReactNode }) {
+    const theme = useTheme();
+    return (
+        <Box sx={{ display: 'flex', alignItems: 'center', marginBottom: { xs: '12px', sm: '16px' }, userSelect: 'none' }}>
+            <Box sx={{
+                width: 4,
+                height: 18,
+                borderRadius: '2px',
+                marginRight: '10px',
+                background: `linear-gradient(180deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.light} 100%)`
+            }} />
+            <Typography variant='h6' fontWeight={700}>{props.title}</Typography>
+            {
+                props.caption &&
+                <Typography variant='caption' color='text.secondary' sx={{ marginLeft: '10px', '@media(max-width:600px)': { display: 'none' } }}>{props.caption}</Typography>
+            }
+            {
+                props.action &&
+                <Box sx={{ marginLeft: 'auto' }}>{props.action}</Box>
+            }
+        </Box>
+    )
+}
+
+/**
+ * 「猜你喜欢」主推荐卡
+ *
+ * 用当前音乐的封面做高斯模糊铺底，再盖一层取色渐变，
+ * 保证任何封面下卡片都有一致的氛围色与足够的文字对比度。
+ */
+interface IRecommendHero {
+    music: MusicVo,
+    backdrop: IRgbColor,
+    coverRef: React.RefObject<HTMLImageElement>,
+    canvasRef: React.RefObject<HTMLCanvasElement>,
+    onCoverLoad: () => void,
+    onPlay: () => void,
+    onNext: () => void,
+    onFavorite: () => void,
+}
+
+/** 封面取色结果，按需拼出不同透明度的 rgba */
+interface IRgbColor {
+    r: number,
+    g: number,
+    b: number,
+}
+
+const DEFAULT_BACKDROP: IRgbColor = { r: 90, g: 90, b: 90 }
+
+const rgbaOf = (color: IRgbColor, alpha: number) => `rgba(${color.r},${color.g},${color.b},${alpha})`
+
+/**
+ * 把封面采样色转成 Hero 卡底色：
+ * 绕均值拉开饱和度以保留封面色彩倾向，再整体压暗到目标亮度，
+ * 这样无论封面明暗，白色文字都能保持足够的对比度。
+ */
+const toBackdropColor = (r: number, g: number, b: number): IRgbColor => {
+    const mean = (r + g + b) / 3;
+    const saturation = 1.5;
+    const targetMean = 104;
+    const k = mean === 0 ? 0 : targetMean / mean;
+    const clamp = (value: number) => Math.max(0, Math.min(255, Math.round(value)));
+    return {
+        r: clamp((mean + (r - mean) * saturation) * k),
+        g: clamp((mean + (g - mean) * saturation) * k),
+        b: clamp((mean + (b - mean) * saturation) * k),
+    }
+}
+
+function RecommendHero(props: IRecommendHero) {
+    const { music } = props;
+    const cover = coverUrlOf(music?.albumCoverUrl);
+    const artists = (music?.artistList || []).map(artist => artist.name).join(' / ');
+
+    return (
+        <Box sx={{
+            position: 'relative',
+            gridColumn: { xs: 'span 2', sm: 'span 1' },
+            height: '100%',
+            borderRadius: '16px',
+            overflow: 'hidden',
+            isolation: 'isolate',
+            display: 'flex',
+            backgroundColor: rgbaOf(props.backdrop, 1),
+            boxShadow: '0 4px 18px rgba(0,0,0,0.14)',
+            userSelect: 'none',
+        }}>
+            {/* 模糊封面铺底 */}
+            <CardMedia component='img' aria-hidden src={cover} sx={{
+                position: 'absolute', top: '-12%', left: '-12%', width: '124%', height: '124%',
+                objectFit: 'cover', filter: 'blur(32px) saturate(1.5)', zIndex: 0,
+            }} />
+            {/* 取色渐变：主色自左向右淡出，右侧压黑保证白色文字的对比度 */}
+            <Box sx={{
+                position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: 1,
+                background: `linear-gradient(100deg, ${rgbaOf(props.backdrop, 1)} 0%, ${rgbaOf(props.backdrop, 1)} 24%, ${rgbaOf(props.backdrop, 0.72)} 56%, rgba(0,0,0,0.55) 100%)`
+            }} />
+            <Box sx={{
+                position: 'relative', zIndex: 2, display: 'flex', alignItems: 'stretch', width: '100%',
+                gap: { xs: '12px', sm: '16px' }, padding: { xs: '12px', sm: '14px', lg: '16px' }
+            }}>
+                {/* 封面 + 悬停播放遮罩 */}
+                <Box sx={{
+                    position: 'relative', flex: '0 0 auto', height: '100%', aspectRatio: '1 / 1',
+                    borderRadius: '10px', overflow: 'hidden', boxShadow: '0 10px 26px rgba(0,0,0,0.35)',
+                    ':hover .hero-cover-mask': { opacity: 1 },
+                }}>
+                    <CardMedia
+                        ref={props.coverRef}
+                        crossOrigin='anonymous'
+                        onLoad={props.onCoverLoad}
+                        component='img'
+                        src={cover}
+                        sx={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' }}
+                    />
+                    {/* 触屏无 hover，播放按钮常显以便点按播放 */}
+                    <Box className='hero-cover-mask' sx={{
+                        position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        background: 'rgba(0,0,0,0.42)', opacity: 0, transition: 'opacity 0.2s ease-in-out',
+                        '@media (hover: none)': { opacity: 1, background: 'rgba(0,0,0,0.28)' },
+                    }}>
+                        <IconButton
+                            disableRipple
+                            onClick={props.onPlay}
+                            sx={{
+                                color: '#ffffff',
+                                transition: 'transform 0.2s ease-in-out',
+                                transform: { xs: 'scale(1)', sm: 'scale(0.82)' },
+                                '&:hover': { transform: 'scale(1)', background: 'transparent' },
+                                '& .MuiSvgIcon-root': { fontSize: '2.4rem' }
+                            }}
+                        >
+                            <PlayArrowRoundedIcon />
+                        </IconButton>
+                    </Box>
+                </Box>
+                <canvas ref={props.canvasRef} style={{ display: 'none' }} />
+                {/* 音乐信息与操作 */}
+                <Box sx={{
+                    display: 'flex', flexDirection: 'column', justifyContent: 'center', flex: '1 1 auto',
+                    minWidth: 0, color: '#ffffff', textShadow: '0 1px 6px rgba(0,0,0,0.35)'
+                }}>
+                    <Typography sx={{
+                        fontSize: '0.68rem', fontWeight: 600, letterSpacing: '0.18em',
+                        color: 'rgba(255,255,255,0.72)', marginBottom: '2px'
+                    }}>FOR YOU</Typography>
+                    <Typography fontWeight={700} sx={{ fontSize: { xs: '1rem', sm: '1.1rem', lg: '1.25rem' }, ...clampLines(2) }}>
+                        {music?.title}
+                    </Typography>
+                    <Typography variant='caption' sx={{ color: 'rgba(255,255,255,0.82)', ...clampLines(1) }}>
+                        {artists}
+                    </Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: '4px', sm: '8px' }, marginTop: { xs: '8px', sm: '12px' } }}>
+                        <Button
+                            variant='contained'
+                            color='inherit'
+                            disableElevation
+                            startIcon={<PlayArrowRoundedIcon />}
+                            onClick={props.onPlay}
+                            sx={{
+                                backgroundColor: '#ffffff',
+                                color: '#16171a',
+                                fontWeight: 700,
+                                textTransform: 'none',
+                                borderRadius: '999px',
+                                padding: '4px 16px 4px 12px',
+                                minWidth: '72px',
+                                boxShadow: '0 4px 14px rgba(0,0,0,0.24)',
+                                '&:hover': { backgroundColor: 'rgba(255,255,255,0.88)' },
+                                '& .MuiButton-startIcon': { marginLeft: 0, marginRight: '4px' },
+                                '@media(max-width:600px)': {
+                                    minWidth: 0,
+                                    padding: '4px 8px',
+                                    '& .MuiButton-startIcon': { marginRight: 0 }
+                                }
+                            }}
+                        >
+                            <Box component='span' sx={{ display: { xs: 'none', sm: 'inline' } }}>播放</Box>
+                        </Button>
+                        <IconButton
+                            title='换一首'
+                            onClick={props.onNext}
+                            sx={{ color: '#ffffff', '&:hover': { background: 'rgba(255,255,255,0.16)' } }}
+                        >
+                            <SkipNext sx={{ fontSize: '1.5rem' }} />
+                        </IconButton>
+                        <IconButton
+                            title={music?.isFavorite ? '取消收藏' : '收藏'}
+                            onClick={props.onFavorite}
+                            sx={{ color: '#ffffff', '&:hover': { background: 'rgba(255,255,255,0.16)' } }}
+                        >
+                            {music?.isFavorite ? <FavoriteOutlinedIcon /> : <FavoriteBorderOutlinedIcon />}
+                        </IconButton>
+                    </Box>
+                </Box>
+            </Box>
+        </Box>
+    )
+}
+
+/**
+ * 推荐区右侧的方形快捷入口卡
+ */
+interface IQuickCard {
+    title: string,
+    caption: string,
+    image?: string,
+    /** 无封面时使用的渐变底色 */
+    tone?: string,
+    icon: ReactNode,
+    onClick?: () => void,
+}
+
+function QuickCard(props: IQuickCard) {
+    const clickable = typeof props.onClick === 'function';
+    return (
+        <Box
+            onClick={props.onClick}
+            sx={[{
+                position: 'relative',
+                height: '100%',
+                borderRadius: '14px',
+                overflow: 'hidden',
+                display: 'flex',
+                alignItems: 'flex-end',
+                boxShadow: '0 2px 10px rgba(0,0,0,0.12)',
+                transition: 'transform 0.22s ease-in-out, box-shadow 0.22s ease-in-out',
+            }, clickable && {
+                cursor: 'pointer',
+                ':hover': { transform: 'translateY(-6px)', boxShadow: '0 14px 28px rgba(0,0,0,0.24)' },
+                ':hover .quick-card-media': { transform: 'scale(1.06)' },
+                // 触屏设备无 hover，避免点按后卡片停留在上浮状态
+                '@media (hover: none)': {
+                    ':hover': { transform: 'none', boxShadow: '0 2px 10px rgba(0,0,0,0.12)' },
+                    ':hover .quick-card-media': { transform: 'none' },
+                }
+            }]}
+        >
+            {
+                props.image
+                    ? <CardMedia className='quick-card-media' component='img' src={props.image} sx={{
+                        position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
+                        objectFit: 'cover', transition: 'transform 0.35s ease-in-out'
+                    }} />
+                    : <Box sx={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', background: props.tone }} />
+            }
+            <Box sx={{
+                position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
+                background: 'linear-gradient(180deg, rgba(0,0,0,0.28) 0%, rgba(0,0,0,0.06) 42%, rgba(0,0,0,0.72) 100%)'
+            }} />
+            <Box sx={{ position: 'absolute', top: '10px', left: '12px', color: 'rgba(255,255,255,0.88)' }}>{props.icon}</Box>
+            <Box sx={{ position: 'relative', width: '100%', padding: { xs: '8px 10px', sm: '10px 12px' }, userSelect: 'none' }}>
+                <Typography noWrap sx={{ color: '#ffffff', fontWeight: 700, fontSize: { xs: '0.85rem', sm: '0.95rem' }, lineHeight: 1.3 }}>
+                    {props.title}
+                </Typography>
+                <Typography noWrap sx={{ color: 'rgba(255,255,255,0.75)', fontSize: { xs: '0.65rem', sm: '0.72rem' } }}>
+                    {props.caption}
+                </Typography>
+            </Box>
+        </Box>
+    )
+}
 
 interface IAlbumCard {
     album: AlbumVo
@@ -24,116 +320,93 @@ interface IAlbumCard {
 
 function AlbumCard(props: IAlbumCard) {
     const theme = useTheme();
-    const imgRef = useRef<HTMLImageElement>(null);
-    const gridRef = useRef<HTMLDivElement>(null);
-    const [width, setWidth] = useState(0);
-    const [loaded, setLoaded] = useState(false)
+    const [loaded, setLoaded] = useState(false);
+    const cover = coverUrlOf(props.album.frontCoverUrl);
+    const artists = (props.album.artistList || []).map(artist => artist.name).join(' / ');
 
-
-
-    // useEffect(() => {
-    //     if (gridRef.current !== null) {
-    //         setWidth(gridRef.current.clientWidth - 24)
-    //         // 性能过低
-    //         const observer = new ResizeObserver(()=>{
-    //             setWidth(gridRef.current.clientWidth - 24)
-    //             console.log(gridRef.current.clientWidth - 24)
-    //         });
-    //         observer.observe(gridRef.current)
-    //         return ()=>{
-    //             observer.disconnect();
-    //         }
-    //     }
-    // }, [gridRef])
-
-    useEffect(() => {
-        if (imgRef.current !== null) {
-            if (props.album.frontCoverUrl === null) {
-                imgRef.current.src = '/images/lxh_sign_400x400.png';
-                setLoaded(true);
-                return;
-            }
-
-            new Promise<void>((resolve, reject) => {
-                imgRef.current.onload = () => resolve()
-                imgRef.current.src = props.album.frontCoverUrl + '?s=@w300h300';
-                imgRef.current.onerror = reject;
-            }).then(() => {
-                setLoaded(true);
-            })
-        }
-    }, [props.album.frontCoverUrl]);
     return (
-
-        <Link href={`/album/${props.album.albumId}`}>
-            <Grid ref={gridRef} item xs={4} sm={3} sx={{ display: 'flex', flexDirection: 'column', flexShrink: '0' }}>
-
-                <Box sx={[{ borderRadius: '6%', display: 'flex', aspectRatio: '1 / 1' }, loaded && { display: 'none' },]}>
-                    <Skeleton variant='rounded' sx={[{ width: '100%', height: '100%' }]} />
-                </Box>
-                <Box sx={[{
-                    borderRadius: '6px',
-                    aspectRatio: '1 / 1',
-                    display: 'flex',
-                    overflow: 'hidden',
+        <Link href={`/album/${props.album.albumId}`} legacyBehavior passHref>
+            <Box component='a' sx={{ display: 'block', color: 'inherit', textDecoration: 'none', minWidth: 0 }}>
+                <Box sx={{
                     position: 'relative',
-                    transition: 'transform 0.2s ease-in-out',
-                    ':hover': {
-                        transform: 'translateY(-10px)',
-                        cursor: 'pointer'
-                    },
-                    // 触屏设备无 hover，避免点按后卡片停留在上浮状态
+                    aspectRatio: '1 / 1',
+                    borderRadius: '12px',
+                    overflow: 'hidden',
+                    backgroundColor: 'rgba(120,120,120,0.12)',
+                    boxShadow: '0 2px 10px rgba(0,0,0,0.10)',
+                    transition: 'transform 0.22s ease-in-out, box-shadow 0.22s ease-in-out',
+                    ':hover': { transform: 'translateY(-6px)', boxShadow: '0 14px 28px rgba(0,0,0,0.24)' },
+                    ':hover .album-cover-media': { transform: 'scale(1.05)' },
+                    ':hover .album-cover-mask': { opacity: 1 },
+                    ':hover .album-title': { color: theme.palette.primary.main },
+                    // 触屏设备无 hover，遮罩常显以便点按
                     '@media (hover: none)': {
-                        ':hover': {
-                            transform: 'none'
-                        }
-                    },
-                    ":hover .album-cover-shadow": {
-                        visibility: 'unset'
+                        ':hover': { transform: 'none', boxShadow: '0 2px 10px rgba(0,0,0,0.10)' },
+                        ':hover .album-cover-media': { transform: 'none' },
+                        ':hover .album-title': { color: 'inherit' },
+                        '.album-cover-mask': { opacity: 1 },
                     }
-                }, !loaded && { display: 'none' },]}>
-                    <CardMedia ref={imgRef} sx={[{ objectFit: 'cover' }]} component='img' ></CardMedia>
-                    <Box className="album-cover-shadow" sx={{ display: 'flex', visibility: "hidden", position: 'absolute', top: '0px', left: '0px', boxShadow: 'inset 0px 95px 280px -106px black', width: '100%', height: '100%' }} >
+                }}>
+                    {
+                        !loaded &&
+                        <Skeleton variant='rectangular' sx={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', transform: 'unset' }} />
+                    }
+                    <CardMedia
+                        className='album-cover-media'
+                        component='img'
+                        src={cover}
+                        onLoad={() => setLoaded(true)}
+                        onError={() => setLoaded(true)}
+                        sx={{
+                            position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
+                            objectFit: 'cover', opacity: loaded ? 1 : 0,
+                            transition: 'opacity 0.25s ease-in-out, transform 0.35s ease-in-out'
+                        }}
+                    />
+                    <Box className='album-cover-mask' sx={{
+                        position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
+                        display: 'flex', alignItems: 'flex-end', padding: '10px',
+                        background: 'linear-gradient(180deg, rgba(0,0,0,0) 42%, rgba(0,0,0,0.72) 100%)',
+                        opacity: 0, transition: 'opacity 0.2s ease-in-out'
+                    }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: '5px', color: '#ffffff' }}>
+                            <MusicNoteRoundedIcon sx={{ fontSize: '1rem', opacity: 0.9 }} />
+                            <Typography variant='caption' fontWeight={600}>{props.album.musicNum ?? 0} 首</Typography>
+                        </Box>
+                        <Box sx={{
+                            marginLeft: 'auto', width: 26, height: 26, borderRadius: '50%',
+                            backgroundColor: 'rgba(255,255,255,0.92)', display: 'flex'
+                        }}>
+                            <ArrowForwardRoundedIcon sx={{ fontSize: '1.05rem', margin: 'auto', color: '#1a1a1a' }} />
+                        </Box>
                     </Box>
                 </Box>
-
-                <Typography
-                    variant='subtitle2'
-                    sx={{
-                        marginTop: '6px',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        display: '-webkit-box',
-                        '-webkit-box-orient': 'vertical',
-                        '-webkit-line-clamp': '2',
-                        lineHeight: '1.5em',
-                        maxHeight: '3em',
-                        ':hover': {
-                            color: theme.palette.primary.main,
-                            cursor: 'pointer'
-                        }
-                    }} >{props.album.title}</Typography>
-
-            </Grid>
+                <Typography className='album-title' variant='subtitle2' sx={{
+                    marginTop: '8px', fontWeight: 600, ...clampLines(2),
+                    transition: 'color 0.2s ease-in-out'
+                }}>{props.album.title}</Typography>
+                {
+                    artists.length !== 0 &&
+                    <Typography variant='caption' color='text.secondary' noWrap sx={{ display: 'block', marginTop: '2px' }}>{artists}</Typography>
+                }
+            </Box>
         </Link>
-
     )
 }
 
 function Home() {
-    const theme = useTheme();
     const router = useRouter();
 
     const [firstLaunch, setFirstLaunch] = useState(false);
-    const [newUploadList, setNewUploadList] = useState([]);
-    const [Toast, makeToast] = useToast()
     const [recentUploadAlbum, setRecentUploadAlbum] = useState<AlbumVo[]>([]);
+    const [recentUploadLoaded, setRecentUploadLoaded] = useState(false);
+    const [Toast, makeToast] = useToast()
 
     //随机音乐
     const [randomMusic, setRandomMusic] = useState<MusicVo>(undefined);
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const coverRef = useRef<HTMLImageElement>(null);
-    const [randomMusicBackgroundColor, setRandomMusicBackgroundColor] = useState("#e3e3e3")
+    const [heroBackdrop, setHeroBackdrop] = useState<IRgbColor>(DEFAULT_BACKDROP)
 
     //每日30首封面
     const [daily30Cover, setDaily30Cover] = useState(undefined);
@@ -147,6 +420,9 @@ function Home() {
             })
             .catch(error => {
                 makeToast('网络连接失败', 'error', 'bottom-left')
+            })
+            .finally(() => {
+                setRecentUploadLoaded(true);
             })
 
         AlbumControllerService.randomMusic()
@@ -172,63 +448,77 @@ function Home() {
 
     }, [makeToast])
 
-    //选取背景色
+    //选取背景色：采样整张封面并剔除接近纯黑/纯白的像素，避免高光与阴影把主色拉偏
     const handleRandomMusicCoverLoaded = () => {
-        if (canvasRef.current !== null && coverRef.current !== null && randomMusic) {
-            var img = coverRef.current;
-            var canvas = canvasRef.current;
-            var ctx = canvas.getContext('2d');
-
-            // 将图像绘制到Canvas上
+        if (canvasRef.current === null || coverRef.current === null) {
+            return;
+        }
+        try {
+            const img = coverRef.current;
+            const canvas = canvasRef.current;
+            const ctx = canvas.getContext('2d');
+            if (ctx === null) {
+                return;
+            }
+            canvas.width = 48;
+            canvas.height = 48;
             ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-            // //取1000个点位的颜色，取平均值
-            // var r = 0;
-            // var g = 0;
-            // var b = 0;
-            // for (var y = 0; y < canvas.height; y += canvas.height / 5) {
-            //     for (var x = 0; x < canvas.width; x += canvas.width / 5) {
-            //         console.log(x, y)
-            //         var pixelData = ctx.getImageData(x, y, 1, 1).data;
-            //         r += pixelData[0];
-            //         g += pixelData[1];
-            //         b += pixelData[2]
-            //     }
-            // }
-
-            // // 解析像素数据，获取颜色信息
-            // var color = `rgb(${r / 25}, ${g / 25}, ${b / 25})`;
-
-            var pixelData = ctx.getImageData(canvas.width / 5, canvas.height / 5, 1, 1).data;
-            setRandomMusicBackgroundColor(`rgb(${pixelData[0]},${pixelData[1]},${pixelData[2]})`)
+            const { data } = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            let r = 0, g = 0, b = 0, count = 0;
+            //每 3 个像素取一个样，足够稳定且开销可忽略
+            for (let i = 0; i < data.length; i += 12) {
+                const brightness = (data[i] + data[i + 1] + data[i + 2]) / 3;
+                if (brightness < 24 || brightness > 235) {
+                    continue;
+                }
+                r += data[i];
+                g += data[i + 1];
+                b += data[i + 2];
+                count++;
+            }
+            if (count === 0) {
+                return;
+            }
+            //整体压暗并提升饱和度：封面取色普遍偏亮，处理后白色文字才有足够对比度
+            setHeroBackdrop(toBackdropColor(r / count, g / count, b / count))
+        } catch (error) {
+            //跨源图片会污染画布导致 getImageData 抛错，保留默认底色即可
+            console.log(error)
         }
     }
 
-    const handlePlayRandomMusic = () => {
-
-        var event = new CustomEvent<IChangePlayListEvent>("music-control-panel::changePlayList", {
+    const playMusic = (music: MusicVo) => {
+        const event = new CustomEvent<IChangePlayListEvent>("music-control-panel::changePlayList", {
             detail: {
                 playlist: [{
-                    musicId: randomMusic.musicId,
-                    title: randomMusic.title,
-                    artists: randomMusic.artistList.map(artist => artist.name),
-                    albumId: randomMusic.albumId,
-                    albumTitle: randomMusic.albumTitle,
-                    cover: randomMusic.albumCoverUrl,
-                    isFavorite: randomMusic.isFavorite,
-                    duration: randomMusic.duration,
+                    musicId: music.musicId,
+                    title: music.title,
+                    artists: music.artistList.map(artist => artist.name),
+                    albumId: music.albumId,
+                    albumTitle: music.albumTitle,
+                    cover: music.albumCoverUrl,
+                    isFavorite: music.isFavorite,
+                    duration: music.duration,
                     qualityOption: [{
                         name: "SQ",
-                        url: randomMusic.resourceUrl,
+                        url: music.resourceUrl,
                         color: "red"
                     }],
-                    isLargeTrackMusic: randomMusic.discStartTime !== '',
-                    discStartTime: parseFloat(randomMusic.discStartTime),
-                    discEndTime: parseFloat(randomMusic.discEndTime)
+                    isLargeTrackMusic: music.discStartTime !== '',
+                    discStartTime: parseFloat(music.discStartTime),
+                    discEndTime: parseFloat(music.discEndTime)
                 }], startIndex: 0
             }
         });
         document.dispatchEvent(event)
+    }
+
+    const handlePlayRandomMusic = () => {
+        if (!randomMusic) {
+            return;
+        }
+        playMusic(randomMusic);
     }
 
     const handleNextRandomMusic = () => {
@@ -236,29 +526,7 @@ function Home() {
             .then(res => {
                 var newRandomMusic = res.data;
                 setRandomMusic(newRandomMusic)
-                var event = new CustomEvent<IChangePlayListEvent>("music-control-panel::changePlayList", {
-                    detail: {
-                        playlist: [{
-                            musicId: newRandomMusic.musicId,
-                            title: newRandomMusic.title,
-                            artists: newRandomMusic.artistList.map(artist => artist.name),
-                            albumId: newRandomMusic.albumId,
-                            albumTitle: newRandomMusic.albumTitle,
-                            cover: newRandomMusic.albumCoverUrl,
-                            isFavorite: newRandomMusic.isFavorite,
-                            duration: newRandomMusic.duration,
-                            qualityOption: [{
-                                name: "SQ",
-                                url: newRandomMusic.resourceUrl,
-                                color: "red"
-                            }],
-                            isLargeTrackMusic: newRandomMusic.discStartTime !== '',
-                            discStartTime: parseFloat(newRandomMusic.discStartTime),
-                            discEndTime: parseFloat(newRandomMusic.discEndTime)
-                        }], startIndex: 0
-                    }
-                });
-                document.dispatchEvent(event)
+                playMusic(newRandomMusic);
             })
             .catch((error: ApiError) => {
                 if (error.status !== 403) {
@@ -290,169 +558,94 @@ function Home() {
     }
 
     return (
-        <Box sx={{ width: '100%', height: '100%', padding: '12px 12px 24px', overflowY: 'auto', overflowX: 'hidden', display: 'flex', flexDirection: 'column' }}>
+        <Box sx={{ width: '100%', height: '100%', padding: { xs: '12px 12px 24px', sm: '16px 16px 28px' }, overflowY: 'auto', overflowX: 'hidden', display: 'flex', flexDirection: 'column' }}>
             {Toast}
-            {/* <Box>
-                <Typography variant='h5' sx={{ marginBottom: '12px' }}>热门歌单</Typography>
-                <Grid container spacing={3} sx={{ display: 'flex', justifyContent: 'space-between', }} columns={{ xs: 12, lg: 15, xl: 18 }} >
-                    {
-                        [1, 2, 3, 4, 5, 6, 7, 8, 9].map((val, index) => {
-                            return <AlbumCard key={index} album={{albumId: 0}} />
-                        })
-                    }
-                </Grid>
-            </Box> */}
+            {/* 首次启动：还没有任何音乐时的引导 */}
             <Box sx={[{ display: 'none' }, firstLaunch && { display: 'flex', flexDirection: 'column' }]}>
-                <Typography sx={{ marginBottom: '24px', userSelect: 'none' }}>欢迎使用HeiMusic!</Typography>
-                <Typography sx={{ marginBottom: '24px', userSelect: 'none' }}>管理员账户由服务端自动创建，初始密码见服务端日志</Typography>
-                <Typography sx={{ marginBottom: '24px', userSelect: 'none' }}>可通过左侧专辑管理按钮进行音乐导入</Typography>
+                <Box sx={{ margin: 'auto', maxWidth: '520px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', padding: '48px 24px' }}>
+                    <Avatar src='/images/logo.jpg' sx={{ width: 64, height: 64, marginBottom: '18px' }} />
+                    <Typography variant='h5' fontWeight={700} sx={{ marginBottom: '8px', userSelect: 'none' }}>欢迎使用 HeiMusic!</Typography>
+                    <Typography variant='body2' color='text.secondary' sx={{ marginBottom: '24px', lineHeight: 1.8, userSelect: 'none' }}>
+                        管理员账户由服务端自动创建，初始密码见服务端日志；
+                        <br />
+                        将本地音乐放入媒体库后扫描即可开始使用
+                    </Typography>
+                    <Button variant='contained' disableElevation onClick={() => { router.push('/album/management') }}>导入音乐</Button>
+                </Box>
             </Box>
-            <Box sx={[{ display: 'flex', flexDirection: 'column' }, firstLaunch && { display: 'none' }]}>
+            <Box sx={[{ display: 'flex', flexDirection: 'column', width: '100%' }, firstLaunch && { display: 'none' }]}>
                 {/* 推荐 */}
-                <Typography variant='h5' sx={{ marginBottom: '12px' }}>推荐</Typography>
-                <Grid container spacing={{ xs: 1.5, sm: 3 }} sx={{ display: 'flex', justifyContent: 'flex-start', marginBottom: '12px', userSelect: 'none' }} columns={{ xs: 6, sm: 12, lg: 15, xl: 24 }} >
+                <SectionTitle title='推荐' caption='为你精选' />
+                <Box sx={{
+                    display: 'grid',
+                    gridTemplateColumns: { xs: '1fr 1fr', sm: '3fr 1fr 1fr' },
+                    gridAutoRows: { xs: '168px', sm: '200px', lg: '224px' },
+                    gap: { xs: '12px', sm: '16px', lg: '20px' },
+                    marginBottom: { xs: '20px', sm: '28px' },
+                }}>
                     {/* 随机推荐 */}
-                    <Grid item xs={6} lg={9} xl={9} sx={{ aspectRatio: { xs: "2 / 1", lg: "3 / 1", xl: "3 / 1" }, display: 'flex', flexDirection: 'column' }}>
-
-                        <Box sx={{ position: 'relative', backgroundColor: randomMusicBackgroundColor, width: '100%', height: '100%', display: 'flex', borderRadius: '12px', overflow: 'hidden', flex: '0 1 auto' }}>
-                            {/* 背景和文本 */}
-                            <Box sx={{ position: 'absolute', top: '0px', left: '0px', boxShadow: 'inset 0px 95px 280px -106px black', width: '100%', height: '100%' }}>
-                                <Typography variant='h5' fontWeight={600} sx={{ position: 'absolute', top: '6px', left: '18px', color: '#e3e3e3', zIndex: 1 }}>
-                                    For
-                                    <br />
-                                    You
-                                </Typography>
-                            </Box>
-                            {/* 封面预览 */}
-                            {
-                                randomMusic &&
-                                <Box sx={{
-                                    margin: { xs: '12px 18px 12px 36px', sm: '24px 18px 24px 36px' },
-                                    height: { xs: 'calc(100% - 24px)', sm: 'calc(100% - 24px - 24px)' },
-                                    aspectRatio: '1 / 1', position: 'relative', ':hover .random-music-playback-btn': { display: 'flex', background: 'rgba(0,0,0,0.5)' }
-                                }}>
-                                    <CardMedia component='img' crossOrigin='anonymous' onLoad={handleRandomMusicCoverLoaded} ref={coverRef} id="random-music-cover" className="random-music-cover" sx={[{ position: 'absolute', top: 0, left: 0, objectFit: 'cover', height: '100%', width: 'unset', aspectRatio: '1 / 1', borderRadius: '6px' }]} src={randomMusic.albumCoverUrl ? randomMusic.albumCoverUrl + "?s=@w300h300" : "/images/lxh_sign_400x400.png"} >
-
-                                    </CardMedia>
-                                    <canvas style={{ display: 'none' }} ref={canvasRef} />
-                                    {/* 触屏无 hover，播放按钮常显以便点按播放 */}
-                                    <Box className="random-music-playback-btn" sx={{ position: 'absolute', top: 0, left: 0, height: '100%', width: 'unset', aspectRatio: '1 / 1', display: 'none', borderRadius: '6px', '@media (hover: none)': { display: 'flex', background: 'rgba(0,0,0,0.35)' } }}>
-                                        <IconButton
-                                            disableRipple
-                                            sx={{ height: '100%', width: '100%', color: '#ffffff', '& .MuiSvgIcon-root': { fontSize: '1.5rem' }, '@media (hover: none)': { '& .MuiSvgIcon-root': { fontSize: '3rem' } } }}
-                                            onClick={handlePlayRandomMusic}
-                                        >
-                                            <PlayCircleFilled />
-                                        </IconButton>
-                                    </Box>
-                                </Box>
-
-                            }
-                            {/* 音乐信息与操作 */}
-                            {
-                                randomMusic &&
-                                <Box sx={{ display: 'flex', flexDirection: 'column', margin: 'auto 18px auto 0px', zIndex: '1' }}>
-                                    <Typography sx={{
-                                        color: '#ffffff',
-                                        overflow: 'hidden',
-                                        textOverflow: 'ellipsis',
-                                        display: '-webkit-box',
-                                        '-webkit-box-orient': 'vertical',
-                                        '-webkit-line-clamp': '2',
-                                        lineHeight: '1.5em',
-                                        maxHeight: '3em',
-                                    }} >{randomMusic.title}</Typography>
-                                    <Typography variant='body2' sx={{
-                                        color: '#e3e3e3',
-                                        overflow: 'hidden',
-                                        textOverflow: 'ellipsis',
-                                        display: '-webkit-box',
-                                        '-webkit-box-orient': 'vertical',
-                                        '-webkit-line-clamp': '2',
-                                        lineHeight: '1.5em',
-                                        maxHeight: '3em',
-                                    }}>{randomMusic.artistList.map(artist => artist.name).join('/')}</Typography>
-                                    <Box sx={{ marginLeft: '-4px' }}>
-                                        <IconButton disableRipple sx={{ padding: '0px 0px', color: '#ffffff' }} onClick={handleNextRandomMusic}><SkipNext sx={{ fontSize: '1.5em' }} /></IconButton>
-                                        <IconButton sx={{ padding: '0px 0px', color: '#ffffff' }} onClick={handleFavorite}>{randomMusic.isFavorite ? <FavoriteOutlinedIcon /> : <FavoriteBorderOutlinedIcon />}</IconButton>
-
-                                    </Box>
-                                </Box>
-                            }
-                        </Box>
-                        <Typography
-                            variant='subtitle2'
-                            sx={{
-                                marginTop: '6px',
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis',
-                                display: '-webkit-box',
-                                '-webkit-box-orient': 'vertical',
-                                '-webkit-line-clamp': '2',
-                                lineHeight: '1.5em',
-                                maxHeight: '3em',
-                                flex: '1 0 auto'
-                            }} >猜你喜欢</Typography>
-                    </Grid>
+                    {
+                        randomMusic
+                            ? <RecommendHero
+                                music={randomMusic}
+                                backdrop={heroBackdrop}
+                                coverRef={coverRef}
+                                canvasRef={canvasRef}
+                                onCoverLoad={handleRandomMusicCoverLoaded}
+                                onPlay={handlePlayRandomMusic}
+                                onNext={handleNextRandomMusic}
+                                onFavorite={handleFavorite}
+                            />
+                            : <Skeleton variant='rounded' sx={{ gridColumn: { xs: 'span 2', sm: 'span 1' }, height: '100%', borderRadius: '16px', transform: 'unset' }} />
+                    }
                     {/* 每日30首 */}
-                    <Grid item xs={3} sx={{ display: 'flex', flexDirection: 'column', flexShrink: '0' }} onClick={() => { router.push("/daily30") }}>
-                        <Box sx={[{ borderRadius: '6px', aspectRatio: '1 / 1', display: 'flex', overflow: 'hidden', position: 'relative' }]}>
-                            <CardMedia sx={[{ objectFit: 'cover' }]} component='img' src={daily30Cover ? daily30Cover + "?s=@w300h300" : "/images/lxh_sign_400x400.png"} ></CardMedia>
-                            <Box sx={{ position: 'absolute', top: '0px', left: '0px', boxShadow: 'inset 0px 95px 280px -106px black', width: '100%', height: '100%' }}>
-                                <Typography variant='h5' fontWeight={600} sx={{ position: 'absolute', top: '6px', left: '18px', color: '#e3e3e3' }}>
-                                    Daily
-                                    <br />
-                                    30
-                                </Typography>
-                            </Box>
-                        </Box>
-                        <Typography
-                            variant='subtitle2'
-                            sx={{
-                                marginTop: '6px',
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis',
-                                display: '-webkit-box',
-                                '-webkit-box-orient': 'vertical',
-                                '-webkit-line-clamp': '2',
-                                lineHeight: '1.5em',
-                                maxHeight: '3em',
-                            }} >每日30首</Typography>
-                    </Grid>
+                    <QuickCard
+                        title='每日30首'
+                        caption='每天 6 点更新'
+                        image={coverUrlOf(daily30Cover)}
+                        icon={<AutoAwesomeRoundedIcon />}
+                        onClick={() => { router.push('/daily30') }}
+                    />
                     {/* 热门歌单 */}
-                    <Grid item xs={3} sx={{ display: 'flex', flexDirection: 'column', flexShrink: '0' }}>
-                        <Box sx={[{ borderRadius: '6px', aspectRatio: '1 / 1', display: 'flex', overflow: 'hidden', position: 'relative' }]}>
-                            <CardMedia sx={[{ margin: 'auto auto', objectFit: 'contain' }]} component='img' src='/images/lxh_sign_400x400.png' ></CardMedia>
-                            <Box sx={{ position: 'absolute', top: '0px', left: '0px', boxShadow: 'inset 0px 95px 280px -106px black', width: '100%', height: '100%' }}>
-                                <Typography variant='h5' fontWeight={600} sx={{ position: 'absolute', top: '6px', left: '18px', color: '#e3e3e3' }}>
-                                    Hot
-                                </Typography>
-                            </Box>
-                        </Box>
-                        <Typography
-                            variant='subtitle2'
-                            sx={{
-                                marginTop: '6px',
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis',
-                                display: '-webkit-box',
-                                '-webkit-box-orient': 'vertical',
-                                '-webkit-line-clamp': '2',
-                                lineHeight: '1.5em',
-                                maxHeight: '3em',
-                            }} >热门歌单</Typography>
-                    </Grid>
-                </Grid>
+                    <QuickCard
+                        title='热门歌单'
+                        caption='敬请期待'
+                        tone='linear-gradient(135deg, #556cd6 0%, #8e6fd8 55%, #c86dd7 100%)'
+                        icon={<QueueMusicRoundedIcon />}
+                    />
+                </Box>
                 {/* 最新上传 */}
-                <Typography variant='h5' sx={{ marginBottom: '12px' }}>最新上传</Typography>
-                <Typography sx={[recentUploadAlbum.length !== 0 && { display: 'none' }]}>暂无音乐</Typography>
-                <Grid container spacing={{ xs: 1.5, sm: 3 }} sx={{ display: 'flex', justifyContent: 'flex-start' }} columns={{ xs: 12, sm: 12, lg: 15, xl: 24 }} >
+                <SectionTitle
+                    title='最新上传'
+                    caption='最近入库的专辑'
+                    action={
+                        <Button size='small' onClick={() => { router.push('/album/management') }} sx={{ textTransform: 'none' }}>全部专辑</Button>
+                    }
+                />
+                {/* 加载中骨架 */}
+                <Box sx={[albumGridSx, recentUploadLoaded && { display: 'none' }]}>
+                    {[0, 1, 2, 3, 4, 5].map(index => (
+                        <Skeleton key={index} variant='rounded' sx={{ aspectRatio: '1 / 1', height: 'auto', borderRadius: '12px', transform: 'unset' }} />
+                    ))}
+                </Box>
+                {/* 空状态 */}
+                {
+                    recentUploadLoaded && recentUploadAlbum.length === 0 &&
+                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: { xs: '32px 0 40px', sm: '40px 0 56px' }, color: 'text.secondary', userSelect: 'none' }}>
+                        <LibraryMusicOutlinedIcon sx={{ fontSize: '44px', opacity: 0.35 }} />
+                        <Typography variant='subtitle2' sx={{ marginTop: '12px' }}>暂无音乐</Typography>
+                        <Typography variant='caption'>扫描本地媒体库后，专辑会出现在这里</Typography>
+                        <Button size='small' sx={{ marginTop: '12px', textTransform: 'none' }} onClick={() => { router.push('/album/management') }}>前往专辑管理</Button>
+                    </Box>
+                }
+                {/* 专辑网格 */}
+                <Box sx={[albumGridSx, !recentUploadLoaded && { display: 'none' }]}>
                     {
                         recentUploadAlbum.map((album, index) => {
                             return <AlbumCard key={index} album={album} />
                         })
                     }
-                </Grid>
+                </Box>
             </Box>
         </Box>
     )
