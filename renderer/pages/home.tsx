@@ -66,7 +66,7 @@ function AlbumCard(props: IAlbumCard) {
     return (
 
         <Link href={`/album/${props.album.albumId}`}>
-            <Grid ref={gridRef} item xs={3} sx={{ display: 'flex', flexDirection: 'column', flexShrink: '0' }}>
+            <Grid ref={gridRef} item xs={4} sm={3} sx={{ display: 'flex', flexDirection: 'column', flexShrink: '0' }}>
 
                 <Box sx={[{ borderRadius: '6%', display: 'flex', aspectRatio: '1 / 1' }, loaded && { display: 'none' },]}>
                     <Skeleton variant='rounded' sx={[{ width: '100%', height: '100%' }]} />
@@ -81,6 +81,12 @@ function AlbumCard(props: IAlbumCard) {
                     ':hover': {
                         transform: 'translateY(-10px)',
                         cursor: 'pointer'
+                    },
+                    // 触屏设备无 hover，避免点按后卡片停留在上浮状态
+                    '@media (hover: none)': {
+                        ':hover': {
+                            transform: 'none'
+                        }
                     },
                     ":hover .album-cover-shadow": {
                         visibility: 'unset'
@@ -284,7 +290,7 @@ function Home() {
     }
 
     return (
-        <Box sx={{ width: '100%', height: '100%', padding: '12px 12px', overflowY: 'auto', overflowX: 'hidden', display: 'flex', flexDirection: 'column' }}>
+        <Box sx={{ width: '100%', height: '100%', padding: '12px 12px 24px', overflowY: 'auto', overflowX: 'hidden', display: 'flex', flexDirection: 'column' }}>
             {Toast}
             {/* <Box>
                 <Typography variant='h5' sx={{ marginBottom: '12px' }}>热门歌单</Typography>
@@ -304,7 +310,7 @@ function Home() {
             <Box sx={[{ display: 'flex', flexDirection: 'column' }, firstLaunch && { display: 'none' }]}>
                 {/* 推荐 */}
                 <Typography variant='h5' sx={{ marginBottom: '12px' }}>推荐</Typography>
-                <Grid container spacing={3} sx={{ display: 'flex', justifyContent: 'flex-start', marginBottom: '12px', userSelect: 'none' }} columns={{ xs: 6, sm: 12, lg: 15, xl: 24 }} >
+                <Grid container spacing={{ xs: 1.5, sm: 3 }} sx={{ display: 'flex', justifyContent: 'flex-start', marginBottom: '12px', userSelect: 'none' }} columns={{ xs: 6, sm: 12, lg: 15, xl: 24 }} >
                     {/* 随机推荐 */}
                     <Grid item xs={6} lg={9} xl={9} sx={{ aspectRatio: { xs: "2 / 1", lg: "3 / 1", xl: "3 / 1" }, display: 'flex', flexDirection: 'column' }}>
 
@@ -320,15 +326,20 @@ function Home() {
                             {/* 封面预览 */}
                             {
                                 randomMusic &&
-                                <Box sx={{ margin: '24px 18px 24px 36px', height: 'calc(100% - 24px - 24px)', aspectRatio: '1 / 1', position: 'relative', ':hover .random-music-playback-btn': { display: 'flex', background: 'rgba(0,0,0,0.5)' } }}>
+                                <Box sx={{
+                                    margin: { xs: '12px 18px 12px 36px', sm: '24px 18px 24px 36px' },
+                                    height: { xs: 'calc(100% - 24px)', sm: 'calc(100% - 24px - 24px)' },
+                                    aspectRatio: '1 / 1', position: 'relative', ':hover .random-music-playback-btn': { display: 'flex', background: 'rgba(0,0,0,0.5)' }
+                                }}>
                                     <CardMedia component='img' crossOrigin='anonymous' onLoad={handleRandomMusicCoverLoaded} ref={coverRef} id="random-music-cover" className="random-music-cover" sx={[{ position: 'absolute', top: 0, left: 0, objectFit: 'cover', height: '100%', width: 'unset', aspectRatio: '1 / 1', borderRadius: '6px' }]} src={randomMusic.albumCoverUrl ? randomMusic.albumCoverUrl + "?s=@w300h300" : "/images/lxh_sign_400x400.png"} >
 
                                     </CardMedia>
                                     <canvas style={{ display: 'none' }} ref={canvasRef} />
-                                    <Box className="random-music-playback-btn" sx={{ position: 'absolute', top: 0, left: 0, height: '100%', width: 'unset', aspectRatio: '1 / 1', display: 'none', borderRadius: '6px' }}>
+                                    {/* 触屏无 hover，播放按钮常显以便点按播放 */}
+                                    <Box className="random-music-playback-btn" sx={{ position: 'absolute', top: 0, left: 0, height: '100%', width: 'unset', aspectRatio: '1 / 1', display: 'none', borderRadius: '6px', '@media (hover: none)': { display: 'flex', background: 'rgba(0,0,0,0.35)' } }}>
                                         <IconButton
                                             disableRipple
-                                            sx={{ height: '100%', width: '100%', color: '#ffffff' }}
+                                            sx={{ height: '100%', width: '100%', color: '#ffffff', '& .MuiSvgIcon-root': { fontSize: '1.5rem' }, '@media (hover: none)': { '& .MuiSvgIcon-root': { fontSize: '3rem' } } }}
                                             onClick={handlePlayRandomMusic}
                                         >
                                             <PlayCircleFilled />
@@ -435,7 +446,7 @@ function Home() {
                 {/* 最新上传 */}
                 <Typography variant='h5' sx={{ marginBottom: '12px' }}>最新上传</Typography>
                 <Typography sx={[recentUploadAlbum.length !== 0 && { display: 'none' }]}>暂无音乐</Typography>
-                <Grid container spacing={3} sx={{ display: 'flex', justifyContent: 'flex-start' }} columns={{ xs: 12, sm: 12, lg: 15, xl: 24 }} >
+                <Grid container spacing={{ xs: 1.5, sm: 3 }} sx={{ display: 'flex', justifyContent: 'flex-start' }} columns={{ xs: 12, sm: 12, lg: 15, xl: 24 }} >
                     {
                         recentUploadAlbum.map((album, index) => {
                             return <AlbumCard key={index} album={album} />
