@@ -5,6 +5,7 @@ import List from "@mui/material/List"
 import FavoriteOutlinedIcon from '@mui/icons-material/FavoriteOutlined';
 import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined';
 import RestoreOutlinedIcon from '@mui/icons-material/RestoreOutlined';
+import WhatshotOutlinedIcon from '@mui/icons-material/WhatshotOutlined';
 import ListItemText from "@mui/material/ListItemText"
 import LibraryMusicIcon from '@mui/icons-material/LibraryMusic';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
@@ -79,6 +80,12 @@ function LeftPannel(props: LeftPannelProps) {
         } else if (path.startsWith("/favoriate")) {
             setActiveList("我的音乐");
             setActiveIndex(1);
+        } else if (path.startsWith("/recent")) {
+            setActiveList("我的音乐");
+            setActiveIndex(3);
+        } else if (path.startsWith("/mostplayed")) {
+            setActiveList("我的音乐");
+            setActiveIndex(4);
         } else {
             setActiveList(null);
             setActiveIndex(null)
@@ -133,7 +140,8 @@ function LeftPannel(props: LeftPannelProps) {
                         />
                         <PannelItem index={1} icon={<FavoriteOutlinedIcon />} text="我喜欢" href="/favoriate" />
                         <PannelItem index={2} icon={<FileDownloadOutlinedIcon />} text="本地和下载" href="" />
-                        <PannelItem index={3} icon={<RestoreOutlinedIcon />} text="最近播放" href="" />
+                        <PannelItem index={3} icon={<RestoreOutlinedIcon />} text="最近播放" href="/recent" />
+                        <PannelItem index={4} icon={<WhatshotOutlinedIcon />} text="最常播放" href="/mostplayed" />
                     </PannelList>
 
                     <PannelList context={{ name: "创建的歌单" }} key="创建的歌单">

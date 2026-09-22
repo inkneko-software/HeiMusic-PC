@@ -25,6 +25,7 @@ import { useRouter } from "next/router"
 import FavoriteBorderOutlinedIcon from '@mui/icons-material/FavoriteBorderOutlined';
 import FavoriteOutlinedIcon from '@mui/icons-material/FavoriteOutlined';
 import { PlaylistControllerService } from "@api/codegen/services/PlaylistControllerService"
+import { PlayHistoryControllerService } from "@api/codegen/services/PlayHistoryControllerService"
 import { pushToast } from "@components/HeiMusicMainLayout"
 import { HeiMusicContext } from "../../lib/HeiMusicContext"
 
@@ -113,7 +114,8 @@ export interface IMusicInfo {
     isFavorite?: boolean,
     duration?: number,
     discStartTime?: number,
-    discEndTime?: number
+    discEndTime?: number,
+    isInstrumental?: boolean
 }
 
 export interface IPlayingMusicInfo extends IMusicInfo {
@@ -133,6 +135,9 @@ function MusicControlPannel(props: IMusicControlPannel) {
     const theme = useTheme();
     const audioRef = React.useRef<HTMLAudioElement>(null)
     const volumeButtonRef = React.useRef()
+    //播放历史打点标记：换源时重置为 0，onplay 时若与当前曲目不一致则上报一次；
+    //暂停后继续播放不重复计数
+    const reportedMusicIdRef = React.useRef(0)
 
     const [playing, setPlaying] = React.useState(false);
     const [playBtnIcon, setPlayBtnIcon] = React.useState(<PlayCircleFilled style={{ fontSize: 42 }} />);
@@ -191,6 +196,7 @@ function MusicControlPannel(props: IMusicControlPannel) {
                 const nextMusic = musicList[0];
                 setCurrentMusicInfo({ ...nextMusic, currentIndex: 0, currentQuality: nextMusic.qualityOption[0] });
                 audioRef.current.src = nextMusic.qualityOption[0].url;
+                reportedMusicIdRef.current = 0;
                 document.title = `${nextMusic.title} - HeiMusic!`;
             }
             audioRef.current.play();
@@ -254,6 +260,7 @@ function MusicControlPannel(props: IMusicControlPannel) {
             var nextMusic: IMusicInfo = musicList[nextIndex];
             setCurrentMusicInfo({ ...nextMusic, currentIndex: nextIndex, currentQuality: nextMusic.qualityOption[0] });
             audio.src = nextMusic.qualityOption[0].url;
+            reportedMusicIdRef.current = 0;
             if (nextMusic.isLargeTrackMusic) {
                 audio.currentTime = nextMusic.discStartTime;
             }
@@ -273,6 +280,7 @@ function MusicControlPannel(props: IMusicControlPannel) {
             var nextMusic: IMusicInfo = musicList[nextIndex];
             setCurrentMusicInfo({ ...nextMusic, currentIndex: nextIndex, currentQuality: nextMusic.qualityOption[0] });
             audio.src = nextMusic.qualityOption[0].url;
+            reportedMusicIdRef.current = 0;
             if (nextMusic.isLargeTrackMusic) {
                 audio.currentTime = nextMusic.discStartTime;
             }
@@ -339,6 +347,14 @@ function MusicControlPannel(props: IMusicControlPannel) {
             audio.onplay = () => {
                 setPlaying(true)
                 setPlayBtnIcon(<PauseCircleFilled style={{ fontSize: 42 }} />)
+                //播放历史打点：每首曲目实际开播时上报一次，暂停后继续不重复计数；失败静默不影响播放
+                if (currentMusicInfo.musicId !== 0 && reportedMusicIdRef.current !== currentMusicInfo.musicId) {
+                    reportedMusicIdRef.current = currentMusicInfo.musicId;
+                    PlayHistoryControllerService.report(currentMusicInfo.musicId)
+                        .catch(error => {
+                            console.error('播放历史打点失败', error);
+                        })
+                }
             }
 
             audio.onpause = () => {
@@ -364,6 +380,7 @@ function MusicControlPannel(props: IMusicControlPannel) {
                 if (audioRef.current !== null) {
                     var audio = audioRef.current;
                     audio.src = newMusic.qualityOption[0].url;
+                    reportedMusicIdRef.current = 0;
                     if (newMusic.isLargeTrackMusic) {
                         audio.currentTime = newMusic.discStartTime;
                     }
@@ -383,6 +400,7 @@ function MusicControlPannel(props: IMusicControlPannel) {
                         audio.currentTime = newMusic.discStartTime;
                     }
                     audio.src = newMusic.qualityOption[0].url;
+                    reportedMusicIdRef.current = 0;
                     handlePlayButtonClick(true);
                 }
             }

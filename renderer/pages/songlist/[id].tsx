@@ -19,7 +19,7 @@ import FavoriteBorderOutlinedIcon from '@mui/icons-material/FavoriteBorderOutlin
 import FavoriteOutlinedIcon from '@mui/icons-material/FavoriteOutlined';
 
 import { IChangePlayListEvent, IMusicInfo, IMusicQuality } from '../../components/MusicControlPannel/MusicControlPannel';
-import { AlbumControllerService, ApiError, ArtistVo, PlaylistControllerService } from '../../api/codegen';
+import { AlbumControllerService, ApiError, ArtistVo, PlayHistoryControllerService, PlaylistControllerService } from '../../api/codegen';
 import { pushToast } from '@components/HeiMusicMainLayout';
 import useMusicContextMenu from '@components/MusicContextMenu';
 import { HeiMusicContext } from '../../lib/HeiMusicContext';
@@ -27,7 +27,9 @@ import SpectrumIcon from '@components/Common/Icon/SpectrumIcon';
 
 interface PlaylistProps extends BoxProps {
     isUserFavoriteMusicList?: boolean,
-    isDaily30MusicList?: boolean
+    isDaily30MusicList?: boolean,
+    //播放历史模式：recent=最近播放 most=最常播放
+    playHistoryMode?: 'recent' | 'most'
 }
 
 function Playlist(props: PlaylistProps) {
@@ -50,11 +52,47 @@ function Playlist(props: PlaylistProps) {
     const playlistInfoRef = React.useRef<HTMLElement>();
 
     React.useEffect(() => {
-        if (!props.isUserFavoriteMusicList && typeof (id) !== "string" && !props.isDaily30MusicList) {
+        if (!props.isUserFavoriteMusicList && typeof (id) !== "string" && !props.isDaily30MusicList && props.playHistoryMode === undefined) {
             return;
         }
 
         (async () => {
+            if (props.playHistoryMode !== undefined) {
+                var historyRes = props.playHistoryMode === 'recent'
+                    ? await PlayHistoryControllerService.getRecentList()
+                    : await PlayHistoryControllerService.getMostPlayedList();
+                setPlayList(historyRes.data.map(history => {
+                    return {
+                        musicId: history.music.musicId,
+                        title: history.music.title,
+                        artists: history.music.artistList.map(val => val.name),
+                        qualityOption: [{
+                            name: "SQ",
+                            url: history.music.resourceUrl,
+                            color: "red"
+                        }],
+                        albumId: history.music.albumId,
+                        albumTitle: history.music.albumTitle,
+                        cover: history.music.albumCoverUrl,
+                        duration: history.music.duration,
+                        isFavorite: history.music.isFavorite,
+                        isLargeTrackMusic: history.music.discStartTime !== '',
+                        isInstrumental: history.music.isInstrumental,
+                        discStartTime: parseFloat(history.music.discStartTime),
+                        discEndTime: parseFloat(history.music.discEndTime)
+                    }
+                }));
+
+                setPlaylistInfo({
+                    playlistId: 0,
+                    title: props.playHistoryMode === 'recent' ? "最近播放" : "最常播放",
+                    author: "",
+                    cover: null,
+                    date: undefined,
+                    listenedCount: 0,
+                })
+                return;
+            }
             if (props.isUserFavoriteMusicList) {
                 var res = await PlaylistControllerService.getMyFavoriteMusicList();
                 setPlayList(res.data.map(music => {
@@ -73,6 +111,7 @@ function Playlist(props: PlaylistProps) {
                         duration: music.duration,
                         isFavorite: music.isFavorite,
                         isLargeTrackMusic: music.discStartTime !== '',
+                        isInstrumental: music.isInstrumental,
                         discStartTime: parseFloat(music.discStartTime),
                         discEndTime: parseFloat(music.discEndTime)
                     }
@@ -106,6 +145,7 @@ function Playlist(props: PlaylistProps) {
                         duration: music.duration,
                         isFavorite: music.isFavorite,
                         isLargeTrackMusic: music.discStartTime !== '',
+                        isInstrumental: music.isInstrumental,
                         discStartTime: parseFloat(music.discStartTime),
                         discEndTime: parseFloat(music.discEndTime)
                     }
@@ -155,6 +195,7 @@ function Playlist(props: PlaylistProps) {
                             duration: music.duration,
                             isFavorite: music.isFavorite,
                             isLargeTrackMusic: music.discStartTime !== '',
+                        isInstrumental: music.isInstrumental,
                             discStartTime: parseFloat(music.discStartTime),
                             discEndTime: parseFloat(music.discEndTime)
                         }
@@ -181,7 +222,7 @@ function Playlist(props: PlaylistProps) {
             // }))
         })()
 
-    }, [id, props.isUserFavoriteMusicList, props.isDaily30MusicList])
+    }, [id, props.isUserFavoriteMusicList, props.isDaily30MusicList, props.playHistoryMode])
 
     React.useEffect(() => {
         if (containerRef.current !== null && playlistInfoRef.current !== null) {
@@ -259,7 +300,7 @@ function Playlist(props: PlaylistProps) {
     }
 
     //音乐右键菜单
-    const [MusicContextMenu, popupMusicContextMenu, musicMenuOpen, musicMenuInfo] = useMusicContextMenu({ musicList: playlist, menuType: props.isUserFavoriteMusicList || props.isDaily30MusicList ? 'favorite' : 'playlist', onPlaylistMusicDelete: handleRemovePlaylistMusic });
+    const [MusicContextMenu, popupMusicContextMenu, musicMenuOpen, musicMenuInfo] = useMusicContextMenu({ musicList: playlist, menuType: props.isUserFavoriteMusicList || props.isDaily30MusicList || props.playHistoryMode !== undefined ? 'favorite' : 'playlist', onPlaylistMusicDelete: handleRemovePlaylistMusic });
 
     return (
         <Box sx={{ height: '100%', width: '100%', overflowY: "auto" }} ref={containerRef}>
@@ -302,7 +343,7 @@ function Playlist(props: PlaylistProps) {
                     <Typography fontWeight={600} variant='h5' noWrap sx={{ '@media(max-width: 600px)': { fontSize: "1em" } }} title={playlistInfo.title}  >{playlistInfo.title}</Typography>
                     <Typography variant='body2' noWrap sx={{ '@media(max-width: 600px)': { fontSize: "1em" } }}>{playlistInfo.author}</Typography>
                     {playlistInfo.date ? <Typography variant='caption' noWrap >{playlistInfo.date}</Typography> : null}
-                    <Typography variant='caption' sx={{ marginTop: "12px" }} >{"播放量 " + playlistInfo.listenedCount}</Typography>
+                    {playlistInfo.listenedCount !== 0 && <Typography variant='caption' sx={{ marginTop: "12px" }} >{"播放量 " + playlistInfo.listenedCount}</Typography>}
                     <Box sx={{ marginTop: "auto", '@media(max-width: 600px)': { display: 'none' } }}>
                         <Button sx={{ width: "90px", height: "32px", marginRight: "30px" }} variant="contained" onClick={handlePlayAll} >播放全部</Button>
                         <Button sx={{ width: "90px", height: "32px", marginRight: "30px" }} variant="outlined">下载</Button>
@@ -351,7 +392,7 @@ function Playlist(props: PlaylistProps) {
                     }}>
                         <Typography fontWeight={600} variant='h5' noWrap sx={{ '@media(max-width: 600px)': { fontSize: "1em" } }}>{playlistInfo.title}</Typography>
 
-                        <Box sx={{ margin: "14px 0px", fontSize: "14px", color: "gray" }}>{"播放量 " + playlistInfo.listenedCount}</Box>
+                        {playlistInfo.listenedCount !== 0 && <Box sx={{ margin: "14px 0px", fontSize: "14px", color: "gray" }}>{"播放量 " + playlistInfo.listenedCount}</Box>}
                     </Box>
                     <Box sx={{ marginTop: "auto", '@media(max-width: 600px)': { display: 'none' } }}>
                         <Button sx={{ width: "90px", height: "32px", marginRight: "30px" }} variant='contained'>播放全部</Button>
@@ -515,7 +556,7 @@ function Playlist(props: PlaylistProps) {
                 </Table>
             </TableContainer>
             <Box sx={[{ height: "96px", width: "100%", display: "flex" }, playlist.length !== 0 && { display: "none" }]}>
-                <Typography sx={{ margin: "auto auto" }} >当前歌单暂无音乐</Typography>
+                <Typography sx={{ margin: "auto auto" }} >{props.playHistoryMode !== undefined ? "暂无播放记录" : "当前歌单暂无音乐"}</Typography>
             </Box>
             {/* 音乐菜单 */}
             {MusicContextMenu}
