@@ -1,4 +1,4 @@
-import { Box, Button, Stack, Typography, Dialog, DialogActions, DialogTitle, DialogContent, TablePagination, TextField, MenuItem, Chip, FormControlLabel, Switch } from "@mui/material";
+import { Box, Button, Stack, Typography, Dialog, DialogActions, DialogTitle, DialogContent, TablePagination, TextField, MenuItem, Chip, FormControlLabel, Switch, LinearProgress } from "@mui/material";
 
 import React from "react"
 import Table from '@mui/material/Table';
@@ -7,7 +7,7 @@ import TableCell from '@mui/material/TableCell';
 import TableContainer from '@mui/material/TableContainer';
 import TableRow from '@mui/material/TableRow';
 import { useTheme } from '@mui/styles'
-import { LyricControllerService, LyricFetchLog, ApiError } from "@api/codegen";
+import { LyricControllerService, LyricFetchLog, LyricCoverageVo, ApiError } from "@api/codegen";
 import { pushToast } from "@components/HeiMusicMainLayout";
 import { useRouter } from "next/router";
 import AutorenewOutlinedIcon from '@mui/icons-material/AutorenewOutlined';
@@ -51,6 +51,8 @@ function LyricFetchLogPage() {
     const [scanSubmitting, setScanSubmitting] = React.useState(false);
     //自动刷新开关；开启后每 2 秒拉取一次（仅管理账户使用，不做多档间隔）
     const [autoRefresh, setAutoRefresh] = React.useState(false);
+    //歌词覆盖率统计；与筛选无关的全局数据，null 表示尚未加载完成
+    const [coverage, setCoverage] = React.useState<LyricCoverageVo | null>(null);
 
     //规范化音乐ID输入：去空格、非法输入视为空
     const normalizeMusicId = (input: string) => {
@@ -83,6 +85,13 @@ function LyricFetchLogPage() {
             })
     }
 
+    //拉取歌词覆盖率统计；供标题行进度指示展示
+    const loadCoverage = () => {
+        LyricControllerService.getCoverage()
+            .then(res => setCoverage(res.data ?? null))
+            .catch((error: ApiError) => pushToast(error.message))
+    }
+
     //按当前 URL 参数重新拉取日志；不重置筛选输入缓冲，避免打断正在输入的内容
     const refreshFromQuery = () => {
         const { p, s, musicId, outcome } = router.query;
@@ -110,11 +119,19 @@ function LyricFetchLogPage() {
     //定时自动刷新；关闭、翻页或组件卸载时重建/清理定时器
     React.useEffect(() => {
         if (!autoRefresh) return;
-        const timer = setInterval(refreshFromQuery, 2000);
+        const timer = setInterval(() => {
+            refreshFromQuery();
+            //覆盖率随自动刷新一并更新，观察扫描拉取进度
+            loadCoverage();
+        }, 2000);
         return () => clearInterval(timer);
         //refreshFromQuery 每次渲染重建，仅按开关与路由变化重建定时器即可
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [autoRefresh, router.query])
+
+    //首次进入页面加载覆盖率统计
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    React.useEffect(() => { loadCoverage() }, [])
 
     //切换自动刷新；开启时立即刷新一次
     const handleAutoRefreshChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -155,12 +172,19 @@ function LyricFetchLogPage() {
                 const count = typeof res.data === "number" ? res.data : null;
                 pushToast(count !== null ? `已提交扫描请求，共 ${count} 首待拉取` : "已提交扫描请求", "success")
                 setScanDialogOpen(false)
+                //提交扫描后立即刷新覆盖率，后续进度依赖自动刷新
+                loadCoverage()
             })
             .catch((error: ApiError) => {
                 pushToast(error.message)
             })
             .finally(() => setScanSubmitting(false))
     };
+
+    //覆盖率展示值：百分比取整，总数为零时进度条置 0 防止 NaN
+    const totalMusicCount = coverage?.totalMusicCount ?? 0;
+    const lyricMusicCount = coverage?.lyricMusicCount ?? 0;
+    const coveragePercent = totalMusicCount > 0 ? Math.round(lyricMusicCount / totalMusicCount * 100) : 0;
 
     return (
         <Box sx={{ display: "flex", flexDirection: "column", height: "100%" }} >
@@ -169,8 +193,43 @@ function LyricFetchLogPage() {
                     <Typography variant='h5' sx={{ margin: "auto 0px auto 12px" }}>歌词拉取</Typography>
                     <Button sx={{ margin: "auto 6px auto 12px" }} color="info" startIcon={<AutorenewOutlinedIcon />}
                         onClick={() => setScanDialogOpen(true)}>扫描缺失歌词</Button>
+                    {/* 歌词覆盖率进度指示，与"扫描缺失歌词"入口配合观察拉取进度 */}
+                    {coverage !== null &&
+                        <Stack direction="row" sx={{ margin: "auto 12px auto auto", alignItems: "center", flex: "0 1 260px", minWidth: "140px" }}
+                            title={`歌词覆盖 ${lyricMusicCount} / ${totalMusicCount}（${coveragePercent}%）`}>
+                            <LinearProgress variant="determinate" value={coveragePercent} sx={{ flex: 1, height: 6, borderRadius: 3 }} />
+                            <Typography variant="body2" sx={{ marginLeft: "8px", whiteSpace: "nowrap" }}>
+                                歌词覆盖 {lyricMusicCount} / {totalMusicCount}
+                            </Typography>
+                        </Stack>
+                    }
+                </Stack>
+                {/* 筛选栏；分页组件也放本行（自动刷新开关左侧），避免窄窗口下挤压标题行 */}
+                <Stack direction="row" sx={{ padding: "4px 12px 8px", flex: "0 0 auto" }}>
+                    <TextField
+                        size="small"
+                        label="音乐ID"
+                        sx={{ width: "120px" }}
+                        value={musicIdInput}
+                        onChange={e => setMusicIdInput(e.target.value)}
+                        onKeyDown={e => { if (e.key === 'Enter') applyMusicIdFilter() }}
+                        onBlur={applyMusicIdFilter}
+                    />
+                    <TextField
+                        size="small"
+                        select
+                        label="拉取结果"
+                        sx={{ width: "120px", marginLeft: "8px" }}
+                        value={outcomeFilter}
+                        onChange={handleOutcomeFilterChange}
+                    >
+                        <MenuItem value="">全部</MenuItem>
+                        {Object.keys(OUTCOME_META).map(key => (
+                            <MenuItem key={key} value={key}>{OUTCOME_META[key].label}</MenuItem>
+                        ))}
+                    </TextField>
                     <TablePagination
-                        sx={{ margin: "auto 0px auto 0px" }}
+                        sx={{ margin: "auto 0px auto auto" }}
                         rowsPerPageOptions={[10, 25, 100]}
                         component="div"
                         count={total}
@@ -181,33 +240,8 @@ function LyricFetchLogPage() {
                         labelRowsPerPage="每页行数"
                         labelDisplayedRows={({ from, to, count }) => `第${page}页 ${from}-${to} 共 ${count !== -1 ? count : `超过 ${to}`} 条`}
                     />
-                </Stack>
-                {/* 筛选栏 */}
-                <Stack direction="row" sx={{ padding: "4px 12px 8px", flex: "0 0 auto" }}>
-                    <TextField
-                        size="small"
-                        label="音乐ID"
-                        sx={{ width: "160px" }}
-                        value={musicIdInput}
-                        onChange={e => setMusicIdInput(e.target.value)}
-                        onKeyDown={e => { if (e.key === 'Enter') applyMusicIdFilter() }}
-                        onBlur={applyMusicIdFilter}
-                    />
-                    <TextField
-                        size="small"
-                        select
-                        label="拉取结果"
-                        sx={{ width: "160px", marginLeft: "12px" }}
-                        value={outcomeFilter}
-                        onChange={handleOutcomeFilterChange}
-                    >
-                        <MenuItem value="">全部</MenuItem>
-                        {Object.keys(OUTCOME_META).map(key => (
-                            <MenuItem key={key} value={key}>{OUTCOME_META[key].label}</MenuItem>
-                        ))}
-                    </TextField>
                     <FormControlLabel
-                        sx={{ marginLeft: "auto", marginRight: 0 }}
+                        sx={{ marginRight: 0 }}
                         control={<Switch size="small" checked={autoRefresh} onChange={handleAutoRefreshChange} />}
                         label="自动刷新"
                     />

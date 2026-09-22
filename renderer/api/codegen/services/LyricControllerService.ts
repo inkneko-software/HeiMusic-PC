@@ -4,6 +4,7 @@
 import type { AddLyricDto } from '../models/AddLyricDto';
 import type { ResponseInteger } from '../models/ResponseInteger';
 import type { ResponseListLyricVo } from '../models/ResponseListLyricVo';
+import type { ResponseLyricCoverageVo } from '../models/ResponseLyricCoverageVo';
 import type { ResponseLyricFetchVo } from '../models/ResponseLyricFetchVo';
 import type { ResponseLyricVo } from '../models/ResponseLyricVo';
 import type { ResponseObject } from '../models/ResponseObject';
@@ -162,6 +163,19 @@ musicId: number,
             query: {
                 'musicId': musicId,
             },
+        });
+    }
+
+    /**
+     * 歌词覆盖率统计
+     * 返回音乐总数与有歌词的音乐数（同音乐多语言仅计一次），用于歌词拉取进度展示
+     * @returns ResponseLyricCoverageVo OK
+     * @throws ApiError
+     */
+    public static getCoverage(): CancelablePromise<ResponseLyricCoverageVo> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/v1/lyric/getCoverage',
         });
     }
 
