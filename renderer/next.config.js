@@ -11,12 +11,16 @@ try {
   console.warn('[next.config.js] 未找到仓库根目录 api-server.json，开发转发回落到 http://localhost:8081（模板见 api-server.json.example）');
 }
 
+// 应用版本号：读取仓库根目录 package.json，设置页展示用
+const appVersion = require(path.join(__dirname, '..', 'package.json')).version;
+
 module.exports = {
   // 构建期把 API 端点内联进渲染层（renderer/lib/apiServer.ts 经
   // process.env.NATIVE_API_BASE 读取），渲染层因此无需直接 import 根目录的
   // api-server.json，网页镜像（Docker）构建不依赖该本地文件
   env: {
     NATIVE_API_BASE: apiServer,
+    APP_VERSION: appVersion,
   },
   webpack: (config, { isServer }) => {
     config.resolve.alias['@components'] = path.join(__dirname, 'components');

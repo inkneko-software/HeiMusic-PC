@@ -4,7 +4,8 @@ import * as React from "react"
 
 import Layout from "./layout"
 
-const version = "0.5.0"
+//版本号由 renderer/next.config.js 构建期从 package.json 注入
+const version = process.env.APP_VERSION ?? ""
 
 
 /**

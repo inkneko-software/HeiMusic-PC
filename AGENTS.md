@@ -146,7 +146,7 @@ npx cap copy android     # 把 app/ 同步进 android/app/src/main/assets/public
 - 路径别名：`@components/*` → `renderer/components/*`，`@api/*` → `renderer/api/*`（同时配置在 `renderer/tsconfig.json` 的 `paths` 与 `renderer/next.config.js` 的 webpack alias，**两处都要改**）。
 - 样式：MUI v5 + `@mui/styles` 的 `makeStyles`/`createStyles`/`styled`；少量 `*.module.css`。未启用 emotion `sx` 之外的统一规范，改动时跟随所在文件风格。
 - 语言：注释、UI 文案、README 变更记录均为中文。
-- 版本：`package.json` 的 `version` 为唯一版本来源，发版时同步在 `README.md` 追加一条 `0.x.y` 变更记录（按现有格式）。
+- 版本：`package.json` 的 `version` 为唯一版本来源，发版时同步在 `README.md` 追加一条 `0.x.y` 变更记录（按现有格式）；设置页展示的版本号由 `renderer/next.config.js` 构建期注入（`process.env.APP_VERSION`），无需手动改代码。
 
 ## 6. 注意事项
 
