@@ -230,7 +230,7 @@ function LyricFetchLogPage() {
                     </TextField>
                     <TablePagination
                         sx={{ margin: "auto 0px auto auto" }}
-                        rowsPerPageOptions={[10, 25, 100]}
+                        rowsPerPageOptions={[10, 20, 25, 100]}
                         component="div"
                         count={total}
                         rowsPerPage={rowsPerPage}
