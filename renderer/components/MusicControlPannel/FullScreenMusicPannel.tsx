@@ -20,69 +20,8 @@ import VolumePannel from "./VolumePannel"
 import ScrollableTypography from "@components/Common/ScrollableTypography"
 import PlayList from "./PlayList"
 import ExpandMoreOutlinedIcon from '@mui/icons-material/ExpandMoreOutlined';
-
-const testLyric = `[00:00.00]测试歌词测试歌词
-[00:02.16]测试歌词
-[00:02.39]测试歌词
-[00:02.73]测试歌词测试歌词测试歌词
-[00:05.19]测试歌词测试歌词测试歌词
-[00:07.89]
-[00:08.42]测试歌词
-[00:15.39]
-[00:24.87]测试歌词
-[00:27.52]测试歌词
-[00:30.19]测试歌词
-[00:33.82]测试歌词
-[00:35.48]测试歌词
-[00:38.14]测试歌词
-[00:40.83]测试歌词
-[00:45.11]
-[00:45.95]测试歌词
-[00:50.30]测试歌词
-[00:53.85]测试歌词
-[00:56.69]测试歌词
-[00:58.55]测试歌词
-[01:01.14]测试歌词
-[01:04.35]测试歌词
-[01:06.88]测试歌词
-[01:09.16]测试歌词
-[01:11.80]测试歌词
-[01:15.08]测试歌词
-[01:16.38]测试歌词
-[01:22.47]
-[01:31.63]测试歌词
-[01:34.13]测试歌词
-[01:36.82]测试歌词
-[01:40.58]测试歌词
-[01:42.15]测试歌词
-[01:44.85]测试歌词
-[01:47.46]测试歌词
-[01:51.56]
-[01:52.54]测试歌词
-[01:56.99]测试歌词
-[02:00.56]测试歌词
-[02:05.20]测试歌词
-[02:07.83]测试歌词
-[02:10.97]测试歌词
-[02:13.69]测试歌词
-[02:15.80]测试歌词测试歌词测试歌词测试歌词测试歌词
-[02:18.45]测试歌词
-[02:21.62]测试歌词
-[02:28.70]
-[02:38.34]测试歌词
-[02:43.51]测试歌词
-[02:47.25]测试歌词
-[02:48.82]测试歌词
-[02:53.32]测试歌词
-[02:55.21]测试歌词
-[03:01.83]
-[03:05.15]测试歌词
-[03:07.81]测试歌词
-[03:10.81]测试歌词
-[03:13.54]测试歌词
-[03:15.96]测试歌词
-[03:18.44]测试歌词
-[03:21.67]测试歌词`
+import { LyricControllerService } from "@api/codegen/services/LyricControllerService"
+import type { LyricVo } from "@api/codegen/models/LyricVo"
 
 const Transition = React.forwardRef(function Transition(
     props: TransitionProps & {
@@ -117,38 +56,96 @@ export interface IFullScreenMusicPannelProps {
 
 interface LyricLine {
     startTime: number,
-    duration: number,
     text: string
+}
+
+//解析逐行时间标签 [mm:ss.xx]（兼容毫秒精度与一行多标签）；
+//lrc_a2/qrc 正文中逐字标签 <mm:ss.xx> 一并剔除；无时间标签的行（元信息等）跳过
+function parseTimedLyric(content: string): LyricLine[] {
+    const timeTagRegex = /\[(\d+):(\d+(?:\.\d+)?)\]/g;
+    const lyricLines: LyricLine[] = [];
+    content.split(/\r?\n/).forEach(line => {
+        timeTagRegex.lastIndex = 0;
+        const times: number[] = [];
+        let match: RegExpExecArray | null;
+        while ((match = timeTagRegex.exec(line)) !== null) {
+            times.push(parseInt(match[1]) * 60 + parseFloat(match[2]));
+        }
+        if (times.length === 0) {
+            return;
+        }
+        const text = line.replace(timeTagRegex, '').replace(/<\d+:\d+(?:\.\d+)?>/g, '').trim();
+        times.forEach(startTime => lyricLines.push({ startTime, text }));
+    });
+    return lyricLines.sort((a, b) => a.startTime - b.startTime);
+}
+
+//歌词选择：用户语言精确匹配 > 语言主子标签匹配 > 后端标记的默认歌词 > 第一份
+function selectLyric(list: LyricVo[]): LyricVo | null {
+    if (list.length === 0) {
+        return null;
+    }
+    const userLocale = (navigator.language || '').toLowerCase();
+    const userPrimary = userLocale.split('-')[0];
+    return list.find(l => l.locale === userLocale)
+        ?? list.find(l => l.locale?.split('-')[0] === userPrimary)
+        ?? list.find(l => l.isDefault)
+        ?? list[0];
 }
 
 export default function FullScreenMusicPannel(props: IFullScreenMusicPannelProps) {
     const theme = useTheme();
     const [volumePanelOpen, setVolumePanelOpen] = React.useState(false);
     const volumeButtonRef = React.useRef(null);
-    const [lyrics, setLyrics] = React.useState<LyricLine[]>([]);
+    const [lyricVo, setLyricVo] = React.useState<LyricVo | null>(null);
+    const [lyricStatus, setLyricStatus] = React.useState<'loading' | 'loaded' | 'empty'>('empty');
+
+    const musicId = props.currentMusicInfo.musicId;
+    const isInstrumental = props.currentMusicInfo.isInstrumental === true;
+
+    //切歌拉取歌词；纯音乐（isInstrumental === true）不请求
     React.useEffect(() => {
-        const regex = /\[(\d+):(\d+\.\d+)\](.*)/;
-        const lyricLines: LyricLine[] = [];
-
-        testLyric.split('\n')
-            .map((line, i) => {
-                var match = line.match(regex);
-                var startTime = parseInt(match[1]) * 60 + parseFloat(match[2]);
-                if (i !== 0) {
-                    lyricLines[i - 1].duration = startTime - lyricLines[i - 1].startTime;
+        setLyricVo(null);
+        if (musicId === 0 || isInstrumental) {
+            setLyricStatus('empty');
+            return;
+        }
+        let cancelled = false;
+        setLyricStatus('loading');
+        LyricControllerService.getList(musicId)
+            .then(res => {
+                if (cancelled) {
+                    return;
                 }
-                lyricLines.push({
-                    startTime: startTime,
-                    duration: 0,
-                    text: match[3]
-                })
+                const selected = selectLyric(res.data ?? []);
+                setLyricVo(selected);
+                setLyricStatus(selected ? 'loaded' : 'empty');
+            })
+            .catch(error => {
+                //歌词缺失/加载失败在歌词页静默展示占位，不打断播放
+                console.error('歌词加载失败', error);
+                if (!cancelled) {
+                    setLyricStatus('empty');
+                }
             });
+        return () => {
+            cancelled = true;
+        };
+    }, [musicId, isInstrumental])
 
-        lyricLines[lyricLines.length - 1].duration = props.duration - lyricLines[lyricLines.length - 1].startTime;
-        setLyrics(lyricLines);
-        console.log(lyricLines)
-        // duration 变化即切歌（当前为占位歌词，切歌后需按新时长修正末行持续时间）
-    }, [props.duration])
+    //format 为自由字符串：text 直接按纯文本展示；其余按时间标签解析，解析失败回落纯文本
+    const parsedLyric = React.useMemo(() => {
+        if (lyricVo?.content === undefined || lyricVo.content === '') {
+            return null;
+        }
+        if (lyricVo.format !== 'text') {
+            const lines = parseTimedLyric(lyricVo.content);
+            if (lines.length > 0) {
+                return { mode: 'timed' as const, lines };
+            }
+        }
+        return { mode: 'text' as const, lines: lyricVo.content.split(/\r?\n/) };
+    }, [lyricVo])
 
 
     return (
@@ -205,13 +202,23 @@ export default function FullScreenMusicPannel(props: IFullScreenMusicPannelProps
                     <Typography variant='caption' noWrap sx={{ flexShrink: '0', color: theme.palette.text.secondary }} >{`专辑：${props.currentMusicInfo.albumTitle}`}</Typography>
                     <Box sx={{ flex: '1 1 auto', marginTop: '24px', marginBottom: '24px', overflow: 'auto', display: 'flex', flexDirection: 'column', '::-webkit-scrollbar': { display: 'none' } }}>
                         {
-                            lyrics.map((lyric, i) => {
-                                var currentLine = lyric.startTime <= props.currentTime && props.currentTime <= (lyric.startTime + lyric.duration);
+                            (isInstrumental || lyricStatus !== 'loaded' || parsedLyric === null) &&
+                            <Typography sx={{ margin: 'auto', color: theme.palette.text.secondary }} variant='body2'>
+                                {isInstrumental ? '纯音乐' : lyricStatus === 'loading' ? '歌词加载中…' : '暂无歌词'}
+                            </Typography>
+                        }
+                        {
+                            !isInstrumental && lyricStatus === 'loaded' && parsedLyric !== null && parsedLyric.mode === 'timed' &&
+                            parsedLyric.lines.map((lyric, i) => {
+                                //末行持续到歌曲结束；props.duration 未就绪时兜底 5 秒
+                                const lineEnd = i + 1 < parsedLyric.lines.length
+                                    ? parsedLyric.lines[i + 1].startTime
+                                    : Math.max(props.duration, lyric.startTime + 5);
+                                var currentLine = lyric.startTime <= props.currentTime && props.currentTime <= lineEnd;
                                 return <Box component='p' key={i}>
                                     <Typography component='span'
                                         onAnimationStart={e => {
                                             e.currentTarget.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                                            console.log('dick')
                                         }}
                                         sx={[{
                                             display: 'inline',
@@ -226,7 +233,7 @@ export default function FullScreenMusicPannel(props: IFullScreenMusicPannelProps
                                             backgroundSize: '200%',
                                             backgroundClip: 'text',
                                             color: currentLine ? 'transparent' : theme.palette.text.primary,
-                                            animation: `${lyric.duration}s linear 0s infinite normal lyric_progress`,
+                                            animation: `${lineEnd - lyric.startTime}s linear 0s infinite normal lyric_progress`,
                                             animationPlayState: props.playing && currentLine ? 'running' : 'paused',
                                             '@keyframes lyric_progress': {
                                                 '0%': {
@@ -241,6 +248,14 @@ export default function FullScreenMusicPannel(props: IFullScreenMusicPannelProps
                                     </Typography>
                                 </Box>
                             })
+                        }
+                        {
+                            !isInstrumental && lyricStatus === 'loaded' && parsedLyric !== null && parsedLyric.mode === 'text' &&
+                            parsedLyric.lines.map((line, i) =>
+                                <Typography key={i} sx={{ textAlign: 'center', paddingTop: '12px', color: theme.palette.text.primary }} variant='body1'>
+                                    {line}
+                                </Typography>
+                            )
                         }
 
                     </Box>

@@ -31,6 +31,7 @@ renderer/                     渲染层（Next.js）
     home.tsx / index.tsx      首页（index 转发 home）
     login.tsx / init.tsx      登录 / 创建根账户
     album/{[id],management,upload}.tsx  album/edit/[albumId].tsx
+    lyric/fetchlog.tsx        歌词拉取记录页（URL 驱动分页与筛选）
     artist/[id].tsx  series/index.tsx  songlist/[id].tsx
     search/index.tsx  favoriate.tsx  daily30.tsx  userDetail.tsx
     settings/player/{home,layout}.tsx
@@ -76,7 +77,7 @@ npx next build renderer            # 仅构建网页端
 npx next start renderer            # 运行网页端
 ```
 
-- 没有 lint/test/typecheck 脚本，也**没有 ESLint 配置**；类型检查靠 `tsc` / IDE。
+- 没有测试框架与 test 脚本；类型检查用 `npm run typecheck`（分别对 `tsconfig.main.json` 与 `renderer/tsconfig.json` 跑 `tsc --noEmit`），lint 用 `npm run lint`（`renderer/.eslintrc.json`，extends `next/core-web-vitals`）。
 - `npm run openapi` 前先确认 `package.json` 中 `openapi` 项的 swagger host 正确，生成的代码整体覆盖 `renderer/api/codegen`。
 
 ### Android 构建链路
@@ -136,7 +137,7 @@ npx cap copy android     # 把 app/ 同步进 android/app/src/main/assets/public
 
 ### 4.5 API 调用
 
-- 优先使用 `renderer/api/codegen/services/*ControllerService`（8 个：Album、Artist、Auth、MinIo、Music、Playlist、Search、User）。
+- 优先使用 `renderer/api/codegen/services/*ControllerService`（10 个：Album、Artist、Auth、Lyric、MinIo、Music、PlayHistory、Playlist、Search、User）。分页类接口的 `data` 为 MyBatis-Plus Page 形状 `{ records, total, size, current, pages }`（首次引入于歌词拉取日志接口）。
 - 返回结构约定后端业务码：`code !== 0` 视为业务错误，`request.ts` 会 reject 并携带 `message`；网络异常统一 Toast「服务错误，请稍后尝试」。
 - **不要手工修改 `renderer/api/codegen/`**，改接口请改 swagger 后重跑 `npm run openapi`；需要调整请求行为请改 `renderer/api/request.ts`。
 

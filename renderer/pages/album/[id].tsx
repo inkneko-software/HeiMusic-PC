@@ -100,7 +100,8 @@ function MusicAlbum(props: MusicAlbumProps) {
                     cover: albumInfo.frontCoverUrl,
                     duration: music.duration,
                     isFavorite: music.isFavorite,
-                    isLargeTrackMusic: music.discStartTime !== ''
+                    isLargeTrackMusic: music.discStartTime !== '',
+                    isInstrumental: music.isInstrumental
                 }
             }))
         })()

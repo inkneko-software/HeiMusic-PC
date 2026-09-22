@@ -13,7 +13,8 @@ import MenuOutlinedIcon from '@mui/icons-material/MenuOutlined';
 import { IChangePlayListEvent, IEnqueueNextEvent, IMusicInfo } from '@components/MusicControlPannel/MusicControlPannel';
 import AddBoxRoundedIcon from '@mui/icons-material/AddBoxRounded';
 import EditNoteOutlinedIcon from '@mui/icons-material/EditNoteOutlined';
-import { ApiError, PlaylistControllerService, PlaylistVo } from '@api/codegen';
+import CloudDownloadOutlinedIcon from '@mui/icons-material/CloudDownloadOutlined';
+import { ApiError, LyricControllerService, PlaylistControllerService, PlaylistVo } from '@api/codegen';
 import { pushToast } from '@components/HeiMusicMainLayout';
 import NewPlaylisitDialog from '@components/NewPlaylistDialog';
 
@@ -29,6 +30,7 @@ export interface IMusicContextMenuMusicInfo {
     musicId: number,
     index: number,
     isFavorite: boolean,
+    isInstrumental?: boolean,
 }
 
 export interface UseMusicContextMenuProps {
@@ -93,6 +95,26 @@ export default function useMusicContextMenu(props: UseMusicContextMenuProps): [
             }
         });
         document.dispatchEvent(event)
+    }
+
+    //从 LRCLIB 手动拉取当前曲目歌词；拉取永远不会覆盖已有歌词，人工数据优先
+    const handleContextMenuFetchLyric = () => {
+        LyricControllerService.fetchFromLrclib(musicMenuInfo.musicId)
+            .then(res => {
+                const outcome = res.data?.outcome;
+                switch (outcome) {
+                    case 'created': pushToast("歌词拉取成功", 'success'); break;
+                    case 'instrumental': pushToast("该曲目为纯音乐，无歌词", 'info'); break;
+                    case 'not_found': pushToast("LRCLIB 暂无此曲，后台补录后可重试", 'info'); break;
+                    default: pushToast("已处理", 'info'); break;
+                }
+            })
+            .catch((error: ApiError) => {
+                const code = error.body?.code;
+                if (code === 5005) pushToast("该曲目已有歌词，无需拉取", 'info')
+                else if (code === 429 || error.status === 429) pushToast("请求过于频繁，请稍后重试", 'warning')
+                else pushToast(error.message)
+            })
     }
 
     // const MusicContextMenu = (
@@ -393,6 +415,20 @@ export default function useMusicContextMenu(props: UseMusicContextMenuProps): [
                 >
                     复制音乐信息
                 </Button>
+                {/* 从 LRCLIB 拉取歌词；纯音乐没有歌词，禁用该项 */}
+                <Button
+                    sx={{ justifyContent: 'flex-start', padding: "6px 16px" }}
+                    color='inherit'
+                    startIcon={<CloudDownloadOutlinedIcon />}
+                    onClick={handleContextMenuFetchLyric}
+                    disabled={musicMenuInfo.isInstrumental === true}
+                    size='small'
+                    onMouseEnter={() => {
+                        setPlaylistMenuOpen(false);
+                    }}
+                >
+                    拉取歌词
+                </Button>
                 {
                     props.menuType === 'album' &&
                     <Button
@@ -508,6 +544,7 @@ export default function useMusicContextMenu(props: UseMusicContextMenuProps): [
             musicId: props.musicList[index].musicId,
             index: index,
             isFavorite: props.musicList[index].isFavorite,
+            isInstrumental: props.musicList[index].isInstrumental,
         });
     }
     return [PopoverContextMenu, popupMusicContextMenu, musicMenuOpen, musicMenuInfo]

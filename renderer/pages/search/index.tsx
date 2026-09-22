@@ -43,6 +43,7 @@ export default function Search() {
             duration: music.duration,
             isFavorite: music.isFavorite,
             isLargeTrackMusic: music.discStartTime !== '',
+            isInstrumental: music.isInstrumental,
             discEndTime: parseFloat(music.discEndTime),
             discStartTime: parseFloat(music.discStartTime)
         }]

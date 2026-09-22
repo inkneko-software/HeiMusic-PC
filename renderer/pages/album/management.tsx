@@ -1,4 +1,4 @@
-import { Box, Button, Stack, Typography, Avatar, IconButton, Popover, PopoverProps, Divider, Dialog, DialogActions, DialogTitle, DialogContent } from "@mui/material";
+import { Box, Button, Stack, Typography, Avatar, IconButton, Popover, PopoverProps, Divider, Dialog, DialogActions, DialogTitle, DialogContent, Tooltip } from "@mui/material";
 
 import Link from "next/link";
 import React from "react"
@@ -22,6 +22,8 @@ import MusicVideoOutlinedIcon from '@mui/icons-material/MusicVideoOutlined';
 import LibraryMusicOutlinedIcon from '@mui/icons-material/LibraryMusicOutlined';
 import EditNoteOutlinedIcon from '@mui/icons-material/EditNoteOutlined';
 import PlayCircleFilledWhiteOutlinedIcon from '@mui/icons-material/PlayCircleFilledWhiteOutlined';
+import CloudDownloadOutlinedIcon from '@mui/icons-material/CloudDownloadOutlined';
+import AutorenewOutlinedIcon from '@mui/icons-material/AutorenewOutlined';
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
 import MoreHorizIcon from '@mui/icons-material/MoreHoriz';
 import { IChangePlayListEvent, IMusicInfo } from "@components/MusicControlPannel/MusicControlPannel";
@@ -104,6 +106,7 @@ function AlbumManagement() {
                         duration: music.duration,
                         isFavorite: music.isFavorite,
                         isLargeTrackMusic: music.discStartTime !== '',
+                        isInstrumental: music.isInstrumental,
                     }
                 });
 
@@ -148,6 +151,16 @@ function AlbumManagement() {
             <Box sx={{ position: "sticky", top: '0' }}>
                 <Stack direction="row" sx={{ flex: "0 0 auto" }}>
                     <Typography variant='h5' sx={{ margin: "auto 0px auto 12px" }}>专辑管理</Typography>
+                    {/* 歌词拉取任务页入口 */}
+                    <Link href="/lyric/fetchlog" passHref>
+                        <Button sx={{ margin: "auto 0px auto 12px" }} color="info" startIcon={<CloudDownloadOutlinedIcon />}>歌词拉取</Button>
+                    </Link>
+                    {/* 曲库扫描入口：日志接口未就绪，先禁用占位 */}
+                    <Tooltip title="后端扫描日志接口未就绪，敬请期待">
+                        <span style={{ display: "inline-flex" }}>
+                            <Button sx={{ margin: "auto 0px auto 6px" }} disabled startIcon={<AutorenewOutlinedIcon />}>曲库扫描</Button>
+                        </span>
+                    </Tooltip>
                     <Link href="/album/upload" passHref>
                         <Button sx={{ margin: "auto 6px auto auto", display: "flex" }} color="info" startIcon={<AddBoxRoundedIcon />}>创建</Button>
                     </Link>

@@ -506,6 +506,7 @@ function Home() {
                         color: "red"
                     }],
                     isLargeTrackMusic: music.discStartTime !== '',
+                    isInstrumental: music.isInstrumental,
                     discStartTime: parseFloat(music.discStartTime),
                     discEndTime: parseFloat(music.discEndTime)
                 }], startIndex: 0
