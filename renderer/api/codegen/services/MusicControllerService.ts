@@ -34,6 +34,28 @@ artistIds: Array<number>,
     }
 
     /**
+     * 设定音乐的纯音乐标记
+     * isInstrumental三态：true=纯音乐，false=有人声，不传=未知（清除标记）
+     * @param musicId 
+     * @param isInstrumental 
+     * @returns ResponseObject OK
+     * @throws ApiError
+     */
+    public static setInstrumental(
+musicId: number,
+isInstrumental?: boolean,
+): CancelablePromise<ResponseObject> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/v1/music/setInstrumental',
+            query: {
+                'musicId': musicId,
+                'isInstrumental': isInstrumental,
+            },
+        });
+    }
+
+    /**
      * 新建音乐
      * @param title 
      * @param translateTitle 

@@ -26,4 +26,6 @@ export type MusicVo = {
     artistList?: Array<ArtistVo>;
     resourceList?: Array<MusicResourceVo>;
     isFavorite?: boolean;
+    defaultLyricId?: number;
+    isInstrumental?: boolean;
 };

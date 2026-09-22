@@ -21,6 +21,8 @@ export type Music = {
     fileHash?: string;
     discStartTime?: string;
     discEndTime?: string;
+    defaultLyricId?: number;
+    isInstrumental?: boolean;
     createdAt?: string;
     updatedAt?: string;
     deletedAt?: string;
