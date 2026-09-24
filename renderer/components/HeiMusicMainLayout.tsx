@@ -56,11 +56,11 @@ import { Drawer } from '@mui/material'
 
 /**
  * 发送Toast信息
- * 
+ *
  * 通过以下方式调用
- * 
+ *
  * const event = new CustomEvent<IHeimusicToastEvent>("main::makeToast", {detail: {...}});
- * 
+ *
  * window.dispatchEvent(event)
  */
 export interface IHeimusicToastEvent {
@@ -68,6 +68,12 @@ export interface IHeimusicToastEvent {
     variant?: "success" | "info" | "warning" | "error",
     position?: "top-left" | "top-right" | "top-center" | "bottom-left" | "bottom-right" | "bottom-center" | "center",
 }
+
+/** 侧边栏宽度：默认值 / 拖拽限幅 / localStorage 持久化键（按设备记忆） */
+const LEFT_PANNEL_DEFAULT_WIDTH = 196;
+const LEFT_PANNEL_MIN_WIDTH = 160;
+const LEFT_PANNEL_MAX_WIDTH = 320;
+const LEFT_PANNEL_WIDTH_STORAGE_KEY = 'heimusic.leftPannelWidth';
 
 /**
  * 发送Toast信息
@@ -98,6 +104,38 @@ function HeiMusicMainLayout({ children }) {
 
     // const matcheMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const [leftPannelDrawerOpen, setLeftPannelDrawerOpen] = React.useState(false)
+
+    //侧边栏宽度可拖拽调整；SSR 首帧保持默认宽度避免水合不一致，挂载后读取本地记忆值
+    const [leftPannelWidth, setLeftPannelWidth] = React.useState(LEFT_PANNEL_DEFAULT_WIDTH);
+    const pannelResizeDragRef = React.useRef<{ pointerId: number, startX: number, startWidth: number } | null>(null);
+    React.useEffect(() => {
+        const stored = parseInt(localStorage.getItem(LEFT_PANNEL_WIDTH_STORAGE_KEY) ?? '', 10);
+        if (!isNaN(stored)) {
+            setLeftPannelWidth(Math.min(LEFT_PANNEL_MAX_WIDTH, Math.max(LEFT_PANNEL_MIN_WIDTH, stored)));
+        }
+    }, [])
+
+    const handlePannelResizeStart = (e: React.PointerEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        e.currentTarget.setPointerCapture(e.pointerId);
+        pannelResizeDragRef.current = { pointerId: e.pointerId, startX: e.clientX, startWidth: leftPannelWidth };
+    }
+    const handlePannelResizeMove = (e: React.PointerEvent<HTMLDivElement>) => {
+        const drag = pannelResizeDragRef.current;
+        if (drag === null || drag.pointerId !== e.pointerId) {
+            return;
+        }
+        const next = drag.startWidth + (e.clientX - drag.startX);
+        setLeftPannelWidth(Math.min(LEFT_PANNEL_MAX_WIDTH, Math.max(LEFT_PANNEL_MIN_WIDTH, next)));
+    }
+    const handlePannelResizeEnd = (e: React.PointerEvent<HTMLDivElement>) => {
+        if (pannelResizeDragRef.current?.pointerId !== e.pointerId) {
+            return;
+        }
+        pannelResizeDragRef.current = null;
+        //指针捕获随 pointerup 自动释放；结束时落盘
+        localStorage.setItem(LEFT_PANNEL_WIDTH_STORAGE_KEY, String(leftPannelWidth));
+    }
 
     //读取当前登录用户信息；个人资料/头像在用户设置页更新后
     //通过 user::profileUpdated 事件触发重新拉取
@@ -234,7 +272,7 @@ function HeiMusicMainLayout({ children }) {
             <Box sx={{ height: "64px", flex: '0 0 auto', width: '100%', display: 'flex', WebkitAppRegion: 'drag', userSelect: 'none' }}>
                 {/* 左侧logo */}
                 {
-                    <Box sx={{ width: '196px', background: theme.palette.pannelBackground.main, display: 'flex', '@media(max-width:600px)': { display: 'none' } }} >
+                    <Box sx={{ width: `${leftPannelWidth}px`, background: theme.palette.pannelBackground.main, display: 'flex', '@media(max-width:600px)': { display: 'none' } }} >
                         <Box sx={{ margin: 'auto auto auto 12px', display: 'flex' }}>
                             <Avatar src='/images/logo.jpg'></Avatar>
                             <Typography sx={{ margin: 'auto 0 auto 6px' }} variant="h6">HeiMusic!</Typography>
@@ -336,12 +374,39 @@ function HeiMusicMainLayout({ children }) {
             </Box>
             {/* 左侧面板 与 右侧 */}
             <Box sx={{ display: 'flex', flexGrow: '1', height: "calc(100% - 64px)" }}>
-                <LeftPannel sx={[{ width: '196px', height: "calc(100%)", maxHeight: "calc(100%)", flex: '0 0 auto', overflowY: 'auto', display: 'flex', flexDirection: 'column', background: theme.palette.pannelBackground.main, ...customizedHiddenScrollBarStyle, ':hover': { ...customizedScrollBarStyle }, '@media(max-width:600px)': { display: 'none' } },]} />
+                <LeftPannel sx={[{ width: `${leftPannelWidth}px`, height: "calc(100%)", maxHeight: "calc(100%)", flex: '0 0 auto', overflowY: 'auto', display: 'flex', flexDirection: 'column', background: theme.palette.pannelBackground.main, ...customizedHiddenScrollBarStyle, ':hover': { ...customizedScrollBarStyle }, '@media(max-width:600px)': { display: 'none' } },]} />
                 <Drawer variant='temporary' open={leftPannelDrawerOpen} onClose={() => setLeftPannelDrawerOpen(false)} sx={{ height: "calc(100%)" }}>
                     <LeftPannel sx={[{ width: '196px', height: "calc(100%)", maxHeight: "calc(100%)", flex: '0 0 auto', overflowY: 'auto', display: 'flex', flexDirection: 'column', background: theme.palette.pannelBackground.main }]} />
                 </Drawer>
+                {/* 侧边栏宽度拖拽手柄：覆盖在内容区左缘上，静默透明，悬停/拖拽时显示分隔线 */}
+                <Box
+                    onPointerDown={handlePannelResizeStart}
+                    onPointerMove={handlePannelResizeMove}
+                    onPointerUp={handlePannelResizeEnd}
+                    onPointerCancel={handlePannelResizeEnd}
+                    sx={{
+                        width: '6px',
+                        flex: '0 0 auto',
+                        marginRight: '-6px',
+                        zIndex: 5,
+                        position: 'relative',
+                        cursor: 'col-resize',
+                        userSelect: 'none',
+                        touchAction: 'none',
+                        ':hover::after, :active::after': {
+                            content: '""',
+                            position: 'absolute',
+                            top: 0,
+                            bottom: 0,
+                            left: '2px',
+                            width: '2px',
+                            background: theme.palette.divider,
+                        },
+                        '@media(max-width:600px)': { display: 'none' },
+                    }}
+                />
                 {/* 上部视窗 与 下部播放器 */}
-                <Box sx={[{ width: "calc(100% - 196px)", display: 'flex', flexDirection: 'column', background: theme.palette.pannelBackground.light, '@media(max-width:600px)': { width: "calc(100%)" } }]}>
+                <Box sx={[{ width: `calc(100% - ${leftPannelWidth}px)`, display: 'flex', flexDirection: 'column', background: theme.palette.pannelBackground.light, '@media(max-width:600px)': { width: "calc(100%)" } }]}>
                     {/* <MusicAlbum sx={{ flexGrow: 1 }} /> */}
                     <Box sx={{ flexGrow: 1, flexShrink: 1, height: 'calc(100% - 64px - 76px)' }}>{children}</Box>
                     <MusicControlPannel sx={{ height: '76px', flexShrink: 0 }} />
