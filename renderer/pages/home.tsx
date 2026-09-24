@@ -39,12 +39,19 @@ const clampLines = (lines: number) => ({
     maxHeight: `${lines * 1.5}em`,
 } as const);
 
-/** 专辑网格：按可用宽度自动铺满，避免固定列数在超宽屏留下大面积空白 */
+/** 专辑网格：按可用宽度自动铺满，避免固定列数在超宽屏留下大面积空白。
+ *  minmax 的最小宽度与 ALBUM_CARD_MIN_WIDTH 保持一致（可见数量按同公式计算列数） */
 const albumGridSx = {
     display: 'grid',
     gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
     gap: { xs: '14px', sm: '20px', lg: '24px' },
 } as const;
+
+/** 最近上传一次拉取的上限，供宽高联动切片（32 覆盖常见 8 列 × 4 行） */
+const RECENT_UPLOAD_FETCH_SIZE = 32;
+
+/** 专辑卡最小宽度，与 albumGridSx 的 minmax(150px, 1fr) 一致 */
+const ALBUM_CARD_MIN_WIDTH = 150;
 
 /**
  * 分区标题：强调色竖条 + 标题 + 说明文案 + 右侧操作
@@ -402,6 +409,11 @@ function Home() {
     const [firstLaunch, setFirstLaunch] = useState(false);
     const [recentUploadAlbum, setRecentUploadAlbum] = useState<AlbumVo[]>([]);
     const [recentUploadLoaded, setRecentUploadLoaded] = useState(false);
+    //最近上传可见数量联动宽高：列数随容器宽、行数随首屏剩余高度，恒为整行
+    const [visibleAlbumCount, setVisibleAlbumCount] = useState(16);
+    const scrollContainerRef = useRef<HTMLDivElement>(null);
+    const albumGridSectionRef = useRef<HTMLDivElement>(null);
+    const albumGridRef = useRef<HTMLDivElement>(null);
     const [Toast, makeToast] = useToast()
 
     //随机音乐
@@ -413,7 +425,7 @@ function Home() {
     //每日30首封面
     const [daily30Cover, setDaily30Cover] = useState(undefined);
     useEffect(() => {
-        AlbumControllerService.getRecentUpload(1, 16)
+        AlbumControllerService.getRecentUpload(1, RECENT_UPLOAD_FETCH_SIZE)
             .then(res => {
                 setRecentUploadAlbum(res.data)
                 if (res.data.length === 0) {
@@ -449,6 +461,44 @@ function Home() {
 
 
     }, [makeToast])
+
+    //可见专辑数：数据就绪/容器宽高变化时重算，恒为整行，正好填满首屏剩余高度
+    useEffect(() => {
+        const scrollEl = scrollContainerRef.current;
+        const sectionEl = albumGridSectionRef.current;
+        const gridEl = albumGridRef.current;
+        if (scrollEl === null || sectionEl === null) {
+            return;
+        }
+        const recompute = () => {
+            const gap = gridEl !== null ? (parseFloat(window.getComputedStyle(gridEl).rowGap) || 20) : 20;
+            //列数与 albumGridSx 的 auto-fill minmax(150px, 1fr) 同公式
+            const width = sectionEl.getBoundingClientRect().width;
+            const cols = Math.max(1, Math.floor((width + gap) / (ALBUM_CARD_MIN_WIDTH + gap)));
+            //行高优先取已渲染网格的首行轨道高度（含标题文案），数据未就绪时按 卡片宽 + 文案区 估算
+            const firstTrack = gridEl !== null ? parseFloat(window.getComputedStyle(gridEl).gridTemplateRows.split(' ')[0]) : NaN;
+            const rowHeight = !isNaN(firstTrack) && firstTrack > 0
+                ? firstTrack
+                : (width - (cols - 1) * gap) / cols + 60;
+            //可用高度 = 滚动视口高 - 网格顶部布局距离 - 底部内边距；至少 2 行，窄屏靠滚动浏览
+            const distanceFromTop = sectionEl.getBoundingClientRect().top - scrollEl.getBoundingClientRect().top + scrollEl.scrollTop;
+            const available = scrollEl.clientHeight - (parseFloat(window.getComputedStyle(scrollEl).paddingBottom) || 0) - distanceFromTop;
+            const rows = Math.max(2, Math.floor((available + gap) / (rowHeight + gap)));
+            const cap = recentUploadLoaded ? recentUploadAlbum.length : RECENT_UPLOAD_FETCH_SIZE;
+            let count = Math.min(cols * rows, cap);
+            count -= count % cols;
+            //曲库不足一整行时全部展示，接受残行
+            if (count === 0 && recentUploadLoaded && recentUploadAlbum.length > 0) {
+                count = Math.min(recentUploadAlbum.length, cols);
+            }
+            setVisibleAlbumCount(count);
+        };
+        recompute();
+        const observer = new ResizeObserver(recompute);
+        observer.observe(scrollEl);
+        observer.observe(sectionEl);
+        return () => observer.disconnect();
+    }, [recentUploadLoaded, recentUploadAlbum.length])
 
     //选取背景色：采样整张封面并剔除接近纯黑/纯白的像素，避免高光与阴影把主色拉偏
     const handleRandomMusicCoverLoaded = () => {
@@ -561,7 +611,7 @@ function Home() {
     }
 
     return (
-        <Box sx={{ width: '100%', height: '100%', padding: { xs: '12px 12px 24px', sm: '16px 16px 28px' }, overflowY: 'auto', overflowX: 'hidden', display: 'flex', flexDirection: 'column' }}>
+        <Box ref={scrollContainerRef} sx={{ width: '100%', height: '100%', padding: { xs: '12px 12px 24px', sm: '16px 16px 28px' }, overflowY: 'auto', overflowX: 'hidden', display: 'flex', flexDirection: 'column' }}>
             {Toast}
             {/* 首次启动：还没有任何音乐时的引导 */}
             <Box sx={[{ display: 'none' }, firstLaunch && { display: 'flex', flexDirection: 'column' }]}>
@@ -625,29 +675,32 @@ function Home() {
                         <Button size='small' onClick={() => { router.push('/album/management') }} sx={{ textTransform: 'none' }}>全部专辑</Button>
                     }
                 />
-                {/* 加载中骨架 */}
-                <Box sx={[albumGridSx, recentUploadLoaded && { display: 'none' }]}>
-                    {[0, 1, 2, 3, 4, 5].map(index => (
-                        <Skeleton key={index} variant='rounded' sx={{ aspectRatio: '1 / 1', height: 'auto', borderRadius: '12px', transform: 'unset' }} />
-                    ))}
-                </Box>
-                {/* 空状态 */}
-                {
-                    recentUploadLoaded && recentUploadAlbum.length === 0 &&
-                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: { xs: '32px 0 40px', sm: '40px 0 56px' }, color: 'text.secondary', userSelect: 'none' }}>
-                        <LibraryMusicOutlinedIcon sx={{ fontSize: '44px', opacity: 0.35 }} />
-                        <Typography variant='subtitle2' sx={{ marginTop: '12px' }}>暂无音乐</Typography>
-                        <Typography variant='caption'>扫描本地媒体库后，专辑会出现在这里</Typography>
-                        <Button size='small' sx={{ marginTop: '12px', textTransform: 'none' }} onClick={() => { router.push('/album/management') }}>前往专辑管理</Button>
+                {/* 测量锚点：宽高联动可见数量的参考盒（骨架、空状态、网格都在其内） */}
+                <Box ref={albumGridSectionRef}>
+                    {/* 加载中骨架 */}
+                    <Box sx={[albumGridSx, recentUploadLoaded && { display: 'none' }]}>
+                        {Array.from({ length: visibleAlbumCount }).map((_, index) => (
+                            <Skeleton key={index} variant='rounded' sx={{ aspectRatio: '1 / 1', height: 'auto', borderRadius: '12px', transform: 'unset' }} />
+                        ))}
                     </Box>
-                }
-                {/* 专辑网格 */}
-                <Box sx={[albumGridSx, !recentUploadLoaded && { display: 'none' }]}>
+                    {/* 空状态 */}
                     {
-                        recentUploadAlbum.map((album, index) => {
-                            return <AlbumCard key={index} album={album} />
-                        })
+                        recentUploadLoaded && recentUploadAlbum.length === 0 &&
+                        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: { xs: '32px 0 40px', sm: '40px 0 56px' }, color: 'text.secondary', userSelect: 'none' }}>
+                            <LibraryMusicOutlinedIcon sx={{ fontSize: '44px', opacity: 0.35 }} />
+                            <Typography variant='subtitle2' sx={{ marginTop: '12px' }}>暂无音乐</Typography>
+                            <Typography variant='caption'>扫描本地媒体库后，专辑会出现在这里</Typography>
+                            <Button size='small' sx={{ marginTop: '12px', textTransform: 'none' }} onClick={() => { router.push('/album/management') }}>前往专辑管理</Button>
+                        </Box>
                     }
+                    {/* 专辑网格 */}
+                    <Box ref={albumGridRef} sx={[albumGridSx, !recentUploadLoaded && { display: 'none' }]}>
+                        {
+                            recentUploadAlbum.slice(0, visibleAlbumCount).map((album, index) => {
+                                return <AlbumCard key={index} album={album} />
+                            })
+                        }
+                    </Box>
                 </Box>
             </Box>
         </Box>
