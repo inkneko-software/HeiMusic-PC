@@ -276,15 +276,16 @@ function QuickCard(props: IQuickCard) {
                 overflow: 'hidden',
                 display: 'flex',
                 alignItems: 'flex-end',
-                boxShadow: '0 2px 10px rgba(0,0,0,0.12)',
-                transition: 'transform 0.22s ease-in-out, box-shadow 0.22s ease-in-out',
+                // 阴影用 filter 而非 box-shadow：filter 与 transform 同在合成器插值，避免 box-shadow 逐帧重绘跟不上浮动动画
+                filter: 'drop-shadow(0 2px 5px rgba(0,0,0,0.12))',
+                transition: 'transform 0.22s ease-in-out, filter 0.22s ease-in-out',
             }, clickable && {
                 cursor: 'pointer',
-                ':hover': { transform: 'translateY(-6px)', boxShadow: '0 14px 28px rgba(0,0,0,0.24)' },
+                ':hover': { transform: 'translateY(-6px)', filter: 'drop-shadow(0 12px 26px rgba(0,0,0,0.24))' },
                 ':hover .quick-card-media': { transform: 'scale(1.06)' },
                 // 触屏设备无 hover，避免点按后卡片停留在上浮状态
                 '@media (hover: none)': {
-                    ':hover': { transform: 'none', boxShadow: '0 2px 10px rgba(0,0,0,0.12)' },
+                    ':hover': { transform: 'none', filter: 'drop-shadow(0 2px 5px rgba(0,0,0,0.12))' },
                     ':hover .quick-card-media': { transform: 'none' },
                 }
             }]}
@@ -333,15 +334,16 @@ function AlbumCard(props: IAlbumCard) {
                     borderRadius: '12px',
                     overflow: 'hidden',
                     backgroundColor: 'rgba(120,120,120,0.12)',
-                    boxShadow: '0 2px 10px rgba(0,0,0,0.10)',
-                    transition: 'transform 0.22s ease-in-out, box-shadow 0.22s ease-in-out',
-                    ':hover': { transform: 'translateY(-6px)', boxShadow: '0 14px 28px rgba(0,0,0,0.24)' },
+                    // 阴影用 filter 而非 box-shadow：filter 与 transform 同在合成器插值，避免 box-shadow 逐帧重绘跟不上浮动动画
+                    filter: 'drop-shadow(0 2px 5px rgba(0,0,0,0.10))',
+                    transition: 'transform 0.22s ease-in-out, filter 0.22s ease-in-out',
+                    ':hover': { transform: 'translateY(-6px)', filter: 'drop-shadow(0 12px 26px rgba(0,0,0,0.24))' },
                     ':hover .album-cover-media': { transform: 'scale(1.05)' },
                     ':hover .album-cover-mask': { opacity: 1 },
                     ':hover .album-title': { color: theme.palette.primary.main },
                     // 触屏设备无 hover，遮罩常显以便点按
                     '@media (hover: none)': {
-                        ':hover': { transform: 'none', boxShadow: '0 2px 10px rgba(0,0,0,0.10)' },
+                        ':hover': { transform: 'none', filter: 'drop-shadow(0 2px 5px rgba(0,0,0,0.10))' },
                         ':hover .album-cover-media': { transform: 'none' },
                         ':hover .album-title': { color: 'inherit' },
                         '.album-cover-mask': { opacity: 1 },
