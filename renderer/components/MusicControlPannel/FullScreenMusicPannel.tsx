@@ -215,37 +215,55 @@ export default function FullScreenMusicPannel(props: IFullScreenMusicPannelProps
                                     ? parsedLyric.lines[i + 1].startTime
                                     : Math.max(props.duration, lyric.startTime + 5);
                                 var currentLine = lyric.startTime <= props.currentTime && props.currentTime <= lineEnd;
-                                return <Box component='p' key={i}>
+                                // 高亮行不用 background-clip:text：非默认 clip 会让文本退化为灰度抗锯齿，暗色背景下笔画显细（无官方修复）。
+                                // 改为双层叠加：底层整行已唱色，顶层未唱色以 clip-path 从左向右收缩。深色在下浅色在上——
+                                // 若浅色在底，会从顶层抗锯齿边缘透出形成白色重影。
+                                // 顶层结构：外层整行宽定位壳负责与底层对齐；clip-path 动画在内层收缩为文本宽的 span 上，
+                                // 百分比按文本宽解析——若按整行宽解析，扫过分界需先越过文本左侧的居中留白，起扫会有可感知延迟。
+                                return <Box component='p' key={i} sx={{ position: 'relative' }}>
                                     <Typography component='span'
-                                        onAnimationStart={e => {
-                                            e.currentTarget.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                                        }}
-                                        sx={[{
+                                        sx={{
                                             display: 'inline',
                                             textAlign: 'center',
                                             paddingTop: '12px',
+                                            color: currentLine ? '#3152ad' : theme.palette.text.primary,
                                             "rt": { fontSize: '12px' },
-
-                                        },
-                                        currentLine && {
-                                            background: `linear-gradient(90deg, #3152ad 50%, ${theme.palette.text.primary} 50%)`,
-                                            backgroundRepeat: 'no-repeat',
-                                            backgroundSize: '200%',
-                                            backgroundClip: 'text',
-                                            color: currentLine ? 'transparent' : theme.palette.text.primary,
-                                            animation: `${lineEnd - lyric.startTime}s linear 0s infinite normal lyric_progress`,
-                                            animationPlayState: props.playing && currentLine ? 'running' : 'paused',
-                                            '@keyframes lyric_progress': {
-                                                '0%': {
-                                                    backgroundPosition: '100%'
-                                                },
-                                                '100%': {
-                                                    backgroundPosition: '0%'
-                                                }
-                                            }
-                                        }]}>
+                                        }}>
                                         {lyric.text}
                                     </Typography>
+                                    {
+                                        currentLine &&
+                                        <Typography component='span' aria-hidden sx={{
+                                            position: 'absolute',
+                                            top: 0,
+                                            left: 0,
+                                            width: '100%',
+                                            display: 'block',
+                                            textAlign: 'center',
+                                            color: theme.palette.text.primary,
+                                            userSelect: 'none',
+                                            pointerEvents: 'none',
+                                            "rt": { fontSize: '12px' },
+                                        }}>
+                                            <Typography component='span'
+                                                onAnimationStart={e => {
+                                                    e.currentTarget.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                                }}
+                                                sx={{
+                                                    display: 'inline-block',
+                                                    // 播一遍停在终点而非 infinite 循环：动画因 currentTime 观测滞后晚启动，
+                                                    // 若循环重置会在行尾 currentLine 翻转前闪一次"从头重扫"
+                                                    animation: `${lineEnd - lyric.startTime}s linear 0s 1 forwards lyric_progress`,
+                                                    animationPlayState: props.playing && currentLine ? 'running' : 'paused',
+                                                    '@keyframes lyric_progress': {
+                                                        '0%': { clipPath: 'inset(0 0 0 0)' },
+                                                        '100%': { clipPath: 'inset(0 0 0 100%)' }
+                                                    }
+                                                }}>
+                                                {lyric.text}
+                                            </Typography>
+                                        </Typography>
+                                    }
                                 </Box>
                             })
                         }
