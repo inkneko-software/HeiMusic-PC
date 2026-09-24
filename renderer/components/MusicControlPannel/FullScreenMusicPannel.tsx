@@ -154,22 +154,22 @@ export default function FullScreenMusicPannel(props: IFullScreenMusicPannelProps
             open={props.open}
             onClose={props.onClose}
             TransitionComponent={Transition}
-            sx={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%' }}
+            PaperProps={{ sx: { display: 'flex', flexDirection: 'column', width: '100%', height: '100%' } }}
         >
             {/* 状态栏 */}
-            <Box sx={{ margin: '0px 24px', height: '64px', WebkitAppRegion: 'drag', userSelect: 'none', flex: '0 0 auto' }}>
-                <IconButton onClick={props.onClose} sx={{ WebkitAppRegion: 'no-drag' }}><ExpandMoreOutlinedIcon sx={{ fontSize: '32px' }} /></IconButton>
+            <Box sx={{ margin: { xs: '0px 16px', sm: '0px 24px' }, height: { xs: '48px', sm: '64px' }, WebkitAppRegion: 'drag', userSelect: 'none', flex: '0 0 auto' }}>
+                <IconButton onClick={props.onClose} sx={{ WebkitAppRegion: 'no-drag' }}><ExpandMoreOutlinedIcon sx={{ fontSize: { xs: '28px', sm: '32px' } }} /></IconButton>
             </Box>
-            {/* 中部 */}
-            <Box sx={{ display: 'flex', flex: '1 1 auto', paddingTop: '36px', height: 'calc(100% - 64px - 64px - 4px - 36px)' }}>
+            {/* 中部：宽屏封面与歌词左右分栏，窄屏纵向堆叠 */}
+            <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, flex: '1 1 auto', minHeight: 0, paddingTop: { xs: '8px', sm: '36px' } }}>
                 {/* 左侧封面 */}
-                <Box sx={{ width: '50%', display: 'flex', userSelect: 'none' }}>
+                <Box sx={{ width: { xs: '100%', sm: '50%' }, display: 'flex', userSelect: 'none', marginBottom: { xs: '8px' } }}>
                     <CardMedia sx={{
                         margin: "auto auto",
-                        maxWidth: "190px",
+                        maxWidth: { xs: '140px', sm: '190px' },
                         aspectRatio: '1 / 1',
                         borderRadius: '100%',
-                        border: '24px black solid',
+                        border: { xs: '18px black solid', sm: '24px black solid' },
                         flex: "0 0 auto",
                         imageRendering: "auto",
                         objectFit: "contain",
@@ -188,19 +188,22 @@ export default function FullScreenMusicPannel(props: IFullScreenMusicPannelProps
                 </Box>
                 {/* 右侧音乐信息 */}
                 <Box sx={{
-                    width: '50%',
+                    // xs 用 auto 借列布局的交叉轴拉伸填满父宽减边距；显式 100% 会叠加边距导致横向溢出
+                    width: { xs: 'auto', sm: '50%' },
+                    flex: { xs: '1 1 auto' },
+                    minHeight: { xs: 0 },
                     maxHeight: '100%',
                     display: 'flex',
                     flexDirection: 'column',
-                    maxWidth: "360px",
+                    maxWidth: { xs: 'unset', sm: '360px' },
                     textAlign: 'center',
-                    margin: 'auto auto',
-                    marginLeft: '24px'
+                    margin: { xs: '0px 16px', sm: 'auto auto' },
+                    marginLeft: { xs: '16px', sm: '24px' }
                 }}>
-                    <Typography fontWeight={600} variant='h5' sx={{ flexShrink: '0', '@media(max-width: 600px)': { fontSize: "1em" } }} noWrap title={props.currentMusicInfo.title} >{props.currentMusicInfo.title}</Typography>
-                    <Typography variant='caption' noWrap sx={{ flexShrink: '0', marginTop: '24px', color: theme.palette.text.secondary }} >{`艺术家：${props.currentMusicInfo.artists.join(" / ")}`}</Typography>
+                    <Typography fontWeight={600} variant='h5' sx={{ flexShrink: '0', fontSize: { xs: '1.1rem', sm: '1.5rem' } }} noWrap title={props.currentMusicInfo.title} >{props.currentMusicInfo.title}</Typography>
+                    <Typography variant='caption' noWrap sx={{ flexShrink: '0', marginTop: { xs: '12px', sm: '24px' }, color: theme.palette.text.secondary }} >{`艺术家：${props.currentMusicInfo.artists.join(" / ")}`}</Typography>
                     <Typography variant='caption' noWrap sx={{ flexShrink: '0', color: theme.palette.text.secondary }} >{`专辑：${props.currentMusicInfo.albumTitle}`}</Typography>
-                    <Box sx={{ flex: '1 1 auto', marginTop: '24px', marginBottom: '24px', overflow: 'auto', display: 'flex', flexDirection: 'column', '::-webkit-scrollbar': { display: 'none' } }}>
+                    <Box sx={{ flex: '1 1 auto', marginTop: { xs: '12px', sm: '24px' }, marginBottom: { xs: '12px', sm: '24px' }, overflow: 'auto', display: 'flex', flexDirection: 'column', '::-webkit-scrollbar': { display: 'none' } }}>
                         {
                             (isInstrumental || lyricStatus !== 'loaded' || parsedLyric === null) &&
                             <Typography sx={{ margin: 'auto', color: theme.palette.text.secondary }} variant='body2'>
@@ -281,10 +284,10 @@ export default function FullScreenMusicPannel(props: IFullScreenMusicPannelProps
 
             </Box>
             {/* 进度条 */}
-            <MusicSlider sx={{ margin: '0px 24px', width: 'unset' }} size="small" max={props.duration} value={props.currentTime} onChangeCommitted={(event, value: number) => props.handleProgressSeek(value)} />
+            <MusicSlider sx={{ margin: { xs: '0px 16px', sm: '0px 24px' }, width: 'unset' }} size="small" max={props.duration} value={props.currentTime} onChangeCommitted={(event, value: number) => props.handleProgressSeek(value)} />
             {/* 控制面板 */}
-            <Box sx={{ margin: '0px 24px', height: '64px', flex: '0 0 auto', display: 'flex' }}>
-                <Box sx={{ margin: 'auto auto', marginLeft: '0px', flex: "1 0 auto", width: "30%", }}>
+            <Box sx={{ margin: { xs: '0px 16px', sm: '0px 24px' }, height: '64px', flex: '0 0 auto', display: 'flex' }}>
+                <Box sx={{ margin: 'auto auto', marginLeft: '0px', flex: { xs: '1 1 0px', sm: '1 0 auto' }, width: { sm: '30%' } }}>
                     {
                         props.currentMusicInfo.isFavorite && <Button size="small" sx={{ padding: "0px 0px", width: "20px", height: "20px", minWidth: "unset" }} color="error" onClick={props.handleRemoveFavoriteMusic} ><FavoriteOutlinedIcon sx={{ width: "18px", height: "18px" }} /></Button>
                     }
@@ -292,7 +295,7 @@ export default function FullScreenMusicPannel(props: IFullScreenMusicPannelProps
                         !props.currentMusicInfo.isFavorite && <Button size="small" sx={{ padding: "0px 0px", width: "20px", height: "20px", minWidth: "unset" }} color="error" onClick={props.handleAddFavoriteMusic}><FavoriteBorderOutlinedIcon sx={{ width: "18px", height: "18px" }} /></Button>
                     }
                 </Box>
-                <Box sx={{ flexGrow: "2", margin: "auto auto", textAlign: "center", '@media(max-width:600px)': { display: 'none' } }} >
+                <Box sx={{ flexGrow: "2", margin: "auto auto", textAlign: "center", display: { xs: 'none', sm: 'block' } }} >
                     <IconButton size="small" sx={{ color: theme.palette.text.primary }} onClick={props.handleLoopOptionClick}><Repeat sx={{ fontSize: "20px" }} /></IconButton>
                     <IconButton size="small" sx={{ color: theme.palette.text.primary }} onClick={props.handlePrevClick} ><SkipPrevious sx={{ fontSize: "32px" }} /></IconButton>
                     <IconButton size="small" color="primary" onClick={() => { props.handlePlayButtonClick() }} >{props.playBtnIcon}</IconButton>
@@ -316,11 +319,16 @@ export default function FullScreenMusicPannel(props: IFullScreenMusicPannelProps
                     </IconButton>
 
                 </Box>
-                <Box sx={{ flexGrow: "1", margin: "auto 12px auto auto", textAlign: "center", '@media(min-width:600px)': { display: 'none' } }}>
+                {/* 窄屏控制段：左右弹性段等宽（flex 基准 0），上一曲/播放/下一曲严格居中，播放列表靠右 */}
+                <Box sx={{ display: { xs: 'flex', sm: 'none' }, alignItems: 'center', flex: '0 0 auto' }}>
+                    <IconButton sx={{ color: theme.palette.text.primary }} onClick={props.handlePrevClick} ><SkipPrevious sx={{ fontSize: '30px' }} /></IconButton>
                     <IconButton color="primary" onClick={() => { props.handlePlayButtonClick() }} >{props.playBtnIcon}</IconButton>
-                    <IconButton sx={{ margin: "auto 8px auto 0px" }} onClick={() => props.setPlaylistOpen(true)}><QueueMusic /></IconButton>
+                    <IconButton sx={{ color: theme.palette.text.primary }} onClick={props.handleNextClick} ><SkipNext sx={{ fontSize: '30px' }} /></IconButton>
                 </Box>
-                <Box sx={{ flex: "1 0 auto", width: "30%", margin: "auto 0px", textAlign: "right", display: "flex", '@media(max-width:600px)': { display: 'none' } }}>
+                <Box sx={{ display: { xs: 'flex', sm: 'none' }, alignItems: 'center', justifyContent: 'flex-end', flex: '1 1 0px' }}>
+                    <IconButton sx={{ color: theme.palette.text.primary }} onClick={() => props.setPlaylistOpen(true)}><QueueMusic /></IconButton>
+                </Box>
+                <Box sx={{ flex: "1 0 auto", width: "30%", margin: "auto 0px", textAlign: "right", display: { xs: 'none', sm: "flex" } }}>
                     <Typography sx={{ margin: "auto 12px auto 0px", flexGrow: "1", userSelect: "none", color: theme.palette.text.secondary }} variant="subtitle2">{props.timeLabel}</Typography>
                     <Button sx={[props.currentMusicInfo.currentQuality.name === null && { display: 'none' }, { color: props.currentMusicInfo.currentQuality.color, border: `1px solid ${props.currentMusicInfo.currentQuality.color}`, padding: '0px 0px', margin: 'auto 8px auto 0px', minWidth: '32px', minHeight: '0px', lineHeight: 'normal' }]} size='small' >{props.currentMusicInfo.currentQuality.name}</Button>
                     <IconButton sx={{ margin: "auto 0px", padding: "0px 0px" }} onClick={() => props.setPlaylistOpen(true)}><QueueMusic /></IconButton>
