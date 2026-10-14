@@ -130,7 +130,7 @@ interface IMusicControlPannel extends BoxProps {
 function MusicControlPannel(props: IMusicControlPannel) {
     // 仅解构 setter（useState 的 setter 身份稳定），避免依赖整个 context 对象
     // 导致 effect 反复重跑；本组件与 _app 双向同步播放状态
-    const { setCurrentMusicInfo: setGlobalMusicInfo } = React.useContext(HeiMusicContext);
+    const { setCurrentMusicInfo: setGlobalMusicInfo, registerOverlay, unregisterOverlay } = React.useContext(HeiMusicContext);
     const router = useRouter();
     const theme = useTheme();
     const audioRef = React.useRef<HTMLAudioElement>(null)
@@ -171,6 +171,14 @@ function MusicControlPannel(props: IMusicControlPannel) {
     const [playlistOpen, setPlaylistOpen] = React.useState(false);
 
     const [fullScreenMusicPannelOpen, setFullScreenMusicPannelOpen] = React.useState(false);
+
+    // 播放列表抽屉注册进 Android 返回键弹层栈：返回键优先收起抽屉
+    React.useEffect(() => {
+        if (!playlistOpen) return;
+        const handle = { close: () => setPlaylistOpen(false) };
+        registerOverlay(handle);
+        return () => unregisterOverlay(handle);
+    }, [playlistOpen, registerOverlay, unregisterOverlay]);
 
     const handlePlayButtonClick = React.useCallback((newList: boolean = false) => {
         if (musicList.length === 0 && newList == false) {

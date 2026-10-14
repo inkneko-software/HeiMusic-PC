@@ -36,6 +36,10 @@ public class MainActivity extends BridgeActivity {
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
+        // 本地插件：安卓返回键的 Toast 二次确认退出（非 npm 插件，无需 cap sync）。
+        // 必须在 super.onCreate 之前注册：bridge 在 super.onCreate 内部就完成构建，
+        // 之后再 registerPlugin 只是往已消费的 builder 里加，不会生效
+        registerPlugin(ExitPromptPlugin.class);
         super.onCreate(savedInstanceState);
         CookieManager.getInstance().setAcceptThirdPartyCookies(bridge.getWebView(), true);
         bridge.getWebView().setWebViewClient(new ProxyWebViewClient(bridge));

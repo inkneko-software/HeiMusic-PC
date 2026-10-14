@@ -152,6 +152,7 @@ npx cap copy android     # 把 app/ 同步进 android/app/src/main/assets/public
 
 - 渲染层不直接 import 根目录 `api-server.json`（值由 `renderer/next.config.js` 构建期内联为 `process.env.NATIVE_API_BASE`，见 4.2）；该文件仅本地开发转发与 Android 构建需要，缺失时前者回落 `http://localhost:8081`、后者注入 `UNCONFIGURED`，均不影响网页镜像构建。
 - `capacitor.config.ts` 的 `DEV` 开关：为 `true` 时 WebView 加载 dev server（`http://10.0.2.2:8888`，真机需改局域网 IP）；**打包 release 前必须改回 `false`**，否则 APK 会指向开发机。
+- Android 硬件返回键由 `@capacitor/app` 插件接管：`renderer/pages/_app.tsx` 注册 `backButton` 监听——优先关闭 `HeiMusicContext` 弹层栈栈顶（全屏播放器、播放列表抽屉均已注册），无弹层时按页面历史回退，无历史则交给本地插件 `ExitPromptPlugin`（`android/.../ExitPromptPlugin.java`，非 npm 插件无需 cap sync）弹原生 Toast 二次确认退出。插件在**无监听且无历史**时会吞掉按键（应用无法退出），故该监听不可移除；新增全屏级弹层时应经 `registerOverlay` 挂进弹层栈。**`MainActivity.registerPlugin` 必须在 `super.onCreate` 之前调用**——bridge 在 `super.onCreate` 内部完成构建，之后再注册不会生效。
 - Electron 生产态同时注册了 `app://` 特权协议与静态文件处理器（`main/background.ts` 末尾），静态资源根目录为打包后的 `app/`；`/api`、`/public` 走 307 重定向而非主进程流式代理——这是为了避免切歌时连接泄漏耗尽单主机连接上限，**不要改回主进程代理**。
 - `android/app/build/`、`app/`、`dist/`、`node_modules/` 均为产物或依赖，不要手改或提交（`.gitignore` 已锚定根目录的 `/app` 与 `/dist`）。
 - CUE 音轨解析在主进程完成（`music-metadata`、`cue-parser`），渲染层通过 `music::parse` / `music::parseCue` 调用；APE/TAK 因 Chromium 内核限制暂不支持播放。

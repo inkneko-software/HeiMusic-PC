@@ -22,6 +22,7 @@ import PlayList from "./PlayList"
 import ExpandMoreOutlinedIcon from '@mui/icons-material/ExpandMoreOutlined';
 import { LyricControllerService } from "@api/codegen/services/LyricControllerService"
 import type { LyricVo } from "@api/codegen/models/LyricVo"
+import { HeiMusicContext } from "../../lib/HeiMusicContext"
 
 const Transition = React.forwardRef(function Transition(
     props: TransitionProps & {
@@ -97,6 +98,18 @@ export default function FullScreenMusicPannel(props: IFullScreenMusicPannelProps
     const theme = useTheme();
     const [volumePanelOpen, setVolumePanelOpen] = React.useState(false);
     const volumeButtonRef = React.useRef(null);
+
+    // 注册进 Android 返回键弹层栈：返回键优先关闭本面板而非退出应用/回退页面。
+    // onClose 经 ref 取值，避免父组件内联箭头函数每次渲染导致重复注册
+    const { registerOverlay, unregisterOverlay } = React.useContext(HeiMusicContext);
+    const onCloseRef = React.useRef(props.onClose);
+    onCloseRef.current = props.onClose;
+    React.useEffect(() => {
+        if (!props.open) return;
+        const handle = { close: () => onCloseRef.current() };
+        registerOverlay(handle);
+        return () => unregisterOverlay(handle);
+    }, [props.open, registerOverlay, unregisterOverlay]);
     const [lyricVo, setLyricVo] = React.useState<LyricVo | null>(null);
     const [lyricStatus, setLyricStatus] = React.useState<'loading' | 'loaded' | 'empty'>('empty');
 
