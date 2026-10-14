@@ -337,7 +337,9 @@ function AlbumCard(props: IAlbumCard) {
             <Box component='a' sx={{ display: 'block', color: 'inherit', textDecoration: 'none', minWidth: 0 }}>
                 <Box sx={{
                     position: 'relative',
-                    aspectRatio: '1 / 1',
+                    // 用 padding-top 百分比而非 aspect-ratio：padding 百分比相对包含块宽度，等价于 1:1，
+                    // 且兼容不支持 aspect-ratio 的旧内核（如 Android WebView Chrome 83）
+                    paddingTop: '100%',
                     borderRadius: '12px',
                     overflow: 'hidden',
                     backgroundColor: 'rgba(120,120,120,0.12)',
@@ -680,7 +682,7 @@ function Home() {
                     {/* 加载中骨架 */}
                     <Box sx={[albumGridSx, recentUploadLoaded && { display: 'none' }]}>
                         {Array.from({ length: visibleAlbumCount }).map((_, index) => (
-                            <Skeleton key={index} variant='rounded' sx={{ aspectRatio: '1 / 1', height: 'auto', borderRadius: '12px', transform: 'unset' }} />
+                            <Skeleton key={index} variant='rounded' sx={{ height: 0, paddingTop: '100%', borderRadius: '12px', transform: 'unset' }} />
                         ))}
                     </Box>
                     {/* 空状态 */}
