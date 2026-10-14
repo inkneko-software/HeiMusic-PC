@@ -47,6 +47,13 @@ const albumGridSx = {
     gap: { xs: '14px', sm: '20px', lg: '24px' },
 } as const;
 
+/** 正方形占位：padding-top 百分比相对包含块宽度，等价 1:1（height:0 归零 Skeleton 默认高度），
+ *  且兼容不支持 aspect-ratio 的旧内核（如 Android WebView Chrome 83），配合绝对定位子元素使用 */
+const squareBoxSx = {
+    height: 0,
+    paddingTop: '100%',
+} as const;
+
 /** 最近上传一次拉取的上限，供宽高联动切片（32 覆盖常见 8 列 × 4 行） */
 const RECENT_UPLOAD_FETCH_SIZE = 32;
 
@@ -160,7 +167,9 @@ function RecommendHero(props: IRecommendHero) {
             }}>
                 {/* 封面 + 悬停播放遮罩 */}
                 <Box sx={{
-                    position: 'relative', flex: '0 0 auto', height: '100%', aspectRatio: '1 / 1',
+                    // 高度驱动的正方形：宽度不用 aspect-ratio（旧内核如 Chrome 83 不支持），
+                    // 由下方静态定位的主图以 height:100% + width:auto 的内在 1:1 比例撑出
+                    position: 'relative', flex: '0 0 auto', height: '100%',
                     borderRadius: '10px', overflow: 'hidden', boxShadow: '0 10px 26px rgba(0,0,0,0.35)',
                     ':hover .hero-cover-mask': { opacity: 1 },
                 }}>
@@ -170,7 +179,7 @@ function RecommendHero(props: IRecommendHero) {
                         onLoad={props.onCoverLoad}
                         component='img'
                         src={cover}
-                        sx={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' }}
+                        sx={{ display: 'block', height: '100%', width: 'auto' }}
                     />
                     {/* 触屏无 hover，播放按钮常显以便点按播放 */}
                     <Box className='hero-cover-mask' sx={{
@@ -337,9 +346,7 @@ function AlbumCard(props: IAlbumCard) {
             <Box component='a' sx={{ display: 'block', color: 'inherit', textDecoration: 'none', minWidth: 0 }}>
                 <Box sx={{
                     position: 'relative',
-                    // 用 padding-top 百分比而非 aspect-ratio：padding 百分比相对包含块宽度，等价于 1:1，
-                    // 且兼容不支持 aspect-ratio 的旧内核（如 Android WebView Chrome 83）
-                    paddingTop: '100%',
+                    ...squareBoxSx,
                     borderRadius: '12px',
                     overflow: 'hidden',
                     backgroundColor: 'rgba(120,120,120,0.12)',
@@ -682,7 +689,7 @@ function Home() {
                     {/* 加载中骨架 */}
                     <Box sx={[albumGridSx, recentUploadLoaded && { display: 'none' }]}>
                         {Array.from({ length: visibleAlbumCount }).map((_, index) => (
-                            <Skeleton key={index} variant='rounded' sx={{ height: 0, paddingTop: '100%', borderRadius: '12px', transform: 'unset' }} />
+                            <Skeleton key={index} variant='rounded' sx={{ ...squareBoxSx, borderRadius: '12px', transform: 'unset' }} />
                         ))}
                     </Box>
                     {/* 空状态 */}
