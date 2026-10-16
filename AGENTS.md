@@ -47,6 +47,7 @@ renderer/                     渲染层（Next.js）
     mediaUrl.ts               Electron 的 API 基址（ensureApiBase，经 IPC 读配置）
     apiServer.ts              Capacitor 原生端点：构建期内联默认值（process.env.NATIVE_API_BASE）
                                + 运行时持久化（ensureNativeApiBase / setNativeApiBase）
+    mediaSession.ts           Android 系统媒体会话桥接（元数据/播放态推送、控制事件；非原生平台空操作）
     HeiMusicContext.tsx       当前播放音乐等跨组件 Context
     HeiMusicThemeProvider.tsx / theme.ts
   api/
@@ -60,6 +61,8 @@ android/                      Capacitor 原生工程（src/main/java/com/inkneko
   MainActivity.java           媒体壳层代理（端点：优先 SharedPreferences，回落 BuildConfig）
   ApiServerPlugin.java        API 端点运行时读写（本地插件，渲染层经 bridge 持久化）
   ExitPromptPlugin.java       返回键退出二次确认（本地插件）
+  MediaSessionPlugin.java     系统媒体通知桥接（本地插件：推送元数据/播放态、请求通知权限、回传系统控制）
+  PlaybackService.java        媒体前台服务（MediaSessionCompat + MediaStyle 通知、封面缓存、音频焦点）
   app/build.gradle            读取 ../api-server.json 注入 BuildConfig.API_SERVER（构建期默认值）
   android/app/build/          **构建产物，勿手改**
 
@@ -163,6 +166,7 @@ npx cap copy android
 - `capacitor.config.ts` 的 `DEV` 开关：为 `true` 时 WebView 加载 dev server（`http://10.0.2.2:8888`，真机需改局域网 IP）；**打包 release 前必须改回 `false`**，否则 APK 会指向开发机。
 - Android 硬件返回键由 `@capacitor/app` 插件接管：`renderer/pages/_app.tsx` 注册 `backButton` 监听——优先关闭 `HeiMusicContext` 弹层栈栈顶（全屏播放器、播放列表抽屉均已注册），无弹层时按页面历史回退，无历史则交给本地插件 `ExitPromptPlugin`（`android/.../ExitPromptPlugin.java`，非 npm 插件无需 cap sync）弹原生 Toast 二次确认退出。插件在**无监听且无历史**时会吞掉按键（应用无法退出），故该监听不可移除；新增全屏级弹层时应经 `registerOverlay` 挂进弹层栈。**`MainActivity.registerPlugin` 必须在 `super.onCreate` 之前调用**——bridge 在 `super.onCreate` 内部完成构建，之后再注册不会生效。
 - Electron 生产态同时注册了 `app://` 特权协议与静态文件处理器（`main/background.ts` 末尾），静态资源根目录为打包后的 `app/`；`/api`、`/public` 走 307 重定向而非主进程流式代理——这是为了避免切歌时连接泄漏耗尽单主机连接上限，**不要改回主进程代理**。
+- Android 系统媒体通知由本地插件 `MediaSessionPlugin` + 前台服务 `PlaybackService`（MediaSessionCompat + MediaStyle，依赖 `androidx.media:media`）承担，渲染层接线点在 `MusicControlPannel.tsx`：元数据跟 `currentMusicInfo` 走，播放态在 onplay/onpause/seek 时推送、`ontimeupdate` 每 5s 低频校准，控制事件经 `bindActions` 回灌（`renderer/lib/mediaSession.ts`）。约定：时间口径统一为碟内相对值（大碟单曲减 `discStartTime`）；Android 13+ 通知按钮由 `PlaybackStateCompat` 的 action 推导、`POST_NOTIFICATIONS` 需运行时请求（渲染层首播时调一次，拒绝不阻断）；插件 `resumed=false`（后台）时不 `startForegroundService`（Android 12+ 限制），状态只进服务暂存、回前台自动拉起；音频焦点默认关闭（`PlaybackService.AUDIO_FOCUS_ENABLED = false`）——Chromium 的 `<audio>` 播放时会自行申请音频焦点，原生再申请会同 uid 互顶、被顶方立即暂停（表现为开播即自暂停，2026-10-16 真机 dumpsys audio 实证），抢占暂停/来电暂停由 Chromium 自身焦点处理承担，拔耳机暂停走 `AUDIO_BECOMING_NOISY` 不依赖焦点，**勿改回 true**。
 - `android/app/build/`、`app/`、`dist/`、`node_modules/` 均为产物或依赖，不要手改或提交（`.gitignore` 已锚定根目录的 `/app` 与 `/dist`）。
 - CUE 音轨解析在主进程完成（`music-metadata`、`cue-parser`），渲染层通过 `music::parse` / `music::parseCue` 调用；APE/TAK 因 Chromium 内核限制暂不支持播放。
 - 全局热键（播放/上一曲/下一曲）在主进程注册，修改后调用 `config::setHotKey` 会自动注销旧键；配置保存后需 `config::saveAndReload` 生效。

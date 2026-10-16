@@ -28,6 +28,8 @@ import { PlaylistControllerService } from "@api/codegen/services/PlaylistControl
 import { PlayHistoryControllerService } from "@api/codegen/services/PlayHistoryControllerService"
 import { pushToast } from "@components/HeiMusicMainLayout"
 import { HeiMusicContext } from "../../lib/HeiMusicContext"
+import { Capacitor } from "@capacitor/core"
+import { mediaSession } from "../../lib/mediaSession"
 
 /**
  * 更换播放列表并播放
@@ -127,6 +129,14 @@ interface IMusicControlPannel extends BoxProps {
     src?: string
 }
 
+/**
+ * 系统媒体通知的进度口径：大碟单曲为碟内相对位置
+ * （与面板进度显示同一换算，见 ontimeupdate）
+ */
+function relPositionSec(audio: HTMLAudioElement, info: { isLargeTrackMusic: boolean; discStartTime?: number }) {
+    return info.isLargeTrackMusic ? audio.currentTime - (info.discStartTime ?? 0) : audio.currentTime;
+}
+
 function MusicControlPannel(props: IMusicControlPannel) {
     // 仅解构 setter（useState 的 setter 身份稳定），避免依赖整个 context 对象
     // 导致 effect 反复重跑；本组件与 _app 双向同步播放状态
@@ -138,6 +148,8 @@ function MusicControlPannel(props: IMusicControlPannel) {
     //播放历史打点标记：换源时重置为 0，onplay 时若与当前曲目不一致则上报一次；
     //暂停后继续播放不重复计数
     const reportedMusicIdRef = React.useRef(0)
+    //系统媒体通知进度的低频校准标记：距上次推送 ≥5s 才再推（系统按 speed 自行外推）
+    const lastSyncedPosRef = React.useRef(0)
 
     const [playing, setPlaying] = React.useState(false);
     const [playBtnIcon, setPlayBtnIcon] = React.useState(<PlayCircleFilled style={{ fontSize: 42 }} />);
@@ -297,6 +309,23 @@ function MusicControlPannel(props: IMusicControlPannel) {
         }
     }, [playbackMethod, currentMusicInfo, musicList])
 
+    const handleProgressSeek = React.useCallback((newProgress: number) => {
+        const audio = audioRef.current;
+        // 空会话守卫：未加载曲目时进度条仍可交互（musicId 0、src 空），
+        // 此时推送播放态会以空元数据拉起前台服务，直接忽略
+        if (audio === null || currentMusicInfo.musicId === 0) {
+            return;
+        }
+        var offset = currentMusicInfo.isLargeTrackMusic ? currentMusicInfo.discStartTime : 0;
+        audio.currentTime = newProgress + offset;
+        setCurrentTime(newProgress);
+        //系统媒体通知：seek 后立即校准系统侧进度（持续播放中 onplay 不会再触发，等 5s 节流太慢）。
+        //挂在 play() 之后：播放失败（流失效/URL 过期）时不误报播放中，并回推暂停态纠正快照
+        audio.play()
+            .then(() => mediaSession.updatePlaybackState({ playing: true, positionSec: newProgress, speed: 1 }))
+            .catch(() => mediaSession.updatePlaybackState({ playing: false, positionSec: newProgress, speed: 0 }));
+    }, [currentMusicInfo])
+
     React.useEffect(() => {
         setGlobalMusicInfo({ musicId: currentMusicInfo.musicId, albumId: currentMusicInfo.albumId });
         if (audioRef.current !== null) {
@@ -336,6 +365,15 @@ function MusicControlPannel(props: IMusicControlPannel) {
 
                 setDuration(duration);
                 setTimeLabel(`${currentMinutes}:${currentSeconds} / ${durationMinutes}:${durationSeconds}`)
+                //系统媒体通知：低频校准系统侧进度（系统按 speed 外推，5s 一次足够；
+                //ontimeupdate 约 4Hz，直接透传会刷爆 bridge）
+                if (!audio.paused) {
+                    const relSec = relPositionSec(audio, currentMusicInfo);
+                    if (Math.abs(relSec - lastSyncedPosRef.current) >= 5) {
+                        lastSyncedPosRef.current = relSec;
+                        void mediaSession.updatePlaybackState({ playing: true, positionSec: relSec, speed: 1 });
+                    }
+                }
                 if (currentMusicInfo.isLargeTrackMusic && audio.currentTime > currentMusicInfo.discEndTime && audio.duration !== 0) {
                     handleNextClick();
                 }
@@ -363,11 +401,15 @@ function MusicControlPannel(props: IMusicControlPannel) {
                             console.error('播放历史打点失败', error);
                         })
                 }
+                //系统媒体通知：播放态推送（进度为碟内相对位置）
+                void mediaSession.updatePlaybackState({ playing: true, positionSec: relPositionSec(audio, currentMusicInfo), speed: 1 });
             }
 
             audio.onpause = () => {
                 setPlaying(false)
                 setPlayBtnIcon(<PlayCircleFilled style={{ fontSize: 42 }} />)
+                //系统媒体通知：暂停态推送
+                void mediaSession.updatePlaybackState({ playing: false, positionSec: relPositionSec(audio, currentMusicInfo), speed: 0 });
             }
 
             audio.onended = () => {
@@ -404,11 +446,13 @@ function MusicControlPannel(props: IMusicControlPannel) {
                 document.title = `${newMusic.title} - HeiMusic!`;
                 if (audioRef.current !== null) {
                     var audio = audioRef.current;
+                    // 先换源再定大碟起点：src 赋值触发 load() 会清掉已设的 currentTime
+                    //（顺序须与 changePlayList/handleNextClick 一致，反了会从碟镜像 0:00 播放）
+                    audio.src = newMusic.qualityOption[0].url;
+                    reportedMusicIdRef.current = 0;
                     if (newMusic.isLargeTrackMusic) {
                         audio.currentTime = newMusic.discStartTime;
                     }
-                    audio.src = newMusic.qualityOption[0].url;
-                    reportedMusicIdRef.current = 0;
                     handlePlayButtonClick(true);
                 }
             }
@@ -460,6 +504,35 @@ function MusicControlPannel(props: IMusicControlPannel) {
                 window.electronAPI.playback.play(handlePlayButtonClick);
             }
 
+            //Android 系统媒体控制（通知栏/锁屏/耳机按键）反向控制播放器（与上面 electron 块并列）。
+            //pause 直接暂停而非 toggle：系统按钮期望确定性结果，且 handlePlayButtonClick
+            //的 1s 淡出窗口内二次指令会互相抵消；onpause 回调会同步按钮态与通知
+            let unbindMediaSession: (() => void) | undefined;
+            if (Capacitor.isNativePlatform()) {
+                unbindMediaSession = mediaSession.bindActions((event) => {
+                    switch (event.action) {
+                        case "play":
+                        case "toggle":
+                            handlePlayButtonClick();
+                            break;
+                        case "pause":
+                            audioRef.current?.pause();
+                            break;
+                        case "next":
+                            handleNextClick();
+                            break;
+                        case "prev":
+                            handlePrevClick();
+                            break;
+                        case "seekTo":
+                            if (typeof event.positionMs === "number") {
+                                handleProgressSeek(event.positionMs / 1000);
+                            }
+                            break;
+                    }
+                });
+            }
+
             return () => {
                 audio.ontimeupdate = null;
                 document.removeEventListener("music-control-panel::changePlayList", changePlayList);
@@ -469,11 +542,35 @@ function MusicControlPannel(props: IMusicControlPannel) {
                 if (window.electronAPI !== undefined) {
                     window.electronAPI.playback.cleanup();
                 }
+                if (unbindMediaSession !== undefined) {
+                    unbindMediaSession();
+                }
 
             }
         }
 
-    }, [currentMusicInfo, musicList, playbackMethod, handlePlayButtonClick, handlePrevClick, handleNextClick, setGlobalMusicInfo])
+    }, [currentMusicInfo, musicList, playbackMethod, handlePlayButtonClick, handlePrevClick, handleNextClick, handleProgressSeek, setGlobalMusicInfo])
+
+    // Android 系统媒体通知：曲目变化即推送元数据（musicId===0 为未播放占位态，跳过）。
+    // 不并入主 useEffect：其依赖含 musicList/playbackMethod。依赖对象身份变化（收藏切换、
+    // enqueue 重排）不重复推送——推送会使原生 metaSeq 自增，作废在途封面下载；顺带重置进度校准标记
+    const lastMetaSignatureRef = React.useRef("");
+    React.useEffect(() => {
+        lastSyncedPosRef.current = 0;
+        if (!Capacitor.isNativePlatform() || currentMusicInfo.musicId === 0) {
+            return;
+        }
+        const signature = [
+            currentMusicInfo.musicId, currentMusicInfo.title, currentMusicInfo.artists.join('/'),
+            currentMusicInfo.albumTitle, currentMusicInfo.cover, currentMusicInfo.isLargeTrackMusic,
+            currentMusicInfo.discStartTime, currentMusicInfo.discEndTime, currentMusicInfo.duration,
+        ].join('|');
+        if (signature === lastMetaSignatureRef.current) {
+            return;
+        }
+        lastMetaSignatureRef.current = signature;
+        void mediaSession.updateMetadata(currentMusicInfo);
+    }, [currentMusicInfo])
 
 
 
@@ -501,13 +598,6 @@ function MusicControlPannel(props: IMusicControlPannel) {
             .catch((error) => {
                 pushToast(error.message)
             })
-    }
-
-    const handleProgressSeek = (newProgress: number) => {
-        var offset = currentMusicInfo.isLargeTrackMusic ? currentMusicInfo.discStartTime : 0;
-        audioRef.current.currentTime = newProgress + offset;
-        audioRef.current.play();
-        setCurrentTime(newProgress);
     }
 
     const handleVolumePanelClose = () => {

@@ -40,9 +40,19 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(ExitPromptPlugin.class);
         // API 端点运行时配置：渲染层经 bridge 写入 SharedPreferences，壳层代理读同一存储
         registerPlugin(ApiServerPlugin.class);
+        // 系统媒体会话桥接：渲染层推送播放态到 PlaybackService，系统控制回传渲染层
+        registerPlugin(MediaSessionPlugin.class);
         super.onCreate(savedInstanceState);
         CookieManager.getInstance().setAcceptThirdPartyCookies(bridge.getWebView(), true);
         bridge.getWebView().setWebViewClient(new ProxyWebViewClient(bridge));
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        // 应用退出：媒体通知与前台服务一并结束（configChanges 已覆盖旋转等配置变化，
+        // 到达此处即真实销毁），避免退出后通知残留
+        PlaybackService.requestTeardown(this);
     }
 
     /**

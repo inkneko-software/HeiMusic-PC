@@ -67,6 +67,9 @@ repositories {
 dependencies {
     implementation fileTree(include: ['*.jar'], dir: 'libs')
     implementation "androidx.appcompat:appcompat:$androidxAppCompatVersion"
+    // 媒体通知：MediaSessionCompat + NotificationCompat.MediaStyle。
+    // 真实播放器在 WebView（<audio>），原生只做系统侧影子会话，无需 Media3
+    implementation "androidx.media:media:1.7.0"
     implementation "androidx.coordinatorlayout:coordinatorlayout:$androidxCoordinatorLayoutVersion"
     implementation "androidx.core:core-splashscreen:$coreSplashScreenVersion"
     implementation project(':capacitor-android')

@@ -4,4 +4,6 @@
     <string name="title_activity_main">HeiMusic</string>
     <string name="package_name">com.inkneko.heimusic</string>
     <string name="custom_url_scheme">com.inkneko.heimusic</string>
+    <string name="notification_channel_playback">音乐播放</string>
+    <string name="notification_channel_playback_description">正在播放的音乐与控制按钮</string>
 </resources>
