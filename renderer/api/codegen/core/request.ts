@@ -18,7 +18,7 @@ import type { OpenAPIConfig } from '@api/codegen/core/OpenAPI';
 import { pushToast } from '@components/HeiMusicMainLayout';
 
 import { Capacitor } from '@capacitor/core';
-import { NATIVE_API_BASE } from '@api/../lib/apiServer';
+import { ensureNativeApiBase } from '@api/../lib/apiServer';
 import { ensureApiBase } from '@api/../lib/mediaUrl';
 
 const isDefined = <T>(value: T | null | undefined): value is Exclude<T, null | undefined> => {
@@ -294,11 +294,11 @@ export const request = <T>(config: OpenAPIConfig, options: ApiRequestOptions): C
     return new CancelablePromise(async (resolve, reject, onCancel) => {
         try {
 
-            // Capacitor 原生：写死的 API 端点（lib/apiServer.ts），fetch 由 CapacitorHttp
-            //   原生网络层发出，无 CORS，媒体相对路径由 MainActivity 的壳层代理转发
+            // Capacitor 原生：持久化端点（lib/apiServer.ts，未设置回落构建期内联值），
+            //   fetch 由 CapacitorHttp 原生网络层发出，无 CORS，媒体相对路径由 MainActivity 的壳层代理转发
             // 网页端：空串（同源，nginx 反代）；开发态：dev server 的 rewrites 反代
             // Electron：配置的 apiHost（媒体走 app:// 壳层代理，API 直连靠后端 CORS 白名单）
-            config.BASE = Capacitor.isNativePlatform() ? NATIVE_API_BASE : await ensureApiBase();
+            config.BASE = Capacitor.isNativePlatform() ? await ensureNativeApiBase() : await ensureApiBase();
 
             const url = getUrl(config, options);
             const formData = getFormData(options);

@@ -24,12 +24,6 @@ import java.util.Map;
 public class MainActivity extends BridgeActivity {
 
     /**
-     * API 端点经 BuildConfig 注入，来源为仓库根目录 api-server.json（不入库），
-     * 与前端 renderer/lib/apiServer.ts 读取同一份文件。
-     */
-    private static final String API_SERVER = BuildConfig.API_SERVER;
-
-    /**
      * 后端拥有的路径前缀，需与网页端 nginx、Electron 壳层代理（main/background.ts）的前缀表一致。
      */
     private static final String[] BACKEND_PATH_PREFIXES = {"/api/", "/public/"};
@@ -40,14 +34,28 @@ public class MainActivity extends BridgeActivity {
         // 必须在 super.onCreate 之前注册：bridge 在 super.onCreate 内部就完成构建，
         // 之后再 registerPlugin 只是往已消费的 builder 里加，不会生效
         registerPlugin(ExitPromptPlugin.class);
+        // API 端点运行时配置：渲染层经 bridge 写入 SharedPreferences，壳层代理读同一存储
+        registerPlugin(ApiServerPlugin.class);
         super.onCreate(savedInstanceState);
         CookieManager.getInstance().setAcceptThirdPartyCookies(bridge.getWebView(), true);
         bridge.getWebView().setWebViewClient(new ProxyWebViewClient(bridge));
     }
 
     /**
+     * 当前生效的 API 端点：优先读运行时持久化（ApiServerPlugin 写入的
+     * SharedPreferences），未设置时回落构建期 BuildConfig（来源仓库根目录
+     * api-server.json，与前端 renderer/lib/apiServer.ts 的内联默认值同源）。
+     * 每次拦截都重读，端点修改后媒体代理即时生效。
+     */
+    private String currentApiServer() {
+        String saved = getSharedPreferences(ApiServerPlugin.PREFS_NAME, MODE_PRIVATE)
+                .getString(ApiServerPlugin.PREFS_KEY, null);
+        return saved != null ? saved : BuildConfig.API_SERVER;
+    }
+
+    /**
      * 壳层代理：媒体元素（<img>/<audio>）不经过 CapacitorHttp，相对路径落在
-     * https://localhost 上，在这里转发到 API_SERVER 并附带会话 Cookie。
+     * https://localhost 上，在这里转发到当前端点并附带会话 Cookie。
      * fetch/XHR 已由 CapacitorHttp 在原生层直连后端，不会进入此拦截。
      */
     private class ProxyWebViewClient extends BridgeWebViewClient {
@@ -76,7 +84,7 @@ public class MainActivity extends BridgeActivity {
     private WebResourceResponse proxyToBackend(WebResourceRequest request) {
         Uri uri = request.getUrl();
         try {
-            StringBuilder target = new StringBuilder(API_SERVER)
+            StringBuilder target = new StringBuilder(currentApiServer())
                     .append(uri.getPath() == null ? "" : uri.getPath());
             if (uri.getQuery() != null) {
                 target.append('?').append(uri.getQuery());
@@ -98,7 +106,8 @@ public class MainActivity extends BridgeActivity {
                     conn.setRequestProperty("Range", range);
                 }
             }
-            String cookie = CookieManager.getInstance().getCookie(API_SERVER + "/");
+            // Cookie 按域名隔离：须取当前端点域下的会话 Cookie（端点切换后旧域 Cookie 自然失效）
+            String cookie = CookieManager.getInstance().getCookie(currentApiServer() + "/");
             if (cookie != null) {
                 conn.setRequestProperty("Cookie", cookie);
             }

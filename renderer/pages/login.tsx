@@ -13,6 +13,8 @@ import { ApiError, AuthControllerService, UserControllerService, UserDetailVo } 
 import { pushToast } from '@components/HeiMusicMainLayout';
 import useToast from '@components/Common/Toast';
 import { useRouter } from 'next/router';
+import { Capacitor } from '@capacitor/core';
+import { ensureNativeApiBase, setNativeApiBase } from '../lib/apiServer';
 import { useState, useEffect } from 'react';
 
 export interface LoginProps {
@@ -24,13 +26,15 @@ const Login = (props: LoginProps) => {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [client, setClient] = useState(false);
+    //原生（Capacitor）标记：连接失败时允许修改端点（Electron 为 client，网页端无此入口）
+    const [isNative, setIsNative] = useState(false);
     const [Toast, makeToast] = useToast();
     const [isNetworkError, setIsNetworkError] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [loginButtonDisabled, setLoginButtonDisabled] = useState(false);
     //密码连续失败被锁定（业务码1007）时的剩余秒数
     const [lockCountdown, setLockCountdown] = useState(0);
-    //当前正在连接的API服务器（Electron为配置的apiHost，其余环境为页面origin）
+    //当前正在连接的API服务器（Electron为配置的apiHost，原生为持久化端点，网页端为页面origin）
     const [currentApiHost, setCurrentApiHost] = useState("");
     const [apiHostInput, setApiHostInput] = useState("");
     const router = useRouter();
@@ -104,9 +108,19 @@ const Login = (props: LoginProps) => {
         if (apiHostInput.trim() === "") {
             return;
         }
-        window.electronAPI.config.set("apiHost", apiHostInput.trim());
-        //保存并重启应用，重启后自动用新地址重新连接
-        window.electronAPI.config.saveAndReload();
+        if (client) {
+            //Electron：保存并重启应用，重启后自动用新地址重新连接
+            window.electronAPI.config.set("apiHost", apiHostInput.trim());
+            window.electronAPI.config.saveAndReload();
+        } else {
+            //原生：持久化后即时生效，直接用新地址重连（无需重启）
+            setNativeApiBase(apiHostInput)
+                .then(base => {
+                    setCurrentApiHost(base);
+                    handleRetry();
+                })
+                .catch(() => makeToast("端点保存失败，请稍后尝试", 'error', 'bottom-right'));
+        }
     }
 
     useEffect(() => {
@@ -116,6 +130,14 @@ const Login = (props: LoginProps) => {
                 setCurrentApiHost(config.apiHost);
                 setApiHostInput(config.apiHost);
             })
+        } else if (typeof (window) !== 'undefined' && Capacitor.isNativePlatform()) {
+            //原生端为持久化端点（lib/apiServer.ts，未设置回落构建期内联值）；
+            //预填当前端点，便于只改端口/路径的小调整
+            setIsNative(true);
+            ensureNativeApiBase().then(base => {
+                setCurrentApiHost(base);
+                setApiHostInput(base);
+            });
         } else if (typeof (window) !== 'undefined') {
             //网页端API与页面同源（由nginx反代），无可配置的apiHost
             setCurrentApiHost(window.location.origin);
@@ -182,7 +204,7 @@ const Login = (props: LoginProps) => {
                         <Typography variant='subtitle2' sx={{ marginTop: '12px' }}>连接至服务器失败</Typography>
                         <Typography variant='subtitle2' sx={{ color: 'text.secondary', wordBreak: 'break-all' }}>当前服务器：{currentApiHost}</Typography>
                         {
-                            client &&
+                            (client || isNative) &&
                             <Box sx={{ display: 'flex', marginTop: '12px', width: '90%' }}>
                                 <TextField size='small' sx={{ flexGrow: '1' }} value={apiHostInput} onChange={e => setApiHostInput(e.target.value)} placeholder='API服务器，如 http://192.168.1.100:8080' spellCheck={false} />
                                 <Button variant='outlined' sx={{ marginLeft: '8px', flex: '0 0 auto' }} onClick={handleSaveApiHost}>保存并重连</Button>

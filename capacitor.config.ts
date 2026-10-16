@@ -6,7 +6,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
 // false（打包 release 前必须改回）：WebView 加载打包进 APK 的静态资源（源为
 //       https://localhost），fetch/XHR 由 CapacitorHttp 原生层直连后端，
 //       媒体相对路径由 MainActivity 的壳层代理转发。
-const DEV = true;
+const DEV = false;
 const DEV_SERVER = 'http://10.0.2.2:8888';
 
 const config: CapacitorConfig = {

@@ -3,6 +3,9 @@ import Button from "@mui/material/Button"
 import * as React from "react"
 
 import Layout from "./layout"
+import { Capacitor } from "@capacitor/core"
+import useToast from '@components/Common/Toast';
+import { ensureNativeApiBase, setNativeApiBase } from "../../../lib/apiServer"
 
 //版本号由 renderer/next.config.js 构建期从 package.json 注入
 const version = process.env.APP_VERSION ?? ""
@@ -14,6 +17,10 @@ const version = process.env.APP_VERSION ?? ""
  */
 export default function Home() {
     const [apiHost, setApiHost] = React.useState("")
+    //Electron 客户端标记（与 login.tsx 一致）；安卓原生标记走本地插件持久化端点；网页端同源无可配置项
+    const [client, setClient] = React.useState(false)
+    const [isNative, setIsNative] = React.useState(false)
+    const [Toast, makeToast] = useToast();
     const [hotkeys, setHotKeys] = React.useState({
         playback: "",
         prev: "string",
@@ -22,24 +29,19 @@ export default function Home() {
     })
 
     React.useEffect(() => {
-        if (typeof (window) !== "undefined" && typeof (window.electronAPI) === "undefined") {
-            //网页端
-            setApiHost("") //默认网页端使用的api服务器与当前网站地址相同
-        } else {
-            //客户端
-            var heiMusicConfig: HeiMusicConfig = null;
-            // window.electronAPI.config.onChange((e, v) => {
-            //     heiMusicConfig = v;
-            // })
-            if (heiMusicConfig === null) {
-                window.electronAPI.config.get().then(res => {
-                    heiMusicConfig = res;
-                    setApiHost(heiMusicConfig.apiHost)
-                    setHotKeys(heiMusicConfig.hotkeys)
-                })
-            }
-
+        if (typeof (window) !== "undefined" && typeof (window.electronAPI) !== "undefined") {
+            //Electron 客户端：经 IPC 读取可配置的 apiHost 与快捷键
+            setClient(true)
+            window.electronAPI.config.get().then(res => {
+                setApiHost(res.apiHost)
+                setHotKeys(res.hotkeys)
+            })
+        } else if (typeof (window) !== "undefined" && Capacitor.isNativePlatform()) {
+            //安卓原生：经本地插件读持久化端点（未设置回落构建期内联值）
+            setIsNative(true)
+            ensureNativeApiBase().then(setApiHost)
         }
+        //网页端 API 与页面同源（nginx 反代），无可配置的 apiHost
     }, [])
 
     var keymap = {};
@@ -84,8 +86,19 @@ export default function Home() {
     }
 
     const handleSaveApiHost = () => {
-        window.electronAPI.config.set("apiHost", apiHost);
-        window.electronAPI.config.saveAndReload();
+        if (apiHost.trim() === "") {
+            return;
+        }
+        if (client) {
+            //Electron：保存并重启后生效
+            window.electronAPI.config.set("apiHost", apiHost.trim());
+            window.electronAPI.config.saveAndReload();
+        } else {
+            //安卓原生：持久化后即时生效（请求层与媒体壳层代理都读当前值），无需重启
+            setNativeApiBase(apiHost)
+                .then(() => makeToast("已保存", "success", "bottom-right"))
+                .catch(() => makeToast("保存失败，请稍后尝试", "error", "bottom-right"))
+        }
     }
 
 
@@ -117,17 +130,21 @@ export default function Home() {
 
     return (
         <Layout>
+            {Toast}
             <Box sx={{ display: "flex", flexDirection: "column" }}>
                 <Box sx={{ display: "flex" }}>
-                    <Typography  >服务器设置</Typography>
+                    {(client || isNative) && <Typography  >服务器设置</Typography>}
                     <Typography variant="subtitle2" sx={{ margin: "auto 12px auto auto" }} color="GrayText">当前版本{version}</Typography>
                 </Box>
-                <Divider sx={{ margin: "2px 0px" }} />
-                <Box sx={{ display: "flex", alignItems: "center", margin: "4px 0px" }}>
-                    <Typography sx={{ minWidth: "30%" }} variant="subtitle2">API服务器</Typography>
-                    <TextField sx={{ flexGrow: "1", marginRight: "12px" }} size="small" value={apiHost} onChange={e => setApiHost(e.target.value)} spellCheck={false} />
-                    <Button variant='contained' size='small' onClick={handleSaveApiHost}>保存并重启</Button>
-                </Box>
+                {(client || isNative) && <Divider sx={{ margin: "2px 0px" }} />}
+                {(client || isNative) &&
+                    <Box sx={{ display: "flex", alignItems: "center", margin: "4px 0px" }}>
+                        <Typography sx={{ minWidth: "30%" }} variant="subtitle2">API服务器</Typography>
+                        <TextField sx={{ flexGrow: "1", marginRight: "12px" }} size="small" value={apiHost} onChange={e => setApiHost(e.target.value)} spellCheck={false} />
+                        {/* Electron 需重启生效；安卓原生保存即生效 */}
+                        <Button variant='contained' size='small' onClick={handleSaveApiHost}>{client ? "保存并重启" : "保存"}</Button>
+                    </Box>
+                }
                 <Typography sx={{ marginTop: "12px" }} >快捷键设置</Typography>
                 <Divider sx={{ margin: "2px 0px" }} />
                 <Box sx={{ display: "flex", margin: "4px 0px" }}>
