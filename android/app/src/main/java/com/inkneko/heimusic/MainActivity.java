@@ -2,6 +2,7 @@ package com.inkneko.heimusic;
 
 import android.net.Uri;
 import android.os.Bundle;
+import android.util.Log;
 import android.webkit.CookieManager;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebResourceResponse;
@@ -27,6 +28,9 @@ public class MainActivity extends BridgeActivity {
      * 后端拥有的路径前缀，需与网页端 nginx、Electron 壳层代理（main/background.ts）的前缀表一致。
      */
     private static final String[] BACKEND_PATH_PREFIXES = {"/api/", "/public/"};
+
+    /** 壳层代理诊断日志标签：adb logcat -s HeiMusicProxy 过滤 */
+    private static final String TAG = "HeiMusicProxy";
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -67,13 +71,21 @@ public class MainActivity extends BridgeActivity {
         @Override
         public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
             Uri url = request.getUrl();
+            String path = url.getPath() == null ? "" : url.getPath();
             // 仅拦截打包前端的源（https://localhost）。开发态 WebView 加载 dev server
             // （host 为 IP），由 dev server 的 rewrites 反代，不在拦截范围。
             if ("localhost".equals(url.getHost())) {
-                String path = url.getPath() == null ? "" : url.getPath();
                 for (String prefix : BACKEND_PATH_PREFIXES) {
                     if (path.startsWith(prefix)) {
                         return proxyToBackend(request);
+                    }
+                }
+            } else {
+                // 后端前缀落在非 localhost 源：渲染层出现了绝对媒体地址（不应发生），记录便于排查
+                for (String prefix : BACKEND_PATH_PREFIXES) {
+                    if (path.startsWith(prefix)) {
+                        Log.w(TAG, "后端路径未进代理（非 localhost 源）: " + url);
+                        break;
                     }
                 }
             }
@@ -83,14 +95,16 @@ public class MainActivity extends BridgeActivity {
 
     private WebResourceResponse proxyToBackend(WebResourceRequest request) {
         Uri uri = request.getUrl();
+        String target = null;
         try {
-            StringBuilder target = new StringBuilder(currentApiServer())
+            StringBuilder targetBuilder = new StringBuilder(currentApiServer())
                     .append(uri.getPath() == null ? "" : uri.getPath());
             if (uri.getQuery() != null) {
-                target.append('?').append(uri.getQuery());
+                targetBuilder.append('?').append(uri.getQuery());
             }
+            target = targetBuilder.toString();
 
-            HttpURLConnection conn = (HttpURLConnection) new URL(target.toString()).openConnection();
+            HttpURLConnection conn = (HttpURLConnection) new URL(target).openConnection();
             conn.setConnectTimeout(10000);
             conn.setReadTimeout(30000);
             conn.setRequestMethod(request.getMethod());
@@ -111,8 +125,11 @@ public class MainActivity extends BridgeActivity {
             if (cookie != null) {
                 conn.setRequestProperty("Cookie", cookie);
             }
+            // 诊断日志不记录 Cookie 值本身，仅记录是否携带
+            Log.d(TAG, "代理请求: " + request.getMethod() + " " + target + " cookie=" + (cookie != null ? "有" : "无"));
 
             int status = conn.getResponseCode();
+            Log.d(TAG, "代理响应: " + status + " " + target);
             Map<String, String> respHeaders = new HashMap<>();
             for (Map.Entry<String, List<String>> entry : conn.getHeaderFields().entrySet()) {
                 String name = entry.getKey();
@@ -146,11 +163,17 @@ public class MainActivity extends BridgeActivity {
                 }
             };
             String mime = conn.getContentType();
+            // 部分后端（如 Netty 系）状态行省略原因短语，getResponseMessage 为 null/空串；
+            // WebResourceResponse 强制要求短语非空，缺失时按状态区间补默认值
+            String reasonPhrase = conn.getResponseMessage();
+            if (reasonPhrase == null || reasonPhrase.isEmpty()) {
+                reasonPhrase = status >= 400 ? "Error" : "OK";
+            }
             return new WebResourceResponse(mime == null ? "application/octet-stream" : mime,
-                    conn.getContentEncoding(), status,
-                    conn.getResponseMessage() == null ? "" : conn.getResponseMessage(),
+                    conn.getContentEncoding(), status, reasonPhrase,
                     respHeaders, guardedStream);
         } catch (Exception e) {
+            Log.e(TAG, "代理失败: " + target, e);
             return new WebResourceResponse("text/plain", "utf-8", 502, "Bad Gateway",
                     null, new ByteArrayInputStream(("proxy error: " + e.getMessage()).getBytes()));
         }
