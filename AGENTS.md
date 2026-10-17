@@ -105,6 +105,7 @@ npm run build                # nextron build，完整发布流程（同时重建
 ```
 
 - gradle 构建要求 JDK 21（capacitor-android 源发行版），本机默认 JDK 版本不足时以 `JAVA_HOME` 指向 JDK 21。
+- APK 版本号从仓库根 `package.json` 同步（`android/app/build.gradle` 读取）：`versionName` 取 `version` 字段，`versionCode` 按 `major*10000 + minor*100 + patch` 计算（如 0.6.1 → 601），升级版本只需改 `package.json`，勿在 gradle 里手写版本。
 - release 签名需在 `android/key.properties` 配置（不入库，字段见 `android/app/build.gradle`）；文件不存在时 release 输出未签名 APK。
 - `android/app/src/main/assets/public`、`capacitor.config.json`、`capacitor.plugins.json` 均为生成物，勿手改。
 - 验证改动是否真的进入了 APK：`unzip -p <apk> assets/public/_next/static/chunks/pages/_app-*.js | grep -c "<特征串>"`——对 APK 直接 `grep` 会因 zip 压缩得到假阴性，须先 `unzip -p` 解压单文件。

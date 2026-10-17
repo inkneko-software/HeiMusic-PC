@@ -9,6 +9,17 @@ if (keystorePropertiesFile.exists()) {
     keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
 }
 
+// 版本号：从仓库根 package.json 同步，versionName 取 version 字段，
+// versionCode 按 major*10000 + minor*100 + patch 计算（如 0.6.1 → 601），
+// 升级版本只需改 package.json（npm version），无需手动改本文件
+def packageJson = new groovy.json.JsonSlurper().parseText(rootProject.file("../package.json").text)
+def appVersionName = packageJson.version
+def versionMatcher = appVersionName =~ /(\d+)\.(\d+)\.(\d+)/
+if (!versionMatcher.find()) {
+    throw new GradleException("无法从 package.json 的 version（${appVersionName}）解析出 x.y.z 形式的版本号")
+}
+def appVersionCode = versionMatcher.group(1).toInteger() * 10000 + versionMatcher.group(2).toInteger() * 100 + versionMatcher.group(3).toInteger()
+
 // API 端点：仓库根目录 api-server.json（不入库，模板见 api-server.json.example），
 // 与 renderer/next.config.js（构建期经 env 内联给渲染层）读取同一份文件
 def apiServerFile = rootProject.file("../api-server.json")
@@ -24,8 +35,8 @@ android {
         applicationId "com.inkneko.heimusic"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0"
+        versionCode appVersionCode
+        versionName appVersionName
         buildConfigField "String", "API_SERVER", "\"${apiServer}\""
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
