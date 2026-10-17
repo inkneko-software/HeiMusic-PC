@@ -26,7 +26,7 @@ const Login = (props: LoginProps) => {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [client, setClient] = useState(false);
-    //原生（Capacitor）标记：连接失败时允许修改端点（Electron 为 client，网页端无此入口）
+    //原生（Capacitor）标记：登录表单/连接失败态允许修改端点（Electron 为 client，网页端无此入口）
     const [isNative, setIsNative] = useState(false);
     const [Toast, makeToast] = useToast();
     const [isNetworkError, setIsNetworkError] = useState(false);
@@ -101,6 +101,9 @@ const Login = (props: LoginProps) => {
             .catch(error => {
                 if (error instanceof TypeError || error instanceof ApiError && error.status !== 200 && error.status !== 403) {
                     setIsNetworkError(true);
+                } else {
+                    //可达但未登录（403）：退出转圈态，显示登录表单（与挂载探测的 403 分支一致）
+                    setIsLoading(false);
                 }
             })
     }
@@ -114,10 +117,12 @@ const Login = (props: LoginProps) => {
             window.electronAPI.config.set("apiHost", apiHostInput.trim());
             window.electronAPI.config.saveAndReload();
         } else {
-            //原生：持久化后即时生效，直接用新地址重连（无需重启）
+            //原生：持久化后即时生效，直接用新地址重连（无需重启）；nav 结果由状态切换自然表达
+            //（不可达→网络错误态，403→留在登录表单，有会话→直接进应用）
             setNativeApiBase(apiHostInput)
                 .then(base => {
                     setCurrentApiHost(base);
+                    makeToast(`服务器已更新：${base}`, 'success', 'bottom-right');
                     handleRetry();
                 })
                 .catch(() => makeToast("端点保存失败，请稍后尝试", 'error', 'bottom-right'));
@@ -186,6 +191,15 @@ const Login = (props: LoginProps) => {
                             <Button >注册账号</Button>
                             <Button sx={{ marginLeft: 'auto' }}>找回密码</Button>
                         </Box>
+                        {
+                            //常驻端点编辑：登出/换服务器后无需构造连接失败即可改地址
+                            //（预填当前端点，保存逻辑与网络错误态共用 handleSaveApiHost）
+                            (client || isNative) &&
+                            <Box sx={{ display: 'flex', marginTop: '12px' }}>
+                                <TextField size='small' sx={{ flexGrow: '1' }} value={apiHostInput} onChange={e => setApiHostInput(e.target.value)} placeholder='API服务器，如 http://192.168.1.100:8080' spellCheck={false} />
+                                <Button variant='outlined' sx={{ marginLeft: '8px', flex: '0 0 auto' }} onClick={handleSaveApiHost}>保存并重连</Button>
+                            </Box>
+                        }
                     </Box>
 
                 }
