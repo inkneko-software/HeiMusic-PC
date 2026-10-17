@@ -93,16 +93,21 @@ Capacitor 的 `webDir` 指向静态导出目录 `app/`（该目录同时承载 E
 
 ```bash
 # ① 生成渲染层静态导出到 app/，二选一：
+npm run android:sync         # 推荐：轻量路径的自动化（scripts/sync-android.js，含背景备份还原）
+npm run android:sync:install # 同上并追加 gradlew installDebug 装机（联调迭代用，需 JDK 21）
 npm run build                # nextron build，完整发布流程（同时重建 Electron 产物，app/ 保证完整）
-npx next export renderer -o app  # 轻量路径（仅安卓迭代更快）：导出会清空 app/，
-                                 # 须先备份 app/background.js(.map) 导出后再还原，否则 Electron 打包入口丢失
-# ② 把 app/ 同步进 android/app/src/main/assets/public（npx cap sync 亦可，同时会刷新 assets/capacitor.config.json）
-npx cap copy android
-# ③ 在 android/ 下执行 gradle assembleRelease
+
+# 轻量路径的手动等价步骤（npm run android:sync 的内部逻辑）：
+#   备份 app/background.js(.map) → npx next build renderer（next export 从 renderer/.next 导出，
+#   不先 build 导出的就是旧产物）→ npx next export renderer -o app（会清空 app/，导出后还原备份，
+#   否则 Electron 打包入口丢失）→ npx cap copy android
+# ② 在 android/ 下执行 gradle assembleRelease
 ```
 
+- gradle 构建要求 JDK 21（capacitor-android 源发行版），本机默认 JDK 版本不足时以 `JAVA_HOME` 指向 JDK 21。
 - release 签名需在 `android/key.properties` 配置（不入库，字段见 `android/app/build.gradle`）；文件不存在时 release 输出未签名 APK。
 - `android/app/src/main/assets/public`、`capacitor.config.json`、`capacitor.plugins.json` 均为生成物，勿手改。
+- 验证改动是否真的进入了 APK：`unzip -p <apk> assets/public/_next/static/chunks/pages/_app-*.js | grep -c "<特征串>"`——对 APK 直接 `grep` 会因 zip 压缩得到假阴性，须先 `unzip -p` 解压单文件。
 
 ## 4. 核心架构约定
 

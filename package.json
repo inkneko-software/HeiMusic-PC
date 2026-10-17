@@ -12,7 +12,9 @@
     "postinstall": "electron-builder install-app-deps",
     "typecheck": "tsc --noEmit -p tsconfig.main.json && tsc --noEmit -p renderer/tsconfig.json",
     "lint": "cd renderer && next lint",
-    "openapi": "openapi -i http://localhost/v3/api-docs/default -o renderer/api/codegen --request renderer/api/request.ts"
+    "openapi": "openapi -i http://localhost/v3/api-docs/default -o renderer/api/codegen --request renderer/api/request.ts",
+    "android:sync": "node scripts/sync-android.js",
+    "android:sync:install": "node scripts/sync-android.js --install"
   },
   "dependencies": {
     "@capacitor/android": "^8.5.1",
