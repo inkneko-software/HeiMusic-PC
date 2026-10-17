@@ -151,7 +151,8 @@ npx cap copy android
 
 - 优先使用 `renderer/api/codegen/services/*ControllerService`（10 个：Album、Artist、Auth、Lyric、MinIo、Music、PlayHistory、Playlist、Search、User）。分页类接口的 `data` 为 MyBatis-Plus Page 形状 `{ records, total, size, current, pages }`（首次引入于歌词拉取日志接口）。
 - 返回结构约定后端业务码：`code !== 0` 视为业务错误，`request.ts` 会 reject 并携带 `message`；网络异常统一 Toast「服务错误，请稍后尝试」。
-- **不要手工修改 `renderer/api/codegen/`**，改接口请改 swagger 后重跑 `npm run openapi`；需要调整请求行为请改 `renderer/api/request.ts`。
+- codegen 请求有双层超时保护（`request.ts`），超时以 `TypeError` reject，调用方据此判定网络层失败（如登录门禁走「连接失败」分支）：①原生平台直调 `CapacitorHttp.request` 并显式传 `connectTimeout` 10s / `readTimeout` 15s——**fetch 垫片不透传超时参数，原生 HttpURLConnection 默认无限等待**，直调让超时由原生网络栈强制执行；②其余路径（FormData/Blob 上传、非原生）用 `Promise.race` 15s 兜底（垫片不感知 AbortSignal，race 保证必达）。**原生直调路径的原生层 reject（CapacitorException，message 为 Java 异常原文）必须在 `nativeSend` 转换为 `TypeError`**——保持与 fetch 垫片路径一致的失败语义，否则登录门禁会把网络失败误判为业务错误、直接显示登录表单并透出 Java 原文。媒体流与上传不走 codegen 请求，无长任务受影响。
+- **不要手工修改 `renderer/api/codegen/`**，改接口请改 swagger 后重跑 `npm run openapi`；需要调整请求行为请改 `renderer/api/request.ts`——注意它是 openapi 生成器的**模板源**，改动只在下一次 `npm run openapi`（或手动同步到 `renderer/api/codegen/core/request.ts`）后才生效，只改模板会过 typecheck 但产物不含改动。
 
 ## 5. 代码约定
 

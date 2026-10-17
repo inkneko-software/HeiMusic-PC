@@ -17,7 +17,7 @@ import type { OnCancel } from '@api/codegen/core/CancelablePromise';
 import type { OpenAPIConfig } from '@api/codegen/core/OpenAPI';
 import { pushToast } from '@components/HeiMusicMainLayout';
 
-import { Capacitor } from '@capacitor/core';
+import { Capacitor, CapacitorHttp } from '@capacitor/core';
 import { ensureNativeApiBase } from '@api/../lib/apiServer';
 import { ensureApiBase } from '@api/../lib/mediaUrl';
 
@@ -202,6 +202,63 @@ const getRequestBody = (options: ApiRequestOptions): any => {
     return undefined;
 };
 
+//请求超时：codegen 请求均为常规 CRUD（媒体流与上传不走此处），正常远小于该值。
+//Android 端 fetch 由 CapacitorHttp 原生层代理，对不可达端点可能长时间无响应
+//（默认超时长达 10 分钟），登录门禁探测会因此一直转圈
+const REQUEST_TIMEOUT_MS = 15000;
+
+//原生平台直调 CapacitorHttp 的超时（毫秒）：fetch 垫片（Capacitor 的 native-bridge.js）
+//不透传 connectTimeout/readTimeout，原生 HttpURLConnection 默认无限等待，不可达端点会永久
+//挂起。直调把超时下沉到原生网络栈——请求真正终止，而非仅 JS 层放弃留下挂死的 socket
+const NATIVE_CONNECT_TIMEOUT_MS = 10000;
+const NATIVE_READ_TIMEOUT_MS = 15000;
+
+/**
+ * 原生平台：绕过 fetch 垫片直调 CapacitorHttp（垫片不传超时参数，见常量注释）。
+ * CapacitorHttp 与 WebView 共享 CookieManager，会话行为与垫片路径一致。
+ * FormData/Blob 请求不走此路径（上传类，回落 fetch 垫片 + 调用方的 race 超时兜底）
+ */
+async function nativeSend(
+    options: ApiRequestOptions,
+    url: string,
+    body: any,
+    headers: Headers
+): Promise<Response> {
+    const headerObj: Record<string, string> = {};
+    headers.forEach((value, key) => {
+        headerObj[key] = value;
+    });
+    const nativeResponse = await CapacitorHttp.request({
+        url,
+        method: options.method,
+        headers: headerObj,
+        //getRequestBody 对 JSON 请求已序列化为字符串；FormData/Blob 不进入本路径
+        data: typeof body === 'string' ? body : undefined,
+        connectTimeout: NATIVE_CONNECT_TIMEOUT_MS,
+        readTimeout: NATIVE_READ_TIMEOUT_MS,
+        //统一拿文本，交由 getResponseBody 按 Content-Type 决定 json()/text() 解析
+        responseType: 'text',
+    }).catch((error) => {
+        //原生网络层失败（连接超时/拒绝、DNS 失败等）经 bridge 以 CapacitorException reject，
+        //message 为 Java 异常原文（如 "failed to connect to ... after 10000ms"）。
+        //必须转换为 TypeError：这是 fetch 垫片路径下网络失败的既有语义，登录门禁/重试
+        //等调用方以 instanceof TypeError 判定网络层失败（不转换会被当作业务错误，
+        //直接显示登录表单并透出 Java 原文）。原始信息仅记录控制台
+        console.error('原生请求失败', error);
+        throw new TypeError(`network request failed: ${options.method} ${url}`);
+    });
+    const bodyText = typeof nativeResponse.data === 'string'
+        ? nativeResponse.data
+        : nativeResponse.data === undefined || nativeResponse.data === null
+            ? ''
+            : JSON.stringify(nativeResponse.data);
+    const nullBodyStatus = nativeResponse.status === 204 || nativeResponse.status === 205 || nativeResponse.status === 304;
+    return new Response(nullBodyStatus ? null : bodyText, {
+        status: nativeResponse.status,
+        headers: new Headers(nativeResponse.headers as Record<string, string>),
+    });
+}
+
 export const sendRequest = async (
     config: OpenAPIConfig,
     options: ApiRequestOptions,
@@ -227,7 +284,33 @@ export const sendRequest = async (
 
     onCancel(() => controller.abort());
 
-    return await fetch(url, request);
+    //原生平台：JSON 等常规请求直调 CapacitorHttp（超时由原生层强制执行）
+    const effectiveBody: any = body ?? formData;
+    if (Capacitor.isNativePlatform() && !isFormData(effectiveBody) && !isBlob(effectiveBody)) {
+        return await nativeSend(options, url, body, headers);
+    }
+
+    //其余路径的超时用 Promise.race 而非仅靠 abort 信号：CapacitorHttp 的 fetch 垫片不感知
+    //AbortSignal，race 保证调用方在超时后必定拿到 TypeError（登录页据此走连接失败分支）
+    let abortHandle: ReturnType<typeof setTimeout> | undefined;
+    let timeoutHandle: ReturnType<typeof setTimeout> | undefined;
+    const timeoutPromise = new Promise<never>((_, reject) => {
+        timeoutHandle = setTimeout(
+            () => reject(new TypeError(`request timeout after ${REQUEST_TIMEOUT_MS}ms: ${options.method} ${url}`)),
+            REQUEST_TIMEOUT_MS
+        );
+    });
+    abortHandle = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+    try {
+        return await Promise.race([fetch(url, request), timeoutPromise]);
+    } finally {
+        if (abortHandle !== undefined) {
+            clearTimeout(abortHandle);
+        }
+        if (timeoutHandle !== undefined) {
+            clearTimeout(timeoutHandle);
+        }
+    }
 };
 
 const getResponseHeader = (response: Response, responseHeader?: string): string | undefined => {

@@ -73,11 +73,12 @@ const Login = (props: LoginProps) => {
                     })
 
             })
-            .catch((error: ApiError) => {
-                makeToast(error.message, 'error', 'bottom-right')
+            .catch((error: ApiError | TypeError) => {
+                //网络不可达/超时（request.ts 统一以 TypeError 报网络层失败）不透出英文原始信息
+                makeToast(error instanceof TypeError ? '连接服务器失败，请检查网络或服务器地址' : error.message, 'error', 'bottom-right')
                 setLoginButtonDisabled(false);
                 //1007：同一邮箱连续失败次数过多，后端锁定15分钟
-                if (error.body?.code === 1007) {
+                if (!(error instanceof TypeError) && error.body?.code === 1007) {
                     setLockCountdown(15 * 60);
                 }
             })
