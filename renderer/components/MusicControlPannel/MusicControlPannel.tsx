@@ -30,6 +30,7 @@ import { pushToast } from "@components/HeiMusicMainLayout"
 import { HeiMusicContext } from "../../lib/HeiMusicContext"
 import { Capacitor } from "@capacitor/core"
 import { mediaSession } from "../../lib/mediaSession"
+import { nativeMediaUrl } from "../../lib/apiServer"
 
 /**
  * 更换播放列表并播放
@@ -215,7 +216,7 @@ function MusicControlPannel(props: IMusicControlPannel) {
             if (audioRef.current.src === '') {
                 const nextMusic = musicList[0];
                 setCurrentMusicInfo({ ...nextMusic, currentIndex: 0, currentQuality: nextMusic.qualityOption[0] });
-                audioRef.current.src = nextMusic.qualityOption[0].url;
+                audioRef.current.src = nativeMediaUrl(nextMusic.qualityOption[0].url);
                 reportedMusicIdRef.current = 0;
                 document.title = `${nextMusic.title} - HeiMusic!`;
             }
@@ -279,7 +280,7 @@ function MusicControlPannel(props: IMusicControlPannel) {
             }
             var nextMusic: IMusicInfo = musicList[nextIndex];
             setCurrentMusicInfo({ ...nextMusic, currentIndex: nextIndex, currentQuality: nextMusic.qualityOption[0] });
-            audio.src = nextMusic.qualityOption[0].url;
+            audio.src = nativeMediaUrl(nextMusic.qualityOption[0].url);
             reportedMusicIdRef.current = 0;
             if (nextMusic.isLargeTrackMusic) {
                 audio.currentTime = nextMusic.discStartTime;
@@ -299,7 +300,7 @@ function MusicControlPannel(props: IMusicControlPannel) {
             }
             var nextMusic: IMusicInfo = musicList[nextIndex];
             setCurrentMusicInfo({ ...nextMusic, currentIndex: nextIndex, currentQuality: nextMusic.qualityOption[0] });
-            audio.src = nextMusic.qualityOption[0].url;
+            audio.src = nativeMediaUrl(nextMusic.qualityOption[0].url);
             reportedMusicIdRef.current = 0;
             if (nextMusic.isLargeTrackMusic) {
                 audio.currentTime = nextMusic.discStartTime;
@@ -429,7 +430,7 @@ function MusicControlPannel(props: IMusicControlPannel) {
                 document.title = `${newMusic.title} - HeiMusic!`;
                 if (audioRef.current !== null) {
                     var audio = audioRef.current;
-                    audio.src = newMusic.qualityOption[0].url;
+                    audio.src = nativeMediaUrl(newMusic.qualityOption[0].url);
                     reportedMusicIdRef.current = 0;
                     if (newMusic.isLargeTrackMusic) {
                         audio.currentTime = newMusic.discStartTime;
@@ -448,7 +449,7 @@ function MusicControlPannel(props: IMusicControlPannel) {
                     var audio = audioRef.current;
                     // 先换源再定大碟起点：src 赋值触发 load() 会清掉已设的 currentTime
                     //（顺序须与 changePlayList/handleNextClick 一致，反了会从碟镜像 0:00 播放）
-                    audio.src = newMusic.qualityOption[0].url;
+                    audio.src = nativeMediaUrl(newMusic.qualityOption[0].url);
                     reportedMusicIdRef.current = 0;
                     if (newMusic.isLargeTrackMusic) {
                         audio.currentTime = newMusic.discStartTime;

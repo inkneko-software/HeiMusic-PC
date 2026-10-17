@@ -69,9 +69,11 @@ public class MainActivity extends BridgeActivity {
     }
 
     /**
-     * 壳层代理：媒体元素（<img>/<audio>）不经过 CapacitorHttp，相对路径落在
-     * https://localhost 上，在这里转发到当前端点并附带会话 Cookie。
-     * fetch/XHR 已由 CapacitorHttp 在原生层直连后端，不会进入此拦截。
+     * 壳层代理：相对路径资源落在 https://localhost 上，在这里转发到当前端点并附带会话 Cookie。
+     * fetch/XHR 已由 CapacitorHttp 在原生层直连后端，不会进入此拦截；<audio> 媒体源由渲染层
+     * （lib/apiServer.ts 的 nativeMediaUrl）拼绝对地址直连后端——WebView 对拦截响应的
+     * Content-Length 置 0，媒体管线对 206 Range 校验失败（seek 报 net::ERR_FAILED），
+     * 故这里主要承载 <img> 等静态资源请求。
      */
     private class ProxyWebViewClient extends BridgeWebViewClient {
 

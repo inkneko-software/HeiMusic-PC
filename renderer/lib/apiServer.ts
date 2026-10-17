@@ -56,6 +56,23 @@ export function getNativeApiBase(): string {
     return Capacitor.isNativePlatform() ? (nativeApiBase ?? NATIVE_API_BASE) : '';
 }
 
+/**
+ * 原生平台媒体绝对地址：`<audio>` 直连后端，绕开壳层拦截代理。
+ * 拦截响应经 WebView 处理时 Content-Length 被置 0，媒体管线对 206 Range 响应
+ * 校验失败（seek 后 net::ERR_FAILED）——直连后由后端 nginx 正确处理 Range。
+ * 非原生平台原样返回（Electron 走 app:// 307 重定向、网页端走 nginx 反代）；
+ * 已是绝对地址（http/https/blob/data）时也原样返回
+ */
+export function nativeMediaUrl(url: string): string {
+    if (!Capacitor.isNativePlatform() || !url) {
+        return url;
+    }
+    if (/^[a-z][a-z0-9+.-]*:/i.test(url)) {
+        return url;
+    }
+    return getNativeApiBase() + url;
+}
+
 /** 保存端点并立即生效（更新缓存并返回规范化值；网页/Electron 调用为空操作） */
 export async function setNativeApiBase(apiServer: string): Promise<string> {
     if (!Capacitor.isNativePlatform()) {

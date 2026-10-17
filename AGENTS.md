@@ -120,6 +120,8 @@ npx cap copy android
 
 > **改动前缀表时必须四处同步**：`main/background.ts`、`renderer/next.config.js`、`MainActivity.java`、生产 nginx。
 
+- **Android 端 `<audio>` 媒体源直连后端（例外于上表）**：渲染层 `nativeMediaUrl`（`renderer/lib/apiServer.ts`）在原生平台把相对媒体地址拼为 `getNativeApiBase() + 路径` 的绝对地址。原因：`shouldInterceptRequest` 拦截响应的 `Content-Length` 被 WebView 置 0，媒体管线对 206 Range 响应校验失败，seek 后 `net::ERR_FAILED`；直连后由后端 nginx 正确处理 Range（2026-10-17 实测，媒体接口无需会话 Cookie；若后端后续收紧鉴权需另行方案）。图片等其余相对资源仍走壳层代理。
+
 请求基址解析（codegen 请求）见 `renderer/api/request.ts` 的 `request()`：网页端把 `config.BASE` 置空走同源，Electron 走 `heiMusicConfig.apiHost` 直连（依赖后端 CORS 白名单），Capacitor 原生走 `ensureNativeApiBase()`（持久化端点，未设置回落构建期默认值）。
 手写请求入口 `renderer/api/baseFetch.tsx` 按 Capacitor / Electron / 网页三态分支。
 
