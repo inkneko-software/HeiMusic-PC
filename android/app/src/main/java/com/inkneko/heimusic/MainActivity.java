@@ -18,9 +18,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.TreeMap;
 
 public class MainActivity extends BridgeActivity {
 
@@ -140,17 +141,32 @@ public class MainActivity extends BridgeActivity {
 
             int status = conn.getResponseCode();
             Log.d(TAG, "代理响应: " + status + " " + target);
-            Map<String, String> respHeaders = new HashMap<>();
+            // 大小写不敏感去重：同名头部若以不同大小写出现，HashMap 会作为两个键转发，
+            // 需合并为一条，避免下游收到重复头部
+            Map<String, String> respHeaders = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
             for (Map.Entry<String, List<String>> entry : conn.getHeaderFields().entrySet()) {
                 String name = entry.getKey();
                 if (name == null || entry.getValue().isEmpty()) {
                     continue; // 状态行
                 }
-                if (name.equalsIgnoreCase("Content-Encoding")
-                        || name.equalsIgnoreCase("Transfer-Encoding")) {
+                String lowerName = name.toLowerCase(Locale.ROOT);
+                // Set-Cookie 值属敏感信息，诊断日志只记录头部名
+                Log.d(TAG, "后端响应头: " + lowerName + "="
+                        + (lowerName.equals("set-cookie") ? "(redacted)" : entry.getValue()));
+                // 以下头部不转发：
+                // - Content-Type 经 WebResourceResponse 的 mimeType 参数传入，再转发会出现两个
+                //   Content-Type（实测 Chromium 显示 "audio/flac, audio/flac"）
+                // - Content-Length 与实际流长度易冲突（实测媒体 206 响应出现 "0, 全量长度"
+                //   两个冲突值，Chromium 判为协议错误，seek 后的 Range 请求直接 net::ERR_FAILED）；
+                //   范围长度与总大小由 Content-Range 表达，足够媒体管线使用
+                // - Content-Encoding/Transfer-Encoding 已被 HttpURLConnection 解码
+                // - Connection 为逐跳头部，不应跨代理转发
+                if (lowerName.equals("content-type") || lowerName.equals("content-length")
+                        || lowerName.equals("content-encoding") || lowerName.equals("transfer-encoding")
+                        || lowerName.equals("connection")) {
                     continue;
                 }
-                respHeaders.put(name, entry.getValue().get(0));
+                respHeaders.putIfAbsent(name, entry.getValue().get(0));
             }
 
             InputStream stream = status >= 400 ? conn.getErrorStream() : conn.getInputStream();
@@ -179,8 +195,10 @@ public class MainActivity extends BridgeActivity {
             if (reasonPhrase == null || reasonPhrase.isEmpty()) {
                 reasonPhrase = status >= 400 ? "Error" : "OK";
             }
+            // 第二参数是字符编码（charset），不是 Content-Encoding；媒体流无需字符集，
+            // 之前误传 getContentEncoding() 语义上不正确，统一传 null
             return new WebResourceResponse(mime == null ? "application/octet-stream" : mime,
-                    conn.getContentEncoding(), status, reasonPhrase,
+                    null, status, reasonPhrase,
                     respHeaders, guardedStream);
         } catch (Exception e) {
             Log.e(TAG, "代理失败: " + target, e);
