@@ -34,7 +34,7 @@ renderer/                     渲染层（Next.js）
     lyric/fetchlog.tsx        歌词拉取记录页（URL 驱动分页与筛选）
     artist/[id].tsx  series/index.tsx  songlist/[id].tsx
     search/index.tsx  favoriate.tsx  daily30.tsx  userDetail.tsx
-    settings/player/{home,layout}.tsx
+    settings/player/{home,layout}.tsx  settings/theme/{index,layout}.tsx
     _app.tsx                  全局 Provider + 登录门禁 + 布局分发
   components/
     HeiMusicMainLayout.tsx    主布局；导出 pushToast
@@ -138,6 +138,7 @@ npm run build                # nextron build，完整发布流程（同时重建
 - 类型定义：`main/types/config.d.ts` 的 `HeiMusicConfig`。
 - Electron 会话 Cookie（`userId`、`sessionId`）由主进程 `webRequest` 钩子自动注入与捕获（`main/background.ts`），渲染层无需手动处理。
 - 网页端开发态的 `/api`、`/public` 转发端点与 Android 端 API 端点的**构建期默认值**均来自仓库根目录 `api-server.json`（**不入库，本地需按 `api-server.json.example` 创建**）：`renderer/next.config.js` 读它做两件事——dev rewrites 转发、构建期经 `env` 把 `NATIVE_API_BASE` 内联进渲染层；`android/app/build.gradle` 读它注入 `BuildConfig.API_SERVER`。渲染层（`renderer/lib/apiServer.ts`）只读 `process.env.NATIVE_API_BASE` 作默认值，**不直接 import 该文件**，因此网页镜像（Docker）构建不依赖它；文件缺失时回落 `http://localhost:8081`。
+- 主题：预设全部定义在 `renderer/lib/theme.ts` 的 `preset`（`name` 与 key 一致，`label` 为中文显示名，对象顺序即设置页展示顺序），设置页 `/settings/theme` 点选即时生效，入口为右上角主题图标（≤600px 隐藏）与设置菜单「主题设置」。持久化按端区分：Electron 存配置项 `theme`（`config::set`/`config::save`），网页/安卓存 `localStorage['heimusic.theme']`，均由 `HeiMusicThemeProvider` 挂载时读取、非法值回落浅色。**带背景图的预设其 `pannelBackground` 必须为 rgba 半透明色**——不透明面板会铺满整窗、背景图不可见。
 - **Android 端点运行时可配置**（入口：登录页连接失败分支、设置页）：经本地插件 `ApiServerPlugin`（`android/.../ApiServerPlugin.java`，与 `ExitPromptPlugin` 同为本地插件，无需 cap sync，须在 `super.onCreate` 前 `registerPlugin`）持久化到 SharedPreferences；渲染层入口为 `renderer/lib/apiServer.ts` 的 `ensureNativeApiBase` / `setNativeApiBase`，未设置时回落构建期默认值；`MainActivity` 的媒体壳层代理每次拦截经 `currentApiServer()` 重读存储，保存后即时生效、无需重启。
 
 ### 4.3 IPC 与跨组件通信

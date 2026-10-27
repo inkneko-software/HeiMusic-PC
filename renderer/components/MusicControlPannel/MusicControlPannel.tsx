@@ -676,7 +676,7 @@ function MusicControlPannel(props: IMusicControlPannel) {
                 </Box>
                 {/* 控制面板的移动端适配 */}
                 <Box sx={{ margin: "auto 12px auto auto", textAlign: "center", '@media(min-width:600px)': { display: 'none' } }}>
-                  .  <IconButton color="primary" onClick={() => { handlePlayButtonClick() }} >{playBtnIcon}</IconButton>
+                    <IconButton color="primary" onClick={() => { handlePlayButtonClick() }} >{playBtnIcon}</IconButton>
                     <IconButton sx={{ margin: "auto 8px auto 0px" }} onClick={() => setPlaylistOpen(true)}><QueueMusic /></IconButton>
                 </Box>
                 {/* 时间、音质、收藏、播放列表 */}

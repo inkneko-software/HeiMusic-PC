@@ -298,7 +298,7 @@ function HeiMusicMainLayout({ children }) {
                     </Box>
                 }
                 {
-                    <Box sx={{ display: 'flex', '@media(min-width:600px)': { display: 'none' } }} >
+                    <Box sx={{ display: 'flex', background: theme.palette.pannelBackground.main, '@media(min-width:600px)': { display: 'none' } }} >
                         <Box sx={{ margin: 'auto auto auto 12px', display: 'flex' }}>
                             <Avatar src='/images/logo.jpg' onClick={() => setLeftPannelDrawerOpen(true)}></Avatar>
                         </Box>
@@ -321,14 +321,8 @@ function HeiMusicMainLayout({ children }) {
                         }
                     </Box>
                     <Box sx={{ margin: 'auto 5px auto 0', WebkitAppRegion: 'no-drag' }}>
-                        {/* 更换皮肤按钮 */}
-                        <HeiMusicThemeContext.Consumer>
-                            {
-                                context => {
-                                    return <IconButton sx={{ color: theme.palette.text.primary, '@media(max-width:600px)': { display: 'none' } }} onClick={() => { context.setMode(context.mode === 'light' ? 'dark' : 'light') }}><Skin fontSize='small' /></IconButton>
-                                }
-                            }
-                        </HeiMusicThemeContext.Consumer>
+                        {/* 主题设置入口：进入主题设置页（移动端隐藏，经设置菜单进入） */}
+                        <IconButton title='主题设置' sx={{ color: theme.palette.text.primary, '@media(max-width:600px)': { display: 'none' } }} onClick={() => { router.push('/settings/theme') }}><Skin fontSize='small' /></IconButton>
                         {/* 设置按钮 */}
                         <IconButton title='设置' ref={settingButtonRef} onClick={() => { setSettingMenuOpen(!settingMenuOpen) }} sx={{ color: theme.palette.text.primary }}><MenuIcon fontSize='small' /></IconButton>
                         <Popover
@@ -358,6 +352,16 @@ function HeiMusicMainLayout({ children }) {
                                         onClick={() => setSettingMenuOpen(false)}
                                     >
                                         播放器设置
+                                    </Button>
+                                </Link>
+                                <Link href="/settings/theme">
+                                    <Button
+                                        sx={{ justifyContent: 'flex-start', padding: "6px 16px" }}
+                                        color='inherit'
+                                        startIcon={<Skin />}
+                                        onClick={() => setSettingMenuOpen(false)}
+                                    >
+                                        主题设置
                                     </Button>
                                 </Link>
                                 <Button
