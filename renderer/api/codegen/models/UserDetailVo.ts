@@ -10,6 +10,7 @@ export type UserDetailVo = {
     birth?: string;
     gender?: string;
     sign?: string;
+    role?: string;
     createdAt?: string;
     updatedAt?: string;
 };

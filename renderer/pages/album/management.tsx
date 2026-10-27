@@ -26,10 +26,16 @@ import CloudDownloadOutlinedIcon from '@mui/icons-material/CloudDownloadOutlined
 import AutorenewOutlinedIcon from '@mui/icons-material/AutorenewOutlined';
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
 import MoreHorizIcon from '@mui/icons-material/MoreHoriz';
+import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import { IChangePlayListEvent, IMusicInfo } from "@components/MusicControlPannel/MusicControlPannel";
+import { HeiMusicUserContext } from "@components/HeiMusicMainLayout";
+
 function AlbumManagement() {
     const router = useRouter();
     const theme = useTheme()
+    //专辑管理为管理类功能：仅 root 角色可见与访问（表结构预留 admin，后端放开时在此扩展）
+    const { userDetail } = React.useContext(HeiMusicUserContext);
+    const isRoot = userDetail?.role === 'root';
     const [total, setTotal] = React.useState(0);
     const [page, setPage] = React.useState(1);
     const [rowsPerPage, setRowsPerPage] = React.useState(25);
@@ -44,6 +50,11 @@ function AlbumManagement() {
     //删除专辑确认对话框
     const [deleteAlbumConfirmDialogOpen, setDeleteAlbumConfirmDialogOpen] = React.useState(false);
     React.useEffect(() => {
+        //非权限角色不发任何管理请求（nav 未返回时同样不拉取，避免无权限用户闪现空表）
+        if (!isRoot) {
+            return;
+        }
+
         const { p, s } = router.query;
         var page: number;
         var size: number;
@@ -70,7 +81,7 @@ function AlbumManagement() {
                 pushToast(error.message)
             })
 
-    }, [router.query])
+    }, [router.query, isRoot])
 
     const handleChangePage = (event: unknown, newPage: number) => {
         //分页组件的起始页为0，但后端的起始页为1，手动修正
@@ -146,27 +157,66 @@ function AlbumManagement() {
 
     }
 
+    /** 打开专辑右键菜单（桌面右键 / 更多按钮、移动端长按与更多按钮共用） */
+    const openAlbumMenu = (e: React.MouseEvent, album: AlbumVo) => {
+        setAlbumMenuOpen(true);
+        setAlbumMenuPos({ left: e.clientX, top: e.clientY });
+        setAlbumMenuInfo({ title: album.title, albumId: album.albumId });
+    }
+
+    //nav 未返回前不渲染，避免非权限用户闪现空表
+    if (userDetail === null) {
+        return null;
+    }
+
+    //非权限用户直达 URL 时给出提示并阻断页面
+    if (!isRoot) {
+        return (
+            <Box sx={{ height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "8px", color: "text.secondary", userSelect: "none" }}>
+                <LockOutlinedIcon sx={{ fontSize: '44px', opacity: 0.35 }} />
+                <Typography variant='subtitle1'>无权访问专辑管理</Typography>
+                <Typography variant='caption'>该页面仅对管理账户开放</Typography>
+                <Button variant='outlined' size='small' sx={{ marginTop: '12px', textTransform: 'none' }} onClick={() => { router.push('/home') }}>返回首页</Button>
+            </Box>
+        );
+    }
+
     return (
         <Box sx={{ display: "flex", flexDirection: "column", height: "100%" }}  >
             <Box sx={{ position: "sticky", top: '0' }}>
-                <Stack direction="row" sx={{ flex: "0 0 auto" }}>
-                    <Typography variant='h5' sx={{ margin: "auto 0px auto 12px" }}>专辑管理</Typography>
+                {/* 移动端换行排布：标题独占一行、按钮保留文字铺开一行、分页独占一行（与专辑页移动端按钮排布一致） */}
+                <Stack direction="row" sx={{ flex: "0 0 auto", '@media(max-width:600px)': { flexWrap: 'wrap' } }}>
+                    <Typography variant='h5' sx={{ margin: "auto 0px auto 12px", '@media(max-width:600px)': { width: '100%' } }}>专辑管理</Typography>
                     {/* 歌词拉取任务页入口 */}
                     <Link href="/lyric/fetchlog" passHref>
-                        <Button sx={{ margin: "auto 0px auto 12px" }} color="info" startIcon={<CloudDownloadOutlinedIcon />}>歌词拉取</Button>
+                        <Button sx={{ margin: "auto 0px auto 12px", '@media(max-width:600px)': { margin: '0px auto 0px 12px' } }} color="info" startIcon={<CloudDownloadOutlinedIcon />}>歌词拉取</Button>
                     </Link>
                     {/* 曲库扫描入口：日志接口未就绪，先禁用占位 */}
                     <Tooltip title="后端扫描日志接口未就绪，敬请期待">
                         <span style={{ display: "inline-flex" }}>
-                            <Button sx={{ margin: "auto 0px auto 6px" }} disabled startIcon={<AutorenewOutlinedIcon />}>曲库扫描</Button>
+                            <Button sx={{ margin: "auto 0px auto 6px", '@media(max-width:600px)': { margin: '0px auto 0px 0px' } }} disabled startIcon={<AutorenewOutlinedIcon />}>曲库扫描</Button>
                         </span>
                     </Tooltip>
                     <Link href="/album/upload" passHref>
-                        <Button sx={{ margin: "auto 6px auto auto", display: "flex" }} color="info" startIcon={<AddBoxRoundedIcon />}>创建</Button>
+                        <Button sx={{ margin: "auto 6px auto auto", display: "flex", '@media(max-width:600px)': { margin: '0px 12px 0px 0px' } }} color="info" startIcon={<AddBoxRoundedIcon />}>创建</Button>
                     </Link>
 
                     <TablePagination
-                        sx={{ margin: "auto 0px auto 0px" }}
+                        sx={{
+                            margin: "auto 0px auto 0px",
+                            '@media(max-width:600px)': {
+                                //根元素默认 overflow:auto，窄屏下内容溢出会产生横向滚动条
+                                width: 'calc(100% - 12px)',
+                                margin: '0px 0px 4px 12px',
+                                overflow: 'hidden',
+                                //去掉 MUI 自带的 flex:1 1 100% 占位块（它会让文字在左侧大量留白时仍被按比例压缩省略），
+                                //改为文字贴左、箭头贴右的两端布局；文字仅极端窄屏才收缩省略
+                                '.MuiTablePagination-toolbar': { paddingLeft: '0px', minHeight: '40px', justifyContent: 'space-between' },
+                                '.MuiTablePagination-spacer': { display: 'none' },
+                                '.MuiTablePagination-displayedRows': { flexShrink: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
+                                '.MuiTablePagination-actions': { marginLeft: '0px' },
+                            }
+                        }}
                         rowsPerPageOptions={[10, 25, 100]}
                         component="div"
                         count={total}
@@ -241,16 +291,16 @@ function AlbumManagement() {
                     </Button>
                 </Paper>
             </Popover>
-            {/* 表头 */}
-            <TableRow sx={{ display: "table" }}>
+            {/* 表头（桌面端；移动端隐藏，由移动端列表自行呈现） */}
+            <TableRow sx={{ display: "table", '@media(max-width:600px)': { display: 'none' } }}>
                 <TableCell width="15%" >专辑封面</TableCell>
                 <TableCell width="35%" >专辑标题</TableCell>
                 <TableCell width="30%">艺术家</TableCell>
                 <TableCell width="10%" >曲数</TableCell>
                 <TableCell width="10%" >操作</TableCell>
             </TableRow>
-            {/* 表格 */}
-            <TableContainer sx={{ overflowY: "auto", overflowX: "hidden", width: "auto" }} ref={tableRef}>
+            {/* 表格（桌面端） */}
+            <TableContainer sx={{ overflowY: "auto", overflowX: "hidden", width: "auto", '@media(max-width:600px)': { display: 'none' } }} ref={tableRef}>
                 <Table sx={{ tableLayout: 'fixed', margin: "0px 6px", ".MuiTableCell-root": { padding: "10px 16px" } }} >
                     <TableBody >
                         {
@@ -260,9 +310,7 @@ function AlbumManagement() {
                                     sx={[{ ':hover': { background: theme.palette.pannelBackground.main } }, albumMenuOpen && albumMenuInfo.albumId === album.albumId && { background: theme.palette.pannelBackground.main }]}
                                     onContextMenu={e => {
                                         e.preventDefault();
-                                        setAlbumMenuOpen(true);
-                                        setAlbumMenuPos({ left: e.clientX, top: e.clientY });
-                                        setAlbumMenuInfo({ title: album.title, albumId: album.albumId });
+                                        openAlbumMenu(e, album);
                                     }}
                                 >
                                     <TableCell sx={{ width: "15%", borderBottom: "unset" }} align="center">
@@ -287,11 +335,7 @@ function AlbumManagement() {
                                         <IconButton
                                             size='small'
                                             sx={{ padding: '0 0' }}
-                                            onClick={e => {
-                                                setAlbumMenuOpen(true);
-                                                setAlbumMenuPos({ left: e.clientX, top: e.clientY });
-                                                setAlbumMenuInfo({ title: album.title, albumId: album.albumId });
-                                            }}
+                                            onClick={e => openAlbumMenu(e, album)}
                                         >
                                             <MoreHorizIcon />
                                         </IconButton>
@@ -303,6 +347,42 @@ function AlbumManagement() {
                         }
                     </TableBody>
 
+                </Table>
+            </TableContainer>
+            {/* 专辑列表（移动端）：封面 + 标题/艺术家两行 + 更多按钮，长按或点更多弹出菜单 */}
+            <TableContainer sx={{ overflowY: "auto", overflowX: "hidden", width: "auto", '@media(min-width:600px)': { display: 'none' } }}>
+                <Table sx={{ tableLayout: 'fixed', margin: "0px 6px", ".MuiTableCell-root": { padding: "10px 10px" } }} >
+                    <TableBody >
+                        {
+                            albumList.map((album) => (
+                                <TableRow
+                                    key={album.albumId}
+                                    sx={[{ ':hover': { background: theme.palette.pannelBackground.main } }, albumMenuOpen && albumMenuInfo.albumId === album.albumId && { background: theme.palette.pannelBackground.main }]}
+                                    onContextMenu={e => {
+                                        e.preventDefault();
+                                        openAlbumMenu(e, album);
+                                    }}
+                                >
+                                    <TableCell sx={{ width: "72px", borderBottom: "unset" }}>
+                                        <ImageSkeleton sx={{
+                                            width: '52px', height: '52px', borderRadius: '6%', flex: "0 0 auto", imageRendering: "auto", objectFit: "contain"
+                                        }} src={album.frontCoverUrl !== null ? album.frontCoverUrl + "?s=@w96h96" : null} />
+                                    </TableCell>
+                                    <TableCell sx={{ borderBottom: "unset" }}>
+                                        <Link href={`/album/${album.albumId}`}>
+                                            <Typography variant="body2" noWrap sx={{ ":hover": { cursor: "pointer", color: theme.palette.primary.main } }} title={album.title} >{album.title}</Typography>
+                                        </Link>
+                                        <Typography variant="caption" noWrap component="p" sx={{ display: 'block', color: 'text.secondary', margin: 0 }}>{album.artistList.map((v, i) => v.name).join('/')}{` · ${album.musicNum} 首`}</Typography>
+                                    </TableCell>
+                                    <TableCell sx={{ width: "44px", borderBottom: "unset" }} align="center">
+                                        <IconButton size='small' sx={{ padding: '0 0' }} onClick={e => openAlbumMenu(e, album)}>
+                                            <MoreHorizIcon />
+                                        </IconButton>
+                                    </TableCell>
+                                </TableRow>
+                            ))
+                        }
+                    </TableBody>
                 </Table>
             </TableContainer>
         </Box >

@@ -69,6 +69,19 @@ export interface IHeimusicToastEvent {
     position?: "top-left" | "top-right" | "top-center" | "bottom-left" | "bottom-right" | "bottom-center" | "center",
 }
 
+/** 当前登录用户摘要（来自 nav 接口），role 取值 "user" | "root"（表结构另预留 admin） */
+export interface HeiMusicUserDetail {
+    username: string;
+    avatarUrl: string;
+    role: string;
+}
+
+/**
+ * 用户信息 Context：由主布局拉取 nav 后提供，子页面/子组件消费。
+ * 目前用于按 role 控制管理类入口（专辑管理等）的显隐；userDetail 为 null 表示尚未取回
+ */
+export const HeiMusicUserContext = React.createContext<{ userDetail: HeiMusicUserDetail | null }>({ userDetail: null });
+
 /** 侧边栏宽度：默认值 / 拖拽限幅 / localStorage 持久化键（按设备记忆） */
 const LEFT_PANNEL_DEFAULT_WIDTH = 196;
 const LEFT_PANNEL_MIN_WIDTH = 160;
@@ -100,7 +113,7 @@ function HeiMusicMainLayout({ children }) {
     const [settingMenuOpen, setSettingMenuOpen] = React.useState(false)
     const [prompt, setPrompt] = React.useState("");
     //当前登录用户的信息
-    const [userDetail, setUserDetail] = React.useState(null)
+    const [userDetail, setUserDetail] = React.useState<HeiMusicUserDetail | null>(null)
 
     // const matcheMobile = useMediaQuery(theme.breakpoints.down('sm'));
     const [leftPannelDrawerOpen, setLeftPannelDrawerOpen] = React.useState(false)
@@ -142,7 +155,11 @@ function HeiMusicMainLayout({ children }) {
     const refreshUserDetail = React.useCallback(() => {
         UserControllerService.nav()
             .then(res => {
-                setUserDetail({ avatarUrl: res.data.avatarUrl, username: res.data.username === null ? `用户[${res.data.userId}]` : res.data.username })
+                setUserDetail({
+                    avatarUrl: res.data.avatarUrl,
+                    username: res.data.username === null ? `用户[${res.data.userId}]` : res.data.username,
+                    role: res.data.role ?? 'user'
+                })
             })
             .catch((error: ApiError) => {
                 console.log(error)
@@ -264,6 +281,7 @@ function HeiMusicMainLayout({ children }) {
     }
 
     return (
+        <HeiMusicUserContext.Provider value={{ userDetail: userDetail }}>
         <Box sx={{ width: 'calc(100vw)', height: 'calc(100%)', display: 'flex', flexDirection: 'column', maxHeight: '100%', overflow: 'hidden', background: `url(${heimusicThemeContext.backgroundUrl})`, backgroundRepeat: 'no-repeat', backgroundSize: 'cover' }}>
             {Toast}
             <LoginDialog open={loginDialogOpen} onClose={() => { setLoginDialogOpen(false) }} />
@@ -414,6 +432,7 @@ function HeiMusicMainLayout({ children }) {
             </Box>
 
         </Box>
+        </HeiMusicUserContext.Provider>
     )
 }
 

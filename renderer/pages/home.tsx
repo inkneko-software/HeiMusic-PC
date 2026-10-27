@@ -17,10 +17,11 @@ import QueueMusicRoundedIcon from "@mui/icons-material/QueueMusicRounded"
 import AutoAwesomeRoundedIcon from "@mui/icons-material/AutoAwesomeRounded"
 import LibraryMusicOutlinedIcon from "@mui/icons-material/LibraryMusicOutlined"
 import { IChangePlayListEvent } from '@components/MusicControlPannel/MusicControlPannel';
+import { HeiMusicUserContext } from '@components/HeiMusicMainLayout';
 import { useRouter } from 'next/router';
 import FavoriteBorderOutlinedIcon from '@mui/icons-material/FavoriteBorderOutlined';
 import FavoriteOutlinedIcon from '@mui/icons-material/FavoriteOutlined';
-import { ReactNode, useRef, useState, useEffect } from 'react';
+import { ReactNode, useContext, useRef, useState, useEffect } from 'react';
 
 /** 封面为空时的兜底图 */
 const DEFAULT_COVER = '/images/lxh_sign_400x400.png';
@@ -414,6 +415,9 @@ function AlbumCard(props: IAlbumCard) {
 
 function Home() {
     const router = useRouter();
+    //专辑管理为管理类功能，非 root 角色不展示指向该页的入口
+    const { userDetail } = useContext(HeiMusicUserContext);
+    const isRoot = userDetail?.role === 'root';
 
     const [firstLaunch, setFirstLaunch] = useState(false);
     const [recentUploadAlbum, setRecentUploadAlbum] = useState<AlbumVo[]>([]);
@@ -632,7 +636,7 @@ function Home() {
                         <br />
                         将本地音乐放入媒体库后扫描即可开始使用
                     </Typography>
-                    <Button variant='contained' disableElevation onClick={() => { router.push('/album/management') }}>导入音乐</Button>
+                    {isRoot && <Button variant='contained' disableElevation onClick={() => { router.push('/album/management') }}>导入音乐</Button>}
                 </Box>
             </Box>
             <Box sx={[{ display: 'flex', flexDirection: 'column', width: '100%' }, firstLaunch && { display: 'none' }]}>
@@ -681,7 +685,9 @@ function Home() {
                     title='最新上传'
                     caption='最近入库的专辑'
                     action={
-                        <Button size='small' onClick={() => { router.push('/album/management') }} sx={{ textTransform: 'none' }}>全部专辑</Button>
+                        isRoot
+                            ? <Button size='small' onClick={() => { router.push('/album/management') }} sx={{ textTransform: 'none' }}>全部专辑</Button>
+                            : undefined
                     }
                 />
                 {/* 测量锚点：宽高联动可见数量的参考盒（骨架、空状态、网格都在其内） */}
@@ -699,7 +705,7 @@ function Home() {
                             <LibraryMusicOutlinedIcon sx={{ fontSize: '44px', opacity: 0.35 }} />
                             <Typography variant='subtitle2' sx={{ marginTop: '12px' }}>暂无音乐</Typography>
                             <Typography variant='caption'>扫描本地媒体库后，专辑会出现在这里</Typography>
-                            <Button size='small' sx={{ marginTop: '12px', textTransform: 'none' }} onClick={() => { router.push('/album/management') }}>前往专辑管理</Button>
+                            {isRoot && <Button size='small' sx={{ marginTop: '12px', textTransform: 'none' }} onClick={() => { router.push('/album/management') }}>前往专辑管理</Button>}
                         </Box>
                     }
                     {/* 专辑网格 */}

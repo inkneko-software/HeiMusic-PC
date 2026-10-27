@@ -153,7 +153,7 @@ npm run build                # nextron build，完整发布流程（同时重建
 ### 4.4 登录门禁与布局
 
 `renderer/pages/_app.tsx` 统一控制：未登录时渲染 `Login` 覆盖全屏；登录后若页面定义了 `getLayout` 则用页面自定义布局（如 `settings/player/layout.tsx`），否则套 `HeiMusicMainLayout`。
-登录态由 `UserControllerService.nav()` 探测。
+登录态由 `UserControllerService.nav()` 探测。nav 返回的 `role`（`user` / `root`，表结构预留 admin）经 `HeiMusicMainLayout` 导出的 `HeiMusicUserContext` 下发：管理类入口（侧边栏「专辑管理」、首页跳转按钮）与专辑管理页本身按 `role === 'root'` 显隐/拦截，新增管理类页面沿用同一判定（放行 admin 时同步扩展各处判断）。
 
 ### 4.5 API 调用
 

@@ -189,27 +189,29 @@ function LyricFetchLogPage() {
     return (
         <Box sx={{ display: "flex", flexDirection: "column", height: "100%" }} >
             <Box sx={{ position: "sticky", top: '0' }}>
-                <Stack direction="row" sx={{ flex: "0 0 auto" }}>
+                {/* 移动端换行排布：标题+按钮一行、覆盖率独占一行 */}
+                <Stack direction="row" sx={{ flex: "0 0 auto", '@media(max-width:600px)': { flexWrap: 'wrap' } }}>
                     <Typography variant='h5' sx={{ margin: "auto 0px auto 12px" }}>歌词拉取</Typography>
-                    <Button sx={{ margin: "auto 6px auto 12px" }} color="info" startIcon={<AutorenewOutlinedIcon />}
+                    <Button sx={{ margin: "auto 6px auto 12px", '@media(max-width:600px)': { margin: '0px 6px 0px 12px' } }} color="info" startIcon={<AutorenewOutlinedIcon />}
                         onClick={() => setScanDialogOpen(true)}>扫描缺失歌词</Button>
                     {/* 歌词覆盖率进度指示，与"扫描缺失歌词"入口配合观察拉取进度 */}
                     {coverage !== null &&
-                        <Stack direction="row" sx={{ margin: "auto 12px auto auto", alignItems: "center", flex: "0 1 260px", minWidth: "140px" }}
+                        <Stack direction="row" sx={{ margin: "auto 12px auto auto", alignItems: "center", flex: "0 1 260px", minWidth: "140px", '@media(max-width:600px)': { flex: '1 1 100%', margin: '4px 12px' } }}
                             title={`歌词覆盖 ${lyricMusicCount} / ${totalMusicCount}（${coveragePercent}%）`}>
                             <LinearProgress variant="determinate" value={coveragePercent} sx={{ flex: 1, height: 6, borderRadius: 3 }} />
-                            <Typography variant="body2" sx={{ marginLeft: "8px", whiteSpace: "nowrap" }}>
+                            <Typography variant="body2" sx={{ marginLeft: "8px", whiteSpace: "nowrap", flexShrink: 0 }}>
                                 歌词覆盖 {lyricMusicCount} / {totalMusicCount}
                             </Typography>
                         </Stack>
                     }
                 </Stack>
-                {/* 筛选栏；分页组件也放本行（自动刷新开关左侧），避免窄窗口下挤压标题行 */}
-                <Stack direction="row" sx={{ padding: "4px 12px 8px", flex: "0 0 auto" }}>
+                {/* 筛选栏；分页组件也放本行（自动刷新开关左侧），避免窄窗口下挤压标题行。
+                    移动端换行并用 order 重排：筛选+开关一行、分页独占一行 */}
+                <Stack direction="row" sx={{ padding: "4px 12px 8px", flex: "0 0 auto", '@media(max-width:600px)': { flexWrap: 'wrap' } }}>
                     <TextField
                         size="small"
                         label="音乐ID"
-                        sx={{ width: "120px" }}
+                        sx={{ width: "120px", '@media(max-width:600px)': { width: 'auto', flexGrow: 1 } }}
                         value={musicIdInput}
                         onChange={e => setMusicIdInput(e.target.value)}
                         onKeyDown={e => { if (e.key === 'Enter') applyMusicIdFilter() }}
@@ -219,7 +221,7 @@ function LyricFetchLogPage() {
                         size="small"
                         select
                         label="拉取结果"
-                        sx={{ width: "120px", marginLeft: "8px" }}
+                        sx={{ width: "120px", marginLeft: "8px", '@media(max-width:600px)': { width: 'auto', flexGrow: 1 } }}
                         value={outcomeFilter}
                         onChange={handleOutcomeFilterChange}
                     >
@@ -229,7 +231,22 @@ function LyricFetchLogPage() {
                         ))}
                     </TextField>
                     <TablePagination
-                        sx={{ margin: "auto 0px auto auto" }}
+                        sx={{
+                            margin: "auto 0px auto auto",
+                            '@media(max-width:600px)': {
+                                order: 3,
+                                width: '100%',
+                                margin: '0px 0px 4px 0px',
+                                //根元素默认 overflow:auto，窄屏下 label 与箭头按钮不收缩会溢出产生横向滚动条
+                                overflow: 'hidden',
+                                //去掉 MUI 自带的 flex:1 1 100% 占位块（它会让文字在左侧大量留白时仍被按比例压缩省略），
+                                //改为文字贴左、箭头贴右的两端布局；文字仅极端窄屏才收缩省略
+                                '.MuiTablePagination-toolbar': { paddingLeft: '0px', minHeight: '40px', justifyContent: 'space-between' },
+                                '.MuiTablePagination-spacer': { display: 'none' },
+                                '.MuiTablePagination-displayedRows': { flexShrink: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
+                                '.MuiTablePagination-actions': { marginLeft: '0px' },
+                            }
+                        }}
                         rowsPerPageOptions={[10, 20, 25, 100]}
                         component="div"
                         count={total}
@@ -241,22 +258,22 @@ function LyricFetchLogPage() {
                         labelDisplayedRows={({ from, to, count }) => `第${page}页 ${from}-${to} 共 ${count !== -1 ? count : `超过 ${to}`} 条`}
                     />
                     <FormControlLabel
-                        sx={{ marginRight: 0 }}
+                        sx={{ marginRight: 0, '@media(max-width:600px)': { order: 2, marginLeft: 'auto' } }}
                         control={<Switch size="small" checked={autoRefresh} onChange={handleAutoRefreshChange} />}
                         label="自动刷新"
                     />
                 </Stack>
             </Box>
-            {/* 表头 */}
-            <TableRow sx={{ display: "table" }}>
+            {/* 表头（桌面端；移动端隐藏） */}
+            <TableRow sx={{ display: "table", '@media(max-width:600px)': { display: 'none' } }}>
                 <TableCell width="18%">时间</TableCell>
                 <TableCell width="10%">音乐ID</TableCell>
                 <TableCell width="10%">来源</TableCell>
                 <TableCell width="14%">结果</TableCell>
                 <TableCell width="48%">详情</TableCell>
             </TableRow>
-            {/* 表格 */}
-            <TableContainer sx={{ overflowY: "auto", overflowX: "hidden", width: "auto" }}>
+            {/* 表格（桌面端） */}
+            <TableContainer sx={{ overflowY: "auto", overflowX: "hidden", width: "auto", '@media(max-width:600px)': { display: 'none' } }}>
                 <Table sx={{ tableLayout: 'fixed', margin: "0px 6px", ".MuiTableCell-root": { padding: "10px 16px" } }} >
                     <TableBody >
                         {
@@ -289,6 +306,41 @@ function LyricFetchLogPage() {
                                         </TableCell>
                                         <TableCell sx={{ width: "48%", borderBottom: "unset" }}>
                                             <Typography variant="body2" noWrap title={log.detail ?? undefined}>{log.detail ?? "—"}</Typography>
+                                        </TableCell>
+                                    </TableRow>
+                                )
+                            })
+                        }
+                    </TableBody>
+                </Table>
+            </TableContainer>
+            {/* 日志列表（移动端）：单列两行——时间+结果 Chip、来源/音乐ID/详情合并为次行 */}
+            <TableContainer sx={{ overflowY: "auto", overflowX: "hidden", width: "auto", '@media(min-width:600px)': { display: 'none' } }}>
+                <Table sx={{ tableLayout: 'fixed', margin: "0px 6px", ".MuiTableCell-root": { padding: "8px 16px" } }} >
+                    <TableBody >
+                        {
+                            logList.map((log, index) => {
+                                const outcomeMeta = log.outcome !== undefined ? OUTCOME_META[log.outcome] : undefined;
+                                //次行摘要分段：音乐ID、来源、详情，空值跳过
+                                const detailSegments = [
+                                    log.musicId !== null && log.musicId !== undefined ? `#${log.musicId}` : null,
+                                    log.source !== undefined ? (SOURCE_META[log.source] ?? log.source) : null,
+                                    log.detail ?? null
+                                ].filter(segment => segment !== null);
+                                return (
+                                    <TableRow
+                                        key={log.id ?? index}
+                                        sx={{ ':hover': { background: theme.palette.pannelBackground.main } }}
+                                    >
+                                        <TableCell sx={{ borderBottom: "unset" }}>
+                                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                                                <Typography variant="body2" noWrap sx={{ minWidth: 0 }}>{formatTime(log.createdAt)}</Typography>
+                                                <Chip size="small" label={outcomeMeta?.label ?? log.outcome ?? "—"} color={outcomeMeta?.color ?? "default"} sx={{ flexShrink: 0 }} />
+                                            </Box>
+                                            <Typography variant="caption" noWrap component="p" title={log.detail ?? undefined}
+                                                sx={{ display: 'block', color: theme.palette.text.secondary, marginTop: '2px' }}>
+                                                {detailSegments.length !== 0 ? detailSegments.join(' · ') : "—"}
+                                            </Typography>
                                         </TableCell>
                                     </TableRow>
                                 )

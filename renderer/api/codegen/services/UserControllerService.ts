@@ -50,7 +50,7 @@ avatar: Blob;
 
     /**
      * 获取导航信息
-     * 在已登录状态下返回当前用户信息
+     * 在已登录状态下返回当前用户信息，role 字段标识角色（user/root），前端据此按权限渲染导航项
      * @returns ResponseUserDetailVo OK
      * @throws ApiError
      */

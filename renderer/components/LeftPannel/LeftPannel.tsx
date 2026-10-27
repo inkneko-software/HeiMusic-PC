@@ -25,7 +25,7 @@ import RadioPannelList from "./RadioPannelList";
 import { useRouter } from "next/router";
 import { ApiError, PlaylistControllerService, PlaylistVo } from "@api/codegen";
 import NewPlaylisitDialog from "@components/NewPlaylistDialog";
-import { pushToast } from "@components/HeiMusicMainLayout";
+import { HeiMusicUserContext, pushToast } from "@components/HeiMusicMainLayout";
 
 /**
  * 刷新用户创建的播放列表
@@ -45,6 +45,9 @@ interface LeftPannelProps extends BoxProps {
 
 function LeftPannel(props: LeftPannelProps) {
     const router = useRouter();
+    //专辑管理为管理类功能，仅 root 角色可见（表结构预留 admin，后端放开时在此扩展）
+    const { userDetail } = React.useContext(HeiMusicUserContext);
+    const isRoot = userDetail?.role === 'root';
 
 
     const [activeList, setActiveList] = React.useState("在线音乐")
@@ -130,7 +133,7 @@ function LeftPannel(props: LeftPannelProps) {
                         />
                         <PannelItem index={1} icon={<AutoAwesomeIcon />} text="推荐" href="/home" />
                         <PannelItem index={2} icon={<LibraryMusicIcon />} text="音乐系列" href="/series/" />
-                        <PannelItem index={3} icon={<WysiwygOutlinedIcon />} text="专辑管理" href="/album/management" />
+                        {isRoot && <PannelItem index={3} icon={<WysiwygOutlinedIcon />} text="专辑管理" href="/album/management" />}
                     </PannelList>
                     <PannelList context={{ name: "我的音乐" }} key="我的音乐" >
                         <ListItemText
