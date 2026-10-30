@@ -208,6 +208,7 @@ interface IMusicInfoDialogProps {
 }
 
 function MusicInfoDialog(props: IMusicInfoDialogProps) {
+    const theme = useTheme();
     const [music, setMusic] = React.useState({ ...props.music })
     const [addArtistDialogOpen, setAddArtistDialogOpen] = React.useState(false)
 
@@ -254,7 +255,7 @@ function MusicInfoDialog(props: IMusicInfoDialogProps) {
                                     key={artist.artistId}
                                     label={artist.name}
                                     sx={{ margin: "0px 2px 2px 0px" }}
-                                    avatar={<Avatar>{artist.name.charAt(0)}</Avatar>}
+                                    avatar={<Avatar sx={{ color: theme.palette.getContrastText(theme.palette.text.primary) }}>{artist.name.charAt(0)}</Avatar>}
                                     color="primary"
                                     onDelete={
                                         () => setMusic(prev => {
@@ -655,7 +656,7 @@ function AlbumEdit() {
                                     key={value.artistId}
                                     label={value.name}
                                     sx={{ margin: "0px 2px 2px 0px" }}
-                                    avatar={<Avatar>{value.name.charAt(0)}</Avatar>}
+                                    avatar={<Avatar sx={{ color: theme.palette.getContrastText(theme.palette.text.primary) }}>{value.name.charAt(0)}</Avatar>}
                                     color="primary"
                                     onDelete={() => {
                                         setAlbumArtists(prev => prev.filter((item, index) => { return item.name !== value.name }))
