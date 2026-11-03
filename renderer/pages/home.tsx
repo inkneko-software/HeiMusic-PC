@@ -22,7 +22,7 @@ import { useRouter } from 'next/router';
 import FavoriteBorderOutlinedIcon from '@mui/icons-material/FavoriteBorderOutlined';
 import FavoriteOutlinedIcon from '@mui/icons-material/FavoriteOutlined';
 import { ReactNode, useContext, useMemo, useRef, useState, useEffect } from 'react';
-import { coverUrlOf } from '../lib/coverUrl';
+import { coverUrlOf, onCoverError } from '../lib/coverUrl';
 
 /** 多行截断样式（-webkit-box 方案）。sx 走 emotion，属性名必须用驼峰 */
 const clampLines = (lines: number) => ({
@@ -206,7 +206,7 @@ function RecommendHero(props: IRecommendHero) {
             userSelect: 'none',
         }}>
             {/* 模糊封面铺底 */}
-            <CardMedia component='img' aria-hidden src={cover} sx={{
+            <CardMedia component='img' aria-hidden src={cover} onError={onCoverError} sx={{
                 position: 'absolute', top: '-12%', left: '-12%', width: '124%', height: '124%',
                 objectFit: 'cover', filter: 'blur(32px) saturate(1.5)', zIndex: 0,
             }} />
@@ -231,6 +231,7 @@ function RecommendHero(props: IRecommendHero) {
                         ref={props.coverRef}
                         crossOrigin='anonymous'
                         onLoad={props.onCoverLoad}
+                        onError={onCoverError}
                         component='img'
                         src={cover}
                         sx={{ display: 'block', height: '100%', width: 'auto' }}
@@ -327,8 +328,7 @@ function RecommendHero(props: IRecommendHero) {
 interface IQuickCard {
     title: string,
     caption: string,
-    /** 四宫格封面（优先级高于 image，不足 4 张时剩余格子用 tone 填充） */
-    images?: (string | null | undefined)[],
+    /** 主封面（歌单第一张可用封面），铺满整卡、底部渐变上叠标题 */
     image?: string,
     /** 无封面时使用的渐变底色 */
     tone?: string,
@@ -363,26 +363,18 @@ function QuickCard(props: IQuickCard) {
             }]}
         >
             {
-                props.images && props.images.length > 0
-                    ? <Box className='quick-card-media' sx={{
-                        position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
-                        display: 'grid', gridTemplateColumns: '1fr 1fr', gridTemplateRows: '1fr 1fr',
-                        gap: '2px', backgroundColor: 'rgba(0,0,0,0.3)',
-                        transition: 'transform 0.35s ease-in-out'
-                    }}>
-                        {Array.from({ length: 4 }).map((_, index) => {
-                            const url = props.images?.[index];
-                            return url
-                                ? <CardMedia key={index} component='img' src={coverUrlOf(url)} sx={{ width: '100%', height: '100%', objectFit: 'cover' } as const} />
-                                : <Box key={index} sx={{ background: props.tone ?? 'rgba(255,255,255,0.06)' }} />;
-                        })}
-                    </Box>
-                    : props.image
-                        ? <CardMedia className='quick-card-media' component='img' src={props.image} sx={{
+                props.image
+                    ? <CardMedia
+                        className='quick-card-media'
+                        component='img'
+                        src={coverUrlOf(props.image)}
+                        onError={onCoverError}
+                        sx={{
                             position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
                             objectFit: 'cover', transition: 'transform 0.35s ease-in-out'
-                        }} />
-                        : <Box sx={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', background: props.tone }} />
+                        }}
+                    />
+                    : <Box sx={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', background: props.tone }} />
             }
             <Box sx={{
                 position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
@@ -444,7 +436,7 @@ function AlbumCard(props: IAlbumCard) {
                         component='img'
                         src={cover}
                         onLoad={() => setLoaded(true)}
-                        onError={() => setLoaded(true)}
+                        onError={(event) => { setLoaded(true); onCoverError(event); }}
                         sx={{
                             position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
                             objectFit: 'cover', opacity: loaded ? 1 : 0,
@@ -823,7 +815,7 @@ function Home() {
                     <QuickCard
                         title='每日30首'
                         caption={daily30Unavailable ? '曲库满 100 首后开启' : '每天 6 点更新'}
-                        images={daily30Covers}
+                        image={daily30Covers.find(cover => cover) || undefined}
                         tone='linear-gradient(135deg, #f6a23c 0%, #f65c4c 55%, #d64577 100%)'
                         icon={<AutoAwesomeRoundedIcon />}
                         onClick={() => { router.push('/daily30') }}
@@ -832,7 +824,7 @@ function Home() {
                     <QuickCard
                         title='我喜欢'
                         caption={favoriteMusics.length > 0 ? `已收藏 ${favoriteMusics.length} 首` : '收藏喜欢的音乐'}
-                        images={favoriteMusics.slice(0, 4).map(music => music.albumCoverUrl)}
+                        image={favoriteMusics.find(music => music.albumCoverUrl)?.albumCoverUrl}
                         tone='linear-gradient(135deg, #ef7d9a 0%, #d6556a 55%, #a855b8 100%)'
                         icon={<FavoriteOutlinedIcon />}
                         onClick={() => { router.push('/favoriate') }}

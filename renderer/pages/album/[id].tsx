@@ -2,6 +2,7 @@ import Box from '@mui/material/Box'
 import { BoxProps, CardMedia, Divider, IconButton, Popover, Stack, Typography, useTheme } from "@mui/material"
 
 import * as React from 'react';
+import { coverUrlOf, onCoverError } from '../../lib/coverUrl';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
 import TableCell from '@mui/material/TableCell';
@@ -203,7 +204,7 @@ function MusicAlbum(props: MusicAlbumProps) {
                 <CardMedia sx={{
                     width: '160px', height: '160px', borderRadius: '6%', flex: "0 0 auto", imageRendering: "auto", border: "1px solid #e3e3e3", objectFit: "cover",
                     '@media(max-width: 600px)': { width: '80px', height: '80px' }
-                }} src={albumInfo.cover ? albumInfo.cover + "?s=@w300h300" : "/images/lxh_sign_400x400.png"} component="img"></CardMedia>
+                }} src={coverUrlOf(albumInfo.cover)} onError={onCoverError} component="img"></CardMedia>
                 {/* <MusicNote sx={{
                     width: '180px', height: '180px', borderRadius: '6%', flex: "0 0 auto",  border: "1px solid #e3e3e3", fontSize: 72 
                 }}  /> */}
@@ -255,7 +256,7 @@ function MusicAlbum(props: MusicAlbumProps) {
                 <Box sx={{ display: "flex", padding: "0px 12px 10px 12px", }}>
                     <CardMedia sx={{
                         width: '90px', height: '90px', borderRadius: '6%', flex: "0 0 auto", imageRendering: "auto", border: "1px solid #e3e3e3", objectFit: "cover"
-                    }} src={albumInfo.cover ? albumInfo.cover + "?s=@w300h300" : "/images/lxh_sign_400x400.png"} component="img"></CardMedia>
+                    }} src={coverUrlOf(albumInfo.cover)} onError={onCoverError} component="img"></CardMedia>
                     <Box sx={{
                         marginLeft: '20px',
                         width: "auto",

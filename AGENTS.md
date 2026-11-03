@@ -46,7 +46,7 @@ renderer/                     渲染层（Next.js）
     Common/                   通用组件（Toast、Icon、Input、ImageSkeleton…）
   lib/
     mediaUrl.ts               Electron 的 API 基址（ensureApiBase，经 IPC 读配置）
-    coverUrl.ts               封面压缩地址（coverUrlOf 统一拼 w300h300，空封面回落默认图）
+    coverUrl.ts               封面压缩地址（coverUrlOf 统一拼 w300h300；空封面与加载失败统一回落 lxh_sign 兜底图，封面 img 的 onError 一律接 onCoverError 兜底换源防破图空白）
     apiServer.ts              Capacitor 原生端点：构建期内联默认值（process.env.NATIVE_API_BASE）
                                + 运行时持久化（ensureNativeApiBase / setNativeApiBase）
     mediaSession.ts           Android 系统媒体会话桥接（元数据/播放态推送、控制事件；非原生平台空操作）

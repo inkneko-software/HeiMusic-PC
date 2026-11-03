@@ -3,6 +3,7 @@ import Slide from '@mui/material/Slide';
 import { TransitionProps } from '@mui/material/transitions';
 import React from "react";
 import { IMusicInfo, IPlayingMusicInfo } from "./MusicControlPannel";
+import { coverUrlOf, onCoverError } from "../../lib/coverUrl";
 import { useTheme } from "@mui/styles"
 
 import MusicNote from "@mui/icons-material/MusicNote"
@@ -197,7 +198,7 @@ export default function FullScreenMusicPannel(props: IFullScreenMusicPannelProps
                             }
                         }
 
-                    }} src={props.currentMusicInfo.cover ? props.currentMusicInfo.cover + "?s=@w300h300" : "/images/lxh_sign_400x400.png"} component="img"></CardMedia>
+                    }} src={coverUrlOf(props.currentMusicInfo.cover)} onError={onCoverError} component="img"></CardMedia>
                 </Box>
                 {/* 右侧音乐信息 */}
                 <Box sx={{

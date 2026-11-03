@@ -8,7 +8,7 @@ import { useEffect, useRef, useState } from 'react'
 
 import useMusicContextMenu from '@components/MusicContextMenu'
 import { IChangePlayListEvent, IMusicInfo } from '@components/MusicControlPannel/MusicControlPannel'
-import { coverUrlOf } from '../../lib/coverUrl'
+import { coverUrlOf, onCoverError } from '../../lib/coverUrl'
 
 /** 多行截断样式（-webkit-box 方案）。sx 走 emotion，属性名必须用驼峰 */
 const clampLines = (lines: number) => ({
@@ -105,7 +105,7 @@ function MusicRowCard(props: IMusicRowCard) {
                     component='img'
                     src={cover}
                     onLoad={() => setLoaded(true)}
-                    onError={() => setLoaded(true)}
+                    onError={(event) => { setLoaded(true); onCoverError(event); }}
                     sx={{
                         position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
                         objectFit: 'cover', opacity: loaded ? 1 : 0,
