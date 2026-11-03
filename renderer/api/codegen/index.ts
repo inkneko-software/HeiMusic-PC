@@ -66,5 +66,6 @@ export { MinIoControllerService } from './services/MinIoControllerService';
 export { MusicControllerService } from './services/MusicControllerService';
 export { PlayHistoryControllerService } from './services/PlayHistoryControllerService';
 export { PlaylistControllerService } from './services/PlaylistControllerService';
+export { RecommendControllerService } from './services/RecommendControllerService';
 export { SearchControllerService } from './services/SearchControllerService';
 export { UserControllerService } from './services/UserControllerService';

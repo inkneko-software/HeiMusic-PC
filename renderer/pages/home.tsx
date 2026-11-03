@@ -6,28 +6,23 @@ import Avatar from '@mui/material/Avatar';
 import Button from '@mui/material/Button';
 import Link from 'next/link';
 import useToast from '../components/Common/Toast';
-import { AlbumControllerService, AlbumVo, ApiError, MusicVo, PlaylistControllerService } from '../api/codegen';
+import { AlbumControllerService, AlbumVo, ApiError, MusicVo, PlayHistoryControllerService, PlayHistoryVo, PlaylistControllerService, RecommendControllerService } from '../api/codegen';
 import { useTheme } from '@mui/styles'
 import { IconButton } from '@mui/material';
 import SkipNext from "@mui/icons-material/SkipNext"
 import PlayArrowRoundedIcon from "@mui/icons-material/PlayArrowRounded"
 import ArrowForwardRoundedIcon from "@mui/icons-material/ArrowForwardRounded"
 import MusicNoteRoundedIcon from "@mui/icons-material/MusicNoteRounded"
-import QueueMusicRoundedIcon from "@mui/icons-material/QueueMusicRounded"
 import AutoAwesomeRoundedIcon from "@mui/icons-material/AutoAwesomeRounded"
 import LibraryMusicOutlinedIcon from "@mui/icons-material/LibraryMusicOutlined"
-import { IChangePlayListEvent } from '@components/MusicControlPannel/MusicControlPannel';
+import { IChangePlayListEvent, IMusicInfo } from '@components/MusicControlPannel/MusicControlPannel';
 import { HeiMusicUserContext } from '@components/HeiMusicMainLayout';
+import MusicRow, { MusicRowSkeleton } from '@components/MusicRow';
 import { useRouter } from 'next/router';
 import FavoriteBorderOutlinedIcon from '@mui/icons-material/FavoriteBorderOutlined';
 import FavoriteOutlinedIcon from '@mui/icons-material/FavoriteOutlined';
-import { ReactNode, useContext, useRef, useState, useEffect } from 'react';
-
-/** 封面为空时的兜底图 */
-const DEFAULT_COVER = '/images/lxh_sign_400x400.png';
-
-/** 首页封面统一请求 w300h300 压缩图，避免大图拖慢首屏 */
-const coverUrlOf = (url?: string | null) => (url ? `${url}?s=@w300h300` : DEFAULT_COVER);
+import { ReactNode, useContext, useMemo, useRef, useState, useEffect } from 'react';
+import { coverUrlOf } from '../lib/coverUrl';
 
 /** 多行截断样式（-webkit-box 方案）。sx 走 emotion，属性名必须用驼峰 */
 const clampLines = (lines: number) => ({
@@ -57,6 +52,64 @@ const squareBoxSx = {
 
 /** 最近上传一次拉取的上限，供宽高联动切片（32 覆盖常见 8 列 × 4 行） */
 const RECENT_UPLOAD_FETCH_SIZE = 32;
+
+/** 横滑行一次拉取的曲目数（最近播放 / 最常播放 / 久未重现共用） */
+const HISTORY_ROW_SIZE = 12;
+
+/** 同口味推荐批量预取数量：一次取 5 首供「换一首」本地轮换，调用量降为 1/5 */
+const SIMILAR_BATCH_SIZE = 5;
+
+/** 播放时间 → 相对时间文案（最近播放卡片角标用），非法/缺失返回空串（不显示角标） */
+const relativeTimeOf = (time?: string) => {
+    if (!time) {
+        return '';
+    }
+    const timestamp = new Date(time).getTime();
+    if (isNaN(timestamp)) {
+        return '';
+    }
+    const minutes = Math.floor((Date.now() - timestamp) / 60000);
+    if (minutes < 1) {
+        return '刚刚';
+    }
+    if (minutes < 60) {
+        return `${minutes} 分钟前`;
+    }
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) {
+        return `${hours} 小时前`;
+    }
+    const days = Math.floor(hours / 24);
+    if (days < 30) {
+        return `${days} 天前`;
+    }
+    const months = Math.floor(days / 30);
+    if (months < 12) {
+        return `${months} 个月前`;
+    }
+    return `${Math.floor(months / 12)} 年前`;
+}
+
+/** MusicVo → 播放器曲目信息（猜你喜欢与各横滑行共用同一形状） */
+const toMusicInfo = (music: MusicVo): IMusicInfo => ({
+    musicId: music.musicId,
+    title: music.title,
+    artists: (music.artistList || []).map(artist => artist.name),
+    qualityOption: [{
+        name: "SQ",
+        url: music.resourceUrl,
+        color: "red"
+    }],
+    albumId: music.albumId,
+    albumTitle: music.albumTitle,
+    cover: music.albumCoverUrl,
+    duration: music.duration,
+    isFavorite: music.isFavorite,
+    isLargeTrackMusic: music.discStartTime !== '',
+    isInstrumental: music.isInstrumental,
+    discStartTime: parseFloat(music.discStartTime),
+    discEndTime: parseFloat(music.discEndTime)
+})
 
 /** 专辑卡最小宽度，与 albumGridSx 的 minmax(150px, 1fr) 一致 */
 const ALBUM_CARD_MIN_WIDTH = 150;
@@ -274,6 +327,8 @@ function RecommendHero(props: IRecommendHero) {
 interface IQuickCard {
     title: string,
     caption: string,
+    /** 四宫格封面（优先级高于 image，不足 4 张时剩余格子用 tone 填充） */
+    images?: (string | null | undefined)[],
     image?: string,
     /** 无封面时使用的渐变底色 */
     tone?: string,
@@ -308,12 +363,26 @@ function QuickCard(props: IQuickCard) {
             }]}
         >
             {
-                props.image
-                    ? <CardMedia className='quick-card-media' component='img' src={props.image} sx={{
+                props.images && props.images.length > 0
+                    ? <Box className='quick-card-media' sx={{
                         position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
-                        objectFit: 'cover', transition: 'transform 0.35s ease-in-out'
-                    }} />
-                    : <Box sx={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', background: props.tone }} />
+                        display: 'grid', gridTemplateColumns: '1fr 1fr', gridTemplateRows: '1fr 1fr',
+                        gap: '2px', backgroundColor: 'rgba(0,0,0,0.3)',
+                        transition: 'transform 0.35s ease-in-out'
+                    }}>
+                        {Array.from({ length: 4 }).map((_, index) => {
+                            const url = props.images?.[index];
+                            return url
+                                ? <CardMedia key={index} component='img' src={coverUrlOf(url)} sx={{ width: '100%', height: '100%', objectFit: 'cover' } as const} />
+                                : <Box key={index} sx={{ background: props.tone ?? 'rgba(255,255,255,0.06)' }} />;
+                        })}
+                    </Box>
+                    : props.image
+                        ? <CardMedia className='quick-card-media' component='img' src={props.image} sx={{
+                            position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
+                            objectFit: 'cover', transition: 'transform 0.35s ease-in-out'
+                        }} />
+                        : <Box sx={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', background: props.tone }} />
             }
             <Box sx={{
                 position: 'absolute', top: 0, left: 0, width: '100%', height: '100%',
@@ -429,14 +498,27 @@ function Home() {
     const albumGridRef = useRef<HTMLDivElement>(null);
     const [Toast, makeToast] = useToast()
 
-    //随机音乐
-    const [randomMusic, setRandomMusic] = useState<MusicVo>(undefined);
+    //猜你喜欢：优先同口味推荐（similar 批量预取、本地轮换），无历史或候选听尽回落纯随机
+    const [recommendMusic, setRecommendMusic] = useState<MusicVo>(undefined);
+    const similarQueueRef = useRef<MusicVo[]>([]);
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const coverRef = useRef<HTMLImageElement>(null);
     const [heroBackdrop, setHeroBackdrop] = useState<IRgbColor>(DEFAULT_BACKDROP)
 
-    //每日30首封面
-    const [daily30Cover, setDaily30Cover] = useState(undefined);
+    //每日30首：前 4 首封面拼四宫格；曲库不足 100 首时后端报业务错误，静默回落占位卡
+    const [daily30Covers, setDaily30Covers] = useState<(string | null)[]>([]);
+    const [daily30Unavailable, setDaily30Unavailable] = useState(false);
+
+    //我喜欢卡：数量与前 4 首封面（失败按无收藏渲染，不打扰首屏）
+    const [favoriteMusics, setFavoriteMusics] = useState<MusicVo[]>([]);
+
+    //首页横滑行：最近播放 / 最常播放 / 久未重现（空数据整节隐藏，失败静默）
+    const [recentHistory, setRecentHistory] = useState<PlayHistoryVo[]>([]);
+    const [historyLoaded, setHistoryLoaded] = useState(false);
+    const [mostPlayedHistory, setMostPlayedHistory] = useState<PlayHistoryVo[]>([]);
+    const [mostPlayedLoaded, setMostPlayedLoaded] = useState(false);
+    const [forgottenMusics, setForgottenMusics] = useState<MusicVo[]>([]);
+    const [forgottenLoaded, setForgottenLoaded] = useState(false);
     useEffect(() => {
         AlbumControllerService.getRecentUpload(1, RECENT_UPLOAD_FETCH_SIZE)
             .then(res => {
@@ -452,26 +534,73 @@ function Home() {
                 setRecentUploadLoaded(true);
             })
 
-        AlbumControllerService.randomMusic()
+        //猜你喜欢：批量预取同口味推荐（首曲上 Hero、其余进本地队列供「换一首」轮换），空结果/失败回落纯随机
+        const fetchRandomFallback = () => {
+            AlbumControllerService.randomMusic()
+                .then(res => {
+                    setRecommendMusic(res.data)
+                })
+                .catch((error: ApiError) => {
+                    if (error.status !== 403) {
+                        makeToast(error.message, "error", "bottom-left");
+                    }
+                })
+        }
+        RecommendControllerService.similar(SIMILAR_BATCH_SIZE)
             .then(res => {
-                setRandomMusic(res.data)
-            })
-            .catch((error: ApiError) => {
-                if (error.status !== 403) {
-                    makeToast(error.message, "error", "bottom-left");
+                if ((res.data?.length ?? 0) > 0) {
+                    similarQueueRef.current = res.data.slice(1)
+                    setRecommendMusic(res.data[0])
+                } else {
+                    fetchRandomFallback()
                 }
             })
+            .catch(fetchRandomFallback)
 
+        //每日30首：取前 4 首封面拼四宫格；曲库不足 100 首时后端报业务错误，静默回落占位卡
         AlbumControllerService.daily30()
             .then(res => {
-                setDaily30Cover(res.data[0].albumCoverUrl);
+                setDaily30Covers(res.data.slice(0, 4).map(music => music.albumCoverUrl))
             })
-            .catch((error: ApiError) => {
-                if (error.status !== 403) {
-                    makeToast(error.message, "error", "bottom-left");
-                }
+            .catch(() => {
+                setDaily30Unavailable(true)
             })
 
+        //最近播放 / 最常播放横滑行
+        PlayHistoryControllerService.getRecentList(HISTORY_ROW_SIZE)
+            .then(res => {
+                setRecentHistory(res.data ?? [])
+            })
+            .catch(() => { })
+            .finally(() => {
+                setHistoryLoaded(true)
+            })
+
+        PlayHistoryControllerService.getMostPlayedList(HISTORY_ROW_SIZE)
+            .then(res => {
+                setMostPlayedHistory(res.data ?? [])
+            })
+            .catch(() => { })
+            .finally(() => {
+                setMostPlayedLoaded(true)
+            })
+
+        //久未重现（以前常听、近 90 天没听）
+        RecommendControllerService.forgotten(90, HISTORY_ROW_SIZE)
+            .then(res => {
+                setForgottenMusics(res.data ?? [])
+            })
+            .catch(() => { })
+            .finally(() => {
+                setForgottenLoaded(true)
+            })
+
+        //我喜欢卡：取数量与前 4 首封面
+        PlaylistControllerService.getMyFavoriteMusicList()
+            .then(res => {
+                setFavoriteMusics(res.data ?? [])
+            })
+            .catch(() => { })
 
     }, [makeToast])
 
@@ -511,7 +640,8 @@ function Home() {
         observer.observe(scrollEl);
         observer.observe(sectionEl);
         return () => observer.disconnect();
-    }, [recentUploadLoaded, recentUploadAlbum.length])
+        //上方横滑行区块的出现/隐藏会改变网格顶部位置，需一并触发重算
+    }, [recentUploadLoaded, recentUploadAlbum.length, historyLoaded, recentHistory.length, mostPlayedLoaded, mostPlayedHistory.length, forgottenLoaded, forgottenMusics.length])
 
     //选取背景色：采样整张封面并剔除接近纯黑/纯白的像素，避免高光与阴影把主色拉偏
     const handleRandomMusicCoverLoaded = () => {
@@ -556,43 +686,68 @@ function Home() {
     const playMusic = (music: MusicVo) => {
         const event = new CustomEvent<IChangePlayListEvent>("music-control-panel::changePlayList", {
             detail: {
-                playlist: [{
-                    musicId: music.musicId,
-                    title: music.title,
-                    artists: music.artistList.map(artist => artist.name),
-                    albumId: music.albumId,
-                    albumTitle: music.albumTitle,
-                    cover: music.albumCoverUrl,
-                    isFavorite: music.isFavorite,
-                    duration: music.duration,
-                    qualityOption: [{
-                        name: "SQ",
-                        url: music.resourceUrl,
-                        color: "red"
-                    }],
-                    isLargeTrackMusic: music.discStartTime !== '',
-                    isInstrumental: music.isInstrumental,
-                    discStartTime: parseFloat(music.discStartTime),
-                    discEndTime: parseFloat(music.discEndTime)
-                }], startIndex: 0
+                playlist: [toMusicInfo(music)], startIndex: 0
             }
         });
         document.dispatchEvent(event)
     }
 
-    const handlePlayRandomMusic = () => {
-        if (!randomMusic) {
-            return;
-        }
-        playMusic(randomMusic);
+    //横滑行曲目数据（PlayHistoryVo 的 music 为可选字段，缺失的直接丢弃）
+    const recentMusicInfos = useMemo(() => recentHistory.flatMap(history => history.music ? [toMusicInfo(history.music)] : []), [recentHistory]);
+    const recentTimeCaptions = useMemo(() => recentHistory.flatMap(history => history.music ? [relativeTimeOf(history.lastPlayedAt)] : []), [recentHistory]);
+    const mostPlayedMusicInfos = useMemo(() => mostPlayedHistory.flatMap(history => history.music ? [toMusicInfo(history.music)] : []), [mostPlayedHistory]);
+    const forgottenMusicInfos = useMemo(() => forgottenMusics.map(music => toMusicInfo(music)), [forgottenMusics]);
+
+    //删除单条播放记录（最近播放与最常播放两行同步移除）
+    const handleRemoveHistory = (musicId: number) => {
+        PlayHistoryControllerService.removeHistory(musicId)
+            .then(() => {
+                setRecentHistory(prev => prev.filter(history => history.music?.musicId !== musicId));
+                setMostPlayedHistory(prev => prev.filter(history => history.music?.musicId !== musicId));
+                makeToast('已删除该条播放记录', 'success', 'bottom-left')
+            })
+            .catch((error) => {
+                makeToast(error.message, 'error', 'bottom-left')
+            })
     }
 
-    const handleNextRandomMusic = () => {
-        AlbumControllerService.randomMusic()
+    const handlePlayRecommendMusic = () => {
+        if (!recommendMusic) {
+            return;
+        }
+        playMusic(recommendMusic);
+    }
+
+    //换一首：优先消费本地预取队列，队列空时再批量拉取；空结果/失败回落纯随机
+    const handleNextRecommendMusic = () => {
+        //跨批次有放回抽样可能抽回当前这首，跳过避免连播重复
+        while (similarQueueRef.current.length > 0) {
+            const candidate = similarQueueRef.current.shift();
+            if (candidate.musicId !== recommendMusic?.musicId) {
+                setRecommendMusic(candidate)
+                playMusic(candidate);
+                return;
+            }
+        }
+        RecommendControllerService.similar(SIMILAR_BATCH_SIZE)
             .then(res => {
-                var newRandomMusic = res.data;
-                setRandomMusic(newRandomMusic)
-                playMusic(newRandomMusic);
+                if ((res.data?.length ?? 0) > 0) {
+                    const next = res.data.find(music => music.musicId !== recommendMusic?.musicId) ?? res.data[0];
+                    similarQueueRef.current = res.data.filter(music => music.musicId !== next.musicId)
+                    setRecommendMusic(next)
+                    playMusic(next);
+                } else {
+                    return AlbumControllerService.randomMusic()
+                        .then(res => {
+                            setRecommendMusic(res.data)
+                            playMusic(res.data);
+                        })
+                        .catch((error: ApiError) => {
+                            if (error.status !== 403) {
+                                makeToast(error.message, "error", "bottom-left");
+                            }
+                        })
+                }
             })
             .catch((error: ApiError) => {
                 if (error.status !== 403) {
@@ -603,18 +758,18 @@ function Home() {
     }
 
     const handleFavorite = () => {
-        if (randomMusic.isFavorite) {
-            PlaylistControllerService.removeMusicFavorite(randomMusic.musicId)
+        if (recommendMusic.isFavorite) {
+            PlaylistControllerService.removeMusicFavorite(recommendMusic.musicId)
                 .then(res => {
-                    setRandomMusic(prev => ({ ...prev, isFavorite: !prev.isFavorite }))
+                    setRecommendMusic(prev => ({ ...prev, isFavorite: !prev.isFavorite }))
                 })
                 .catch((error) => {
                     makeToast(error.message, "error", "bottom-left");
                 })
         } else {
-            PlaylistControllerService.addMusicFavorite(randomMusic.musicId)
+            PlaylistControllerService.addMusicFavorite(recommendMusic.musicId)
                 .then(res => {
-                    setRandomMusic(prev => ({ ...prev, isFavorite: !prev.isFavorite }))
+                    setRecommendMusic(prev => ({ ...prev, isFavorite: !prev.isFavorite }))
                 })
                 .catch((error) => {
                     makeToast(error.message, "error", "bottom-left");
@@ -649,17 +804,17 @@ function Home() {
                     gap: { xs: '12px', sm: '16px', lg: '20px' },
                     marginBottom: { xs: '20px', sm: '28px' },
                 }}>
-                    {/* 随机推荐 */}
+                    {/* 猜你喜欢 */}
                     {
-                        randomMusic
+                        recommendMusic
                             ? <RecommendHero
-                                music={randomMusic}
+                                music={recommendMusic}
                                 backdrop={heroBackdrop}
                                 coverRef={coverRef}
                                 canvasRef={canvasRef}
                                 onCoverLoad={handleRandomMusicCoverLoaded}
-                                onPlay={handlePlayRandomMusic}
-                                onNext={handleNextRandomMusic}
+                                onPlay={handlePlayRecommendMusic}
+                                onNext={handleNextRecommendMusic}
                                 onFavorite={handleFavorite}
                             />
                             : <Skeleton variant='rounded' sx={{ gridColumn: { xs: 'span 2', sm: 'span 1' }, height: '100%', borderRadius: '16px', transform: 'unset' }} />
@@ -667,56 +822,108 @@ function Home() {
                     {/* 每日30首 */}
                     <QuickCard
                         title='每日30首'
-                        caption='每天 6 点更新'
-                        image={coverUrlOf(daily30Cover)}
+                        caption={daily30Unavailable ? '曲库满 100 首后开启' : '每天 6 点更新'}
+                        images={daily30Covers}
+                        tone='linear-gradient(135deg, #f6a23c 0%, #f65c4c 55%, #d64577 100%)'
                         icon={<AutoAwesomeRoundedIcon />}
                         onClick={() => { router.push('/daily30') }}
                     />
-                    {/* 热门歌单 */}
+                    {/* 我喜欢（与侧边栏入口同一页面） */}
                     <QuickCard
-                        title='热门歌单'
-                        caption='敬请期待'
-                        tone='linear-gradient(135deg, #556cd6 0%, #8e6fd8 55%, #c86dd7 100%)'
-                        icon={<QueueMusicRoundedIcon />}
+                        title='我喜欢'
+                        caption={favoriteMusics.length > 0 ? `已收藏 ${favoriteMusics.length} 首` : '收藏喜欢的音乐'}
+                        images={favoriteMusics.slice(0, 4).map(music => music.albumCoverUrl)}
+                        tone='linear-gradient(135deg, #ef7d9a 0%, #d6556a 55%, #a855b8 100%)'
+                        icon={<FavoriteOutlinedIcon />}
+                        onClick={() => { router.push('/favoriate') }}
                     />
                 </Box>
                 {/* 最新上传 */}
-                <SectionTitle
-                    title='最新上传'
-                    caption='最近入库的专辑'
-                    action={
-                        isRoot
-                            ? <Button size='small' onClick={() => { router.push('/album/management') }} sx={{ textTransform: 'none' }}>全部专辑</Button>
-                            : undefined
-                    }
-                />
-                {/* 测量锚点：宽高联动可见数量的参考盒（骨架、空状态、网格都在其内） */}
-                <Box ref={albumGridSectionRef}>
-                    {/* 加载中骨架 */}
-                    <Box sx={[albumGridSx, recentUploadLoaded && { display: 'none' }]}>
-                        {Array.from({ length: visibleAlbumCount }).map((_, index) => (
-                            <Skeleton key={index} variant='rounded' sx={{ ...squareBoxSx, borderRadius: '12px', transform: 'unset' }} />
-                        ))}
-                    </Box>
-                    {/* 空状态 */}
-                    {
-                        recentUploadLoaded && recentUploadAlbum.length === 0 &&
-                        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: { xs: '32px 0 40px', sm: '40px 0 56px' }, color: 'text.secondary', userSelect: 'none' }}>
-                            <LibraryMusicOutlinedIcon sx={{ fontSize: '44px', opacity: 0.35 }} />
-                            <Typography variant='subtitle2' sx={{ marginTop: '12px' }}>暂无音乐</Typography>
-                            <Typography variant='caption'>扫描本地媒体库后，专辑会出现在这里</Typography>
-                            {isRoot && <Button size='small' sx={{ marginTop: '12px', textTransform: 'none' }} onClick={() => { router.push('/album/management') }}>前往专辑管理</Button>}
-                        </Box>
-                    }
-                    {/* 专辑网格 */}
-                    <Box ref={albumGridRef} sx={[albumGridSx, !recentUploadLoaded && { display: 'none' }]}>
-                        {
-                            recentUploadAlbum.slice(0, visibleAlbumCount).map((album, index) => {
-                                return <AlbumCard key={index} album={album} />
-                            })
+                <Box sx={{ marginBottom: { xs: '20px', sm: '28px' } }}>
+                    <SectionTitle
+                        title='最新上传'
+                        caption='最近入库的专辑'
+                        action={
+                            isRoot
+                                ? <Button size='small' onClick={() => { router.push('/album/management') }} sx={{ textTransform: 'none' }}>全部专辑</Button>
+                                : undefined
                         }
+                    />
+                    {/* 测量锚点：宽高联动可见数量的参考盒（骨架、空状态、网格都在其内） */}
+                    <Box ref={albumGridSectionRef}>
+                        {/* 加载中骨架 */}
+                        <Box sx={[albumGridSx, recentUploadLoaded && { display: 'none' }]}>
+                            {Array.from({ length: visibleAlbumCount }).map((_, index) => (
+                                <Skeleton key={index} variant='rounded' sx={{ ...squareBoxSx, borderRadius: '12px', transform: 'unset' }} />
+                            ))}
+                        </Box>
+                        {/* 空状态 */}
+                        {
+                            recentUploadLoaded && recentUploadAlbum.length === 0 &&
+                            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: { xs: '32px 0 40px', sm: '40px 0 56px' }, color: 'text.secondary', userSelect: 'none' }}>
+                                <LibraryMusicOutlinedIcon sx={{ fontSize: '44px', opacity: 0.35 }} />
+                                <Typography variant='subtitle2' sx={{ marginTop: '12px' }}>暂无音乐</Typography>
+                                <Typography variant='caption'>扫描本地媒体库后，专辑会出现在这里</Typography>
+                                {isRoot && <Button size='small' sx={{ marginTop: '12px', textTransform: 'none' }} onClick={() => { router.push('/album/management') }}>前往专辑管理</Button>}
+                            </Box>
+                        }
+                        {/* 专辑网格 */}
+                        <Box ref={albumGridRef} sx={[albumGridSx, !recentUploadLoaded && { display: 'none' }]}>
+                            {
+                                recentUploadAlbum.slice(0, visibleAlbumCount).map((album, index) => {
+                                    return <AlbumCard key={index} album={album} />
+                                })
+                            }
+                        </Box>
                     </Box>
                 </Box>
+                {/* 最近播放（空数据整节隐藏） */}
+                {
+                    !(historyLoaded && recentHistory.length === 0) &&
+                    <Box sx={{ marginBottom: { xs: '20px', sm: '28px' } }}>
+                        <SectionTitle
+                            title='最近播放'
+                            caption='接着上次的继续听'
+                            action={<Button size='small' onClick={() => { router.push('/recent') }} sx={{ textTransform: 'none' }}>查看全部</Button>}
+                        />
+                        {
+                            historyLoaded
+                                ? <MusicRow musicList={recentMusicInfos} cornerCaptions={recentTimeCaptions} menuType='history' onHistoryDelete={handleRemoveHistory} />
+                                : <MusicRowSkeleton />
+                        }
+                    </Box>
+                }
+                {/* 最常播放（空数据整节隐藏） */}
+                {
+                    !(mostPlayedLoaded && mostPlayedHistory.length === 0) &&
+                    <Box sx={{ marginBottom: { xs: '20px', sm: '28px' } }}>
+                        <SectionTitle
+                            title='最常播放'
+                            caption='经常播放的歌曲'
+                            action={<Button size='small' onClick={() => { router.push('/mostplayed') }} sx={{ textTransform: 'none' }}>查看全部</Button>}
+                        />
+                        {
+                            mostPlayedLoaded
+                                ? <MusicRow musicList={mostPlayedMusicInfos} menuType='history' onHistoryDelete={handleRemoveHistory} showRank />
+                                : <MusicRowSkeleton />
+                        }
+                    </Box>
+                }
+                {/* 久未重现（空数据整节隐藏） */}
+                {
+                    !(forgottenLoaded && forgottenMusics.length === 0) &&
+                    <Box sx={{ marginBottom: { xs: '20px', sm: '28px' } }}>
+                        <SectionTitle
+                            title='久未重现'
+                            caption='以前常听 · 近 90 天没听'
+                        />
+                        {
+                            forgottenLoaded
+                                ? <MusicRow musicList={forgottenMusicInfos} menuType='favorite' />
+                                : <MusicRowSkeleton />
+                        }
+                    </Box>
+                }
             </Box>
         </Box>
     )

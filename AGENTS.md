@@ -40,11 +40,13 @@ renderer/                     渲染层（Next.js）
     HeiMusicMainLayout.tsx    主布局；导出 pushToast
     LeftPannel/               侧边导航
     MusicControlPannel/       播放控制面板（HTML5 audio 播放器在此）
-    MusicContextMenu/         音乐右键菜单
+    MusicContextMenu/         音乐右键菜单（menuType 含 history=播放历史行，多「删除播放记录」项）
+    MusicRow/                 首页曲目横滑行（整行作播放列表；含 MusicRowSkeleton 加载骨架）
     Auth/LoginDialog.tsx
     Common/                   通用组件（Toast、Icon、Input、ImageSkeleton…）
   lib/
     mediaUrl.ts               Electron 的 API 基址（ensureApiBase，经 IPC 读配置）
+    coverUrl.ts               封面压缩地址（coverUrlOf 统一拼 w300h300，空封面回落默认图）
     apiServer.ts              Capacitor 原生端点：构建期内联默认值（process.env.NATIVE_API_BASE）
                                + 运行时持久化（ensureNativeApiBase / setNativeApiBase）
     mediaSession.ts           Android 系统媒体会话桥接（元数据/播放态推送、控制事件；非原生平台空操作）
@@ -158,7 +160,7 @@ npm run build                # nextron build，完整发布流程（同时重建
 
 ### 4.5 API 调用
 
-- 优先使用 `renderer/api/codegen/services/*ControllerService`（10 个：Album、Artist、Auth、Lyric、MinIo、Music、PlayHistory、Playlist、Search、User）。分页类接口的 `data` 为 MyBatis-Plus Page 形状 `{ records, total, size, current, pages }`（首次引入于歌词拉取日志接口）。
+- 优先使用 `renderer/api/codegen/services/*ControllerService`（11 个：Album、Artist、Auth、Lyric、MinIo、Music、PlayHistory、Playlist、Recommend、Search、User）。分页类接口的 `data` 为 MyBatis-Plus Page 形状 `{ records, total, size, current, pages }`（首次引入于歌词拉取日志接口）。推荐类接口（`RecommendControllerService.similar/forgotten`）**空结果返回空数组（code=0）而非报错**，前端以 `data=[]` 走回落（首页猜你喜欢回落 randomMusic、久未重现整节隐藏）。
 - 返回结构约定后端业务码：`code !== 0` 视为业务错误，`request.ts` 会 reject 并携带 `message`；网络异常统一 Toast「服务错误，请稍后尝试」。
 - codegen 请求有双层超时保护（`request.ts`），超时以 `TypeError` reject，调用方据此判定网络层失败（如登录门禁走「连接失败」分支）：①原生平台直调 `CapacitorHttp.request` 并显式传 `connectTimeout` 10s / `readTimeout` 15s——**fetch 垫片不透传超时参数，原生 HttpURLConnection 默认无限等待**，直调让超时由原生网络栈强制执行；②其余路径（FormData/Blob 上传、非原生）用 `Promise.race` 15s 兜底（垫片不感知 AbortSignal，race 保证必达）。**原生直调路径的原生层 reject（CapacitorException，message 为 Java 异常原文）必须在 `nativeSend` 转换为 `TypeError`**——保持与 fetch 垫片路径一致的失败语义，否则登录门禁会把网络失败误判为业务错误、直接显示登录表单并透出 Java 原文。媒体流与上传不走 codegen 请求，无长任务受影响。
 - **不要手工修改 `renderer/api/codegen/`**，改接口请改 swagger 后重跑 `npm run openapi`；需要调整请求行为请改 `renderer/api/request.ts`——注意它是 openapi 生成器的**模板源**，改动只在下一次 `npm run openapi`（或手动同步到 `renderer/api/codegen/core/request.ts`）后才生效，只改模板会过 typecheck 但产物不含改动。

@@ -35,8 +35,10 @@ export interface IMusicContextMenuMusicInfo {
 
 export interface UseMusicContextMenuProps {
     musicList: IMusicInfo[],
-    menuType: 'album' | 'playlist' | 'favorite',
+    menuType: 'album' | 'playlist' | 'favorite' | 'history',
     onPlaylistMusicDelete?: (musicIdList: number[]) => void
+    /** menuType 为 history 时删除单条播放记录的回调 */
+    onHistoryDelete?: (musicId: number) => void
 }
 
 /**
@@ -454,6 +456,21 @@ export default function useMusicContextMenu(props: UseMusicContextMenuProps): [
                         size='small'
                     >
                         从歌单中删除
+                    </Button>
+                }
+                {
+                    props.menuType === 'history' &&
+                    <Button
+                        sx={{ justifyContent: 'flex-start', padding: "6px 16px" }}
+                        color='inherit'
+                        startIcon={<DeleteSweepOutlinedIcon />}
+                        onClick={() => props.onHistoryDelete(musicMenuInfo.musicId)}
+                        size='small'
+                        onMouseEnter={() => {
+                            setPlaylistMenuOpen(false);
+                        }}
+                    >
+                        删除播放记录
                     </Button>
                 }
 
