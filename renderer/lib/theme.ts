@@ -89,6 +89,9 @@ export const darkMode = createTheme({
 
 export const darkModeNeptune = createTheme({
     palette: {
+        // 深色背景图主题必须显式 mode:"dark"：MUI 的 action.active/divider 等衍生色按 mode 硬编码
+        // （不随 text.primary 推导），漏设会让无色 IconButton 等拿到 54% 黑、深色面板上不可见
+        mode: "dark",
         primary: {
             main: '#52b3ff',
             contrastText: "#fff"
@@ -207,6 +210,8 @@ export const lightModeIsland = createTheme({
 /** 月夜：藏青磨砂深色，背景图为夜色城堡与淡金圆月（同海王星的透明面板模式） */
 export const darkModeMoon = createTheme({
     palette: {
+        // 同海王星：深色背景图主题必须显式 mode:"dark"，否则 action/divider 衍生色走浅色分支
+        mode: "dark",
         primary: {
             main: '#e8c56d',
             contrastText: "#26202a"
@@ -304,7 +309,10 @@ export interface IThemePresetEntry {
 /**
  * 主题预设（对象顺序即设置页展示顺序：浅色组在前、深色组在后）。
  * 注意：带 backgroundUrl 的预设，pannelBackground 必须为 rgba 半透明色，
- * 否则不透明面板铺满整窗、背景图不可见（暖阳曾因复用浅色不透明面板而与浅色无异）
+ * 否则不透明面板铺满整窗、背景图不可见（暖阳曾因复用浅色不透明面板而与浅色无异）。
+ * 深色预设（含带背景图的海王星/月夜）palette 必须显式 mode:"dark"——MUI 的
+ * action.active/divider 等衍生色按 mode 硬编码，漏设会拿到浅色分支的 54% 黑
+ * （月夜顶栏前进/后退按钮曾因此在藏青面板上不可见）
  */
 export const preset: Record<string, IThemePresetEntry> = {
     light:{
