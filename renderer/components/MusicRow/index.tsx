@@ -287,7 +287,8 @@ export default function MusicRow(props: IMusicRow) {
     )
 }
 
-/** 横滑行的加载骨架（与 MusicRow 的卡片尺寸、间距一致，加载前后不跳动） */
+/** 横滑行的加载骨架（与 MusicRow 的卡片尺寸、间距一致，加载前后不跳动；
+ *  文字行上边距对齐卡片标题/艺人的 8px/2px——variant='text' 的 Skeleton 自带 margin:0，不补会与封面紧贴） */
 export function MusicRowSkeleton(props: { count?: number }) {
     const count = props.count ?? 8;
     return (
@@ -296,8 +297,8 @@ export function MusicRowSkeleton(props: { count?: number }) {
                 Array.from({ length: count }).map((_, index) => (
                     <Box key={index} sx={{ flex: '0 0 auto', width: musicCardWidth }}>
                         <Skeleton variant='rounded' sx={{ ...squareBoxSx, borderRadius: '12px', transform: 'unset' }} />
-                        <Skeleton variant='text' sx={{ transform: 'unset' }} />
-                        <Skeleton variant='text' width='60%' sx={{ transform: 'unset' }} />
+                        <Skeleton variant='text' sx={{ transform: 'unset', marginTop: '8px' }} />
+                        <Skeleton variant='text' width='60%' sx={{ transform: 'unset', marginTop: '2px' }} />
                     </Box>
                 ))
             }

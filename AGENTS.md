@@ -30,7 +30,7 @@ renderer/                     渲染层（Next.js）
   pages/                      路由页面（Pages Router）
     home.tsx / index.tsx      首页（index 转发 home）
     login.tsx / init.tsx      登录 / 创建根账户
-    album/{[id],management,upload}.tsx  album/edit/[albumId].tsx
+    album/{[id],management,recent,upload}.tsx  album/edit/[albumId].tsx
     lyric/fetchlog.tsx        歌词拉取记录页（URL 驱动分页与筛选）
     artist/[id].tsx  series/index.tsx  songlist/[id].tsx
     search/index.tsx  favoriate.tsx  daily30.tsx  userDetail.tsx
@@ -42,6 +42,7 @@ renderer/                     渲染层（Next.js）
     MusicControlPannel/       播放控制面板（HTML5 audio 播放器在此；四种播放模式：列表循环/顺序/随机/单曲循环，随机=纯随机索引+历史栈回退，模式经 config.playbackMethod 持久化，非 Electron 走 localStorage）
     MusicContextMenu/         音乐右键菜单（menuType 含 history=播放历史行，多「删除播放记录」项）
     MusicRow/                 首页曲目横滑行（整行作播放列表；滚动条隐藏，翻页由两侧悬浮箭头承担——行悬停淡入、点击平滑滚 80% 可见宽、到头侧不渲染、触屏 @media(hover:none) 隐藏走手势横滑；含 MusicRowSkeleton 加载骨架）
+    AlbumCard/                专辑卡片（封面+曲目数遮罩+标题/艺人，自 home.tsx 抽出，首页「最新上传」与 /album/recent 共用）
     Auth/LoginDialog.tsx
     Common/                   通用组件（Toast、Icon、Input、ImageSkeleton…）
   lib/
