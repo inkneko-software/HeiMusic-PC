@@ -2,7 +2,7 @@ import { Box, Button, CardMedia, Dialog, IconButton, InputBase, TextField, Typog
 import Slide from '@mui/material/Slide';
 import { TransitionProps } from '@mui/material/transitions';
 import React from "react";
-import { IMusicInfo, IPlayingMusicInfo } from "./MusicControlPannel";
+import { IMusicInfo, IPlayingMusicInfo, PlaybackMethod } from "./MusicControlPannel";
 import { coverUrlOf, onCoverError } from "../../lib/coverUrl";
 import { useTheme } from "@mui/styles"
 
@@ -13,7 +13,9 @@ import QueueMusic from "@mui/icons-material/QueueMusicRounded"
 import VolumeDown from "@mui/icons-material/VolumeDownRounded"
 import VolumeOff from "@mui/icons-material/VolumeOff"
 import Repeat from "@mui/icons-material/RepeatRounded"
-import RepeatOne from "@mui/icons-material/RepeatOne"
+import RepeatOne from "@mui/icons-material/RepeatOneRounded"
+import PlaylistPlay from "@mui/icons-material/PlaylistPlayRounded"
+import Shuffle from "@mui/icons-material/ShuffleRounded"
 import FavoriteBorderOutlinedIcon from '@mui/icons-material/FavoriteBorderOutlined';
 import FavoriteOutlinedIcon from '@mui/icons-material/FavoriteOutlined';
 import MusicSlider from "./MusicSlider"
@@ -40,6 +42,7 @@ export interface IFullScreenMusicPannelProps {
     currentMusicInfo: IPlayingMusicInfo,
     timeLabel: string,
     playing: boolean,
+    playbackMethod: PlaybackMethod,
     handleLoopOptionClick: () => void,
     handlePrevClick: () => void,
     handlePlayButtonClick: () => void,
@@ -310,10 +313,16 @@ export default function FullScreenMusicPannel(props: IFullScreenMusicPannelProps
                     }
                 </Box>
                 <Box sx={{ flexGrow: "2", margin: "auto auto", textAlign: "center", display: { xs: 'none', sm: 'block' } }} >
-                    <IconButton size="small" sx={{ color: theme.palette.text.primary }} onClick={props.handleLoopOptionClick}><Repeat sx={{ fontSize: "20px" }} /></IconButton>
+                    {/* 播放模式：顺序播放为"不循环"中性色，其余循环态用主题色高亮（与底栏 MusicControlPannel 一致） */}
+                    <IconButton size="small" sx={{ color: props.playbackMethod === 'sequence' ? theme.palette.text.primary : theme.palette.primary.main }} onClick={props.handleLoopOptionClick}>
+                        {props.playbackMethod === 'loop' && <Repeat sx={{ fontSize: "20px" }} />}
+                        {props.playbackMethod === 'sequence' && <PlaylistPlay sx={{ fontSize: "20px" }} />}
+                        {props.playbackMethod === 'random' && <Shuffle sx={{ fontSize: "20px" }} />}
+                        {props.playbackMethod === 'repeat' && <RepeatOne sx={{ fontSize: "20px" }} />}
+                    </IconButton>
                     <IconButton size="small" sx={{ color: theme.palette.text.primary }} onClick={props.handlePrevClick} ><SkipPrevious sx={{ fontSize: "32px" }} /></IconButton>
                     <IconButton size="small" color="primary" onClick={() => { props.handlePlayButtonClick() }} >{props.playBtnIcon}</IconButton>
-                    <IconButton size="small" sx={{ color: theme.palette.text.primary }} onClick={props.handleNextClick} ><SkipNext sx={{ fontSize: "32px" }} /></IconButton>
+                    <IconButton size="small" sx={{ color: theme.palette.text.primary }} onClick={() => props.handleNextClick()} ><SkipNext sx={{ fontSize: "32px" }} /></IconButton>
                     <VolumePannel
                         open={volumePanelOpen}
                         value={props.volume}
@@ -337,7 +346,7 @@ export default function FullScreenMusicPannel(props: IFullScreenMusicPannelProps
                 <Box sx={{ display: { xs: 'flex', sm: 'none' }, alignItems: 'center', flex: '0 0 auto' }}>
                     <IconButton sx={{ color: theme.palette.text.primary }} onClick={props.handlePrevClick} ><SkipPrevious sx={{ fontSize: '30px' }} /></IconButton>
                     <IconButton color="primary" onClick={() => { props.handlePlayButtonClick() }} >{props.playBtnIcon}</IconButton>
-                    <IconButton sx={{ color: theme.palette.text.primary }} onClick={props.handleNextClick} ><SkipNext sx={{ fontSize: '30px' }} /></IconButton>
+                    <IconButton sx={{ color: theme.palette.text.primary }} onClick={() => props.handleNextClick()} ><SkipNext sx={{ fontSize: '30px' }} /></IconButton>
                 </Box>
                 <Box sx={{ display: { xs: 'flex', sm: 'none' }, alignItems: 'center', justifyContent: 'flex-end', flex: '1 1 0px' }}>
                     <IconButton sx={{ color: theme.palette.text.primary }} onClick={() => props.setPlaylistOpen(true)}><QueueMusic /></IconButton>

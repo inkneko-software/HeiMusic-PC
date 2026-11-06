@@ -21,5 +21,7 @@ interface HeiMusicConfig {
     },
     theme: string,
     lastPannel: string,
-    closeWindowMinimized?: boolean
+    closeWindowMinimized?: boolean,
+    /** 播放模式：loop=列表循环 / sequence=顺序播放 / random=随机播放 / repeat=单曲循环 */
+    playbackMethod?: 'loop' | 'sequence' | 'random' | 'repeat'
 }

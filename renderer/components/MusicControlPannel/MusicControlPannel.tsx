@@ -11,6 +11,8 @@ import VolumeDown from "@mui/icons-material/VolumeDown"
 import VolumeOff from "@mui/icons-material/VolumeOff"
 import Repeat from "@mui/icons-material/Repeat"
 import RepeatOne from "@mui/icons-material/RepeatOne"
+import PlaylistPlay from "@mui/icons-material/PlaylistPlay"
+import Shuffle from "@mui/icons-material/Shuffle"
 import IconButton from '@mui/material/IconButton';
 
 import { styled, useTheme } from "@mui/styles"
@@ -32,13 +34,16 @@ import { Capacitor } from "@capacitor/core"
 import { mediaSession } from "../../lib/mediaSession"
 import { nativeMediaUrl } from "../../lib/apiServer"
 
+/** 播放模式：loop=列表循环（环绕）/ sequence=顺序播放（到末尾停止）/ random=随机播放（纯随机索引，上一曲走历史栈回退）/ repeat=单曲循环（自然播完重播当前曲） */
+export type PlaybackMethod = 'loop' | 'sequence' | 'random' | 'repeat'
+
 /**
  * 更换播放列表并播放
- * 
+ *
  * 通过以下方式调用
- * 
+ *
  * const event = new CustomEvent<IChangePlayListEvent>("music-control-panel::changePlayList", {detail: {...}});
- * 
+ *
  * document.dispatchEvent(event)
  */
 export interface IChangePlayListEvent {
@@ -179,8 +184,10 @@ function MusicControlPannel(props: IMusicControlPannel) {
         },
         isLargeTrackMusic: false
     });
-    const [playbackMethod, setPlaybackMethod] = React.useState<'loop' | 'sequence' | 'random' | 'repeate'>("loop")
+    const [playbackMethod, setPlaybackMethod] = React.useState<PlaybackMethod>("loop")
     const [musicList, setMusicList] = React.useState<IMusicInfo[]>([]);
+    //随机模式的历史下标栈：随机切曲前压入当前下标，上一曲 pop 回退；列表变动（换列表/入队）时清空，避免下标失效
+    const randomHistoryRef = React.useRef<number[]>([]);
     const [playlistOpen, setPlaylistOpen] = React.useState(false);
 
     const [fullScreenMusicPannelOpen, setFullScreenMusicPannelOpen] = React.useState(false);
@@ -208,17 +215,18 @@ function MusicControlPannel(props: IMusicControlPannel) {
 
 
         if (audioRef.current.paused) {
-            //设置主进程小窗口按钮
-            if (typeof (window) !== "undefined" && typeof (window.electronAPI) !== "undefined") {
-                window.electronAPI.thumbnail.playing();
-            }
-
             if (audioRef.current.src === '') {
                 const nextMusic = musicList[0];
                 setCurrentMusicInfo({ ...nextMusic, currentIndex: 0, currentQuality: nextMusic.qualityOption[0] });
                 audioRef.current.src = nativeMediaUrl(nextMusic.qualityOption[0].url);
                 reportedMusicIdRef.current = 0;
                 document.title = `${nextMusic.title} - HeiMusic!`;
+            } else if (!newList && currentMusicInfo.isLargeTrackMusic && audioRef.current.currentTime > currentMusicInfo.discEndTime) {
+                //大碟曲停在 discEndTime 之后（顺序播放末曲到点暂停）时恢复播放，先回碟内起点重播：普通曲 ended 态下
+                //play() 浏览器会自动 seek 回 0，大碟没有这个行为，不回起点会从镜像里别的曲目续播、且立刻被
+                //ontimeupdate 的到点检测再次暂停（表现为播放键点了没反应）。
+                //newList 为换源路径（changePlayList/changeMusic），闭包里的 currentMusicInfo 还是旧曲，须跳过
+                audioRef.current.currentTime = currentMusicInfo.discStartTime ?? 0;
             }
             audioRef.current.play();
             var counter = 0;
@@ -240,10 +248,6 @@ function MusicControlPannel(props: IMusicControlPannel) {
             }, 100)
 
         } else {
-            if (typeof (window) !== "undefined" && typeof (window.electronAPI) !== "undefined") {
-                window.electronAPI.thumbnail.paused();
-            }
-
             var counter = 0;
             sourceVolume = audioRef.current.volume;
             handle = setInterval(() => {
@@ -264,51 +268,116 @@ function MusicControlPannel(props: IMusicControlPannel) {
             }, 100)
 
         }
+    }, [musicList, currentMusicInfo])
+
+    //换曲到 musicList[index]：集中各播放模式分支重复的换源/大碟起点/打点/标题逻辑
+    //（先换源再定大碟起点：src 赋值触发 load() 会清掉已设的 currentTime，顺序须与 changePlayList/changeMusic 一致）
+    const switchToMusic = React.useCallback((index: number) => {
+        const audio = audioRef.current;
+        var nextMusic: IMusicInfo = musicList[index];
+        setCurrentMusicInfo({ ...nextMusic, currentIndex: index, currentQuality: nextMusic.qualityOption[0] });
+        audio.src = nativeMediaUrl(nextMusic.qualityOption[0].url);
+        reportedMusicIdRef.current = 0;
+        if (nextMusic.isLargeTrackMusic) {
+            audio.currentTime = nextMusic.discStartTime;
+        }
+        audio.play();
+        document.title = `${nextMusic.title} - HeiMusic!`;
     }, [musicList])
 
+    //切换播放模式：loop → sequence → random → repeat 轮换；Electron 存配置文件，非 Electron（网页/安卓）存 localStorage
     const handleLoopOptionClick = () => {
-
+        const order: PlaybackMethod[] = ['loop', 'sequence', 'random', 'repeat'];
+        const next = order[(order.indexOf(playbackMethod) + 1) % order.length];
+        setPlaybackMethod(next);
+        if (window !== undefined && window.electronAPI !== undefined) {
+            window.electronAPI.config.set("playbackMethod", next);
+            window.electronAPI.config.save();
+        } else {
+            localStorage.setItem('heimusic.playbackMethod', next);
+        }
     }
 
-    const handlePrevClick = React.useCallback(() => {
-        const audio = audioRef.current;
-        audio.currentTime = 0;
-        if (playbackMethod === 'loop') {
-            var nextIndex = currentMusicInfo.currentIndex - 1;
-            if (nextIndex === -1) {
-                nextIndex = musicList.length - 1;
+    //恢复上次播放模式：只在挂载时读一次，不进主 useEffect——它随换曲重跑，会把用户刚切的模式反复覆盖回配置值
+    React.useEffect(() => {
+        const isValidMethod = (value: unknown): value is PlaybackMethod =>
+            value === 'loop' || value === 'sequence' || value === 'random' || value === 'repeat';
+        if (window !== undefined && window.electronAPI !== undefined) {
+            window.electronAPI.config.get()
+                .then(config => {
+                    if (isValidMethod(config.playbackMethod)) {
+                        setPlaybackMethod(config.playbackMethod);
+                    }
+                })
+                .catch(error => {
+                    console.error('读取播放模式配置失败', error);
+                })
+        } else {
+            const saved = localStorage.getItem('heimusic.playbackMethod');
+            if (isValidMethod(saved)) {
+                setPlaybackMethod(saved);
             }
-            var nextMusic: IMusicInfo = musicList[nextIndex];
-            setCurrentMusicInfo({ ...nextMusic, currentIndex: nextIndex, currentQuality: nextMusic.qualityOption[0] });
-            audio.src = nativeMediaUrl(nextMusic.qualityOption[0].url);
-            reportedMusicIdRef.current = 0;
-            if (nextMusic.isLargeTrackMusic) {
-                audio.currentTime = nextMusic.discStartTime;
-            }
-            audio.play();
-            document.title = `${nextMusic.title} - HeiMusic!`;
         }
-    }, [playbackMethod, currentMusicInfo, musicList])
+    }, [])
 
-    const handleNextClick = React.useCallback(() => {
+    const handlePrevClick = React.useCallback(() => {
+        if (musicList.length === 0) {
+            return;
+        }
         const audio = audioRef.current;
-        if (playbackMethod === 'loop') {
-            audio.currentTime = 0;
+        //先回到本曲起点：后续分支若不切曲（顺序到头/随机栈空）即等效重播当前曲；大碟曲必须回碟内起点，落 0 会跳进镜像里别的曲目
+        audio.currentTime = currentMusicInfo.isLargeTrackMusic ? (currentMusicInfo.discStartTime ?? 0) : 0;
+        if (playbackMethod === 'loop' || playbackMethod === 'repeat') {
+            var prevIndex = currentMusicInfo.currentIndex - 1;
+            if (prevIndex === -1) {
+                prevIndex = musicList.length - 1;
+            }
+            switchToMusic(prevIndex);
+        } else if (playbackMethod === 'sequence') {
+            //顺序播放：已到列表头不再环绕，重播当前曲
+            if (currentMusicInfo.currentIndex > 0) {
+                switchToMusic(currentMusicInfo.currentIndex - 1);
+            }
+        } else if (playbackMethod === 'random') {
+            //随机播放：沿历史栈回退到刚才那首，栈空则重播当前曲
+            if (randomHistoryRef.current.length > 0) {
+                switchToMusic(randomHistoryRef.current.pop()!);
+            }
+        }
+    }, [playbackMethod, currentMusicInfo, musicList, switchToMusic])
+
+    //auto=true 表示自然播完（onended/大碟到点）：单曲循环下重播当前曲而非前进；手动切歌/热键/媒体通知仍前进
+    const handleNextClick = React.useCallback((auto: boolean = false) => {
+        if (musicList.length === 0) {
+            return;
+        }
+        const audio = audioRef.current;
+        if (playbackMethod === 'loop' || (playbackMethod === 'repeat' && !auto)) {
             var nextIndex = currentMusicInfo.currentIndex + 1;
             if (nextIndex === musicList.length) {
                 nextIndex = 0;
             }
-            var nextMusic: IMusicInfo = musicList[nextIndex];
-            setCurrentMusicInfo({ ...nextMusic, currentIndex: nextIndex, currentQuality: nextMusic.qualityOption[0] });
-            audio.src = nativeMediaUrl(nextMusic.qualityOption[0].url);
-            reportedMusicIdRef.current = 0;
-            if (nextMusic.isLargeTrackMusic) {
-                audio.currentTime = nextMusic.discStartTime;
+            switchToMusic(nextIndex);
+        } else if (playbackMethod === 'sequence') {
+            //顺序播放：到列表末尾不再回绕，自然播完即停（ended 后 onpause 会把按钮态置回播放）
+            if (currentMusicInfo.currentIndex + 1 < musicList.length) {
+                switchToMusic(currentMusicInfo.currentIndex + 1);
+            } else if (auto && currentMusicInfo.isLargeTrackMusic) {
+                //大碟整轨的末曲没有 onended 兜底（碟镜像后续还有别的曲目音频），到点须主动暂停；
+                //进度留在末尾显示"已播完"，回碟内起点推迟到恢复播放时（见 handlePlayButtonClick）
+                audio.pause();
             }
+        } else if (playbackMethod === 'random') {
+            //随机播放：纯随机索引（允许连播同曲），切曲前把当前下标压栈供上一曲回退
+            randomHistoryRef.current.push(currentMusicInfo.currentIndex);
+            switchToMusic(Math.floor(Math.random() * musicList.length));
+        } else if (playbackMethod === 'repeat' && auto) {
+            //单曲循环自然播完：不换源，回本曲起点重播；重置打点标记让每次重播都计入播放历史
+            reportedMusicIdRef.current = 0;
+            audio.currentTime = currentMusicInfo.isLargeTrackMusic ? (currentMusicInfo.discStartTime ?? 0) : 0;
             audio.play();
-            document.title = `${nextMusic.title} - HeiMusic!`;
         }
-    }, [playbackMethod, currentMusicInfo, musicList])
+    }, [playbackMethod, currentMusicInfo, musicList, switchToMusic])
 
     const handleProgressSeek = React.useCallback((newProgress: number) => {
         const audio = audioRef.current;
@@ -376,7 +445,7 @@ function MusicControlPannel(props: IMusicControlPannel) {
                     }
                 }
                 if (currentMusicInfo.isLargeTrackMusic && audio.currentTime > currentMusicInfo.discEndTime && audio.duration !== 0) {
-                    handleNextClick();
+                    handleNextClick(true);
                 }
 
             }
@@ -404,6 +473,11 @@ function MusicControlPannel(props: IMusicControlPannel) {
                 }
                 //系统媒体通知：播放态推送（进度为碟内相对位置）
                 void mediaSession.updatePlaybackState({ playing: true, positionSec: relPositionSec(audio, currentMusicInfo), speed: 1 });
+                //任务栏缩略图按钮：跟随实际播放态在 onplay/onpause 统一同步——切歌（switchToMusic）、单曲循环重播、
+                //顺序播放播完自动停止等路径都不经 handlePlayButtonClick，放在那里会残留错误的按钮态
+                if (window.electronAPI !== undefined) {
+                    window.electronAPI.thumbnail.playing();
+                }
             }
 
             audio.onpause = () => {
@@ -411,18 +485,24 @@ function MusicControlPannel(props: IMusicControlPannel) {
                 setPlayBtnIcon(<PlayCircleFilled style={{ fontSize: 42 }} />)
                 //系统媒体通知：暂停态推送
                 void mediaSession.updatePlaybackState({ playing: false, positionSec: relPositionSec(audio, currentMusicInfo), speed: 0 });
+                //任务栏缩略图按钮：暂停态同步（见 onplay）
+                if (window.electronAPI !== undefined) {
+                    window.electronAPI.thumbnail.paused();
+                }
             }
 
             audio.onended = () => {
                 console.log(currentMusicInfo);
                 console.log(audio.duration);
                 console.log(audio.currentTime)
-                handleNextClick();
+                handleNextClick(true);
             }
 
 
             //更换播放列表消息的处理函数
             const changePlayList = (data: CustomEvent<IChangePlayListEvent>) => {
+                //更换列表语境，随机模式历史栈里的旧下标全部失效
+                randomHistoryRef.current = [];
                 var index = data.detail.startIndex;
                 var newMusic = data.detail.playlist[index]
                 setMusicList(data.detail.playlist);
@@ -460,6 +540,8 @@ function MusicControlPannel(props: IMusicControlPannel) {
 
             //添加音乐到播放列表消息的处理函数
             const enqueue = (data: CustomEvent<IEnqueueEvent>) => {
+                //入队会把已在列表中的曲目移到队尾、重排下标，历史栈清空
+                randomHistoryRef.current = [];
                 //对于已在播放列表中的音乐，将其移动到队尾
                 //也就是先将已存在的歌曲删掉，然后追加音乐列表
                 var enqueueMusicList = data.detail.musicList;
@@ -477,6 +559,8 @@ function MusicControlPannel(props: IMusicControlPannel) {
 
             //添加音乐到下一曲播放消息的处理函数
             const enqueueNext = (data: CustomEvent<IEnqueueNextEvent>) => {
+                //当前曲之后插入会使后续下标漂移，历史栈清空
+                randomHistoryRef.current = [];
                 var enqueueMusicList = data.detail.musicList;
                 //判断给定的音乐是否不在入队的音乐列表中
                 const isNotEnqueuedMusic = (music: IMusicInfo) => {
@@ -500,9 +584,11 @@ function MusicControlPannel(props: IMusicControlPannel) {
 
             //electron 相关操作
             if (window.electronAPI !== undefined) {
-                window.electronAPI.playback.next(handleNextClick);
+                //next/play 必须包一层箭头函数：ipcRenderer.on 会把 IPC 事件对象透传为回调首参，truthy 的事件会被误判——
+                //next 误判成 auto=true（单曲循环下热键下一曲变成重播当前曲），play 误判成 newList=true（跳过大碟末曲回起点）
+                window.electronAPI.playback.next(() => handleNextClick());
                 window.electronAPI.playback.prev(handlePrevClick);
-                window.electronAPI.playback.play(handlePlayButtonClick);
+                window.electronAPI.playback.play(() => handlePlayButtonClick());
             }
 
             //Android 系统媒体控制（通知栏/锁屏/耳机按键）反向控制播放器（与上面 electron 块并列）。
@@ -647,14 +733,22 @@ function MusicControlPannel(props: IMusicControlPannel) {
                 </Box>
                 {/* 控制面板 */}
                 <Box sx={{ flexGrow: "1", margin: "auto auto", textAlign: "center", '@media(max-width:600px)': { display: 'none' } }} >
-                    {/* 播放模式 */}
-                    <IconButton sx={{ color: theme.palette.text.primary }} onClick={handleLoopOptionClick}><Repeat style={{ fontSize: 24 }} /></IconButton>
+                    {/* 播放模式：顺序播放为"不循环"中性色，其余循环态用主题色高亮 */}
+                    <IconButton
+                        sx={{ color: playbackMethod === 'sequence' ? theme.palette.text.primary : theme.palette.primary.main }}
+                        onClick={handleLoopOptionClick}
+                    >
+                        {playbackMethod === 'loop' && <Repeat style={{ fontSize: 24 }} />}
+                        {playbackMethod === 'sequence' && <PlaylistPlay style={{ fontSize: 24 }} />}
+                        {playbackMethod === 'random' && <Shuffle style={{ fontSize: 24 }} />}
+                        {playbackMethod === 'repeat' && <RepeatOne style={{ fontSize: 24 }} />}
+                    </IconButton>
                     {/* 上一曲 */}
                     <IconButton sx={{ color: theme.palette.text.primary }} onClick={handlePrevClick} ><SkipPrevious style={{ fontSize: 34 }} /></IconButton>
                     {/* 播放 */}
                     <IconButton color="primary" onClick={() => { handlePlayButtonClick() }} >{playBtnIcon}</IconButton>
                     {/* 下一曲 */}
-                    <IconButton sx={{ color: theme.palette.text.primary }} onClick={handleNextClick} ><SkipNext style={{ fontSize: 34 }} /></IconButton>
+                    <IconButton sx={{ color: theme.palette.text.primary }} onClick={() => handleNextClick()} ><SkipNext style={{ fontSize: 34 }} /></IconButton>
                     {/* 音量 */}
                     <VolumePannel
                         open={volumePanelOpen}
@@ -712,6 +806,7 @@ function MusicControlPannel(props: IMusicControlPannel) {
                 currentMusicInfo={currentMusicInfo}
                 timeLabel={timeLabel}
                 playing={playing}
+                playbackMethod={playbackMethod}
                 handleLoopOptionClick={handleLoopOptionClick}
                 handlePrevClick={handlePrevClick}
                 handlePlayButtonClick={handlePlayButtonClick}

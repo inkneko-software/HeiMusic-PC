@@ -39,7 +39,7 @@ renderer/                     渲染层（Next.js）
   components/
     HeiMusicMainLayout.tsx    主布局；导出 pushToast
     LeftPannel/               侧边导航
-    MusicControlPannel/       播放控制面板（HTML5 audio 播放器在此）
+    MusicControlPannel/       播放控制面板（HTML5 audio 播放器在此；四种播放模式：列表循环/顺序/随机/单曲循环，随机=纯随机索引+历史栈回退，模式经 config.playbackMethod 持久化，非 Electron 走 localStorage）
     MusicContextMenu/         音乐右键菜单（menuType 含 history=播放历史行，多「删除播放记录」项）
     MusicRow/                 首页曲目横滑行（整行作播放列表；含 MusicRowSkeleton 加载骨架）
     Auth/LoginDialog.tsx
