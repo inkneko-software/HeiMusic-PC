@@ -2,7 +2,7 @@ import { Box, Button, CardMedia, Dialog, IconButton, InputBase, TextField, Typog
 import Slide from '@mui/material/Slide';
 import { TransitionProps } from '@mui/material/transitions';
 import React from "react";
-import { IMusicInfo, IPlayingMusicInfo, PlaybackMethod } from "./MusicControlPannel";
+import { IMusicInfo, IPlayingMusicInfo, PlaybackMethod, PLAYBACK_METHOD_LABEL } from "./MusicControlPannel";
 import { coverUrlOf, onCoverError } from "../../lib/coverUrl";
 import { useTheme } from "@mui/styles"
 
@@ -313,8 +313,8 @@ export default function FullScreenMusicPannel(props: IFullScreenMusicPannelProps
                     }
                 </Box>
                 <Box sx={{ flexGrow: "2", margin: "auto auto", textAlign: "center", display: { xs: 'none', sm: 'block' } }} >
-                    {/* 播放模式：顺序播放为"不循环"中性色，其余循环态用主题色高亮（与底栏 MusicControlPannel 一致） */}
-                    <IconButton size="small" sx={{ color: props.playbackMethod === 'sequence' ? theme.palette.text.primary : theme.palette.primary.main }} onClick={props.handleLoopOptionClick}>
+                    {/* 播放模式：四种模式统一中性色（与底栏 MusicControlPannel 一致）；仅以图标区分，悬停提示当前模式名 */}
+                    <IconButton size="small" title={PLAYBACK_METHOD_LABEL[props.playbackMethod]} sx={{ color: theme.palette.text.primary }} onClick={props.handleLoopOptionClick}>
                         {props.playbackMethod === 'loop' && <Repeat sx={{ fontSize: "20px" }} />}
                         {props.playbackMethod === 'sequence' && <PlaylistPlay sx={{ fontSize: "20px" }} />}
                         {props.playbackMethod === 'random' && <Shuffle sx={{ fontSize: "20px" }} />}

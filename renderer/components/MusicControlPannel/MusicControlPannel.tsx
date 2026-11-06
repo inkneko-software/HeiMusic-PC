@@ -37,6 +37,14 @@ import { nativeMediaUrl } from "../../lib/apiServer"
 /** 播放模式：loop=列表循环（环绕）/ sequence=顺序播放（到末尾停止）/ random=随机播放（纯随机索引，上一曲走历史栈回退）/ repeat=单曲循环（自然播完重播当前曲） */
 export type PlaybackMethod = 'loop' | 'sequence' | 'random' | 'repeat'
 
+/** 播放模式中文名，用作播放模式按钮的悬停提示（底栏与全屏面板共用） */
+export const PLAYBACK_METHOD_LABEL: Record<PlaybackMethod, string> = {
+    loop: '列表循环',
+    sequence: '顺序播放',
+    random: '随机播放',
+    repeat: '单曲循环',
+}
+
 /**
  * 更换播放列表并播放
  *
@@ -733,9 +741,10 @@ function MusicControlPannel(props: IMusicControlPannel) {
                 </Box>
                 {/* 控制面板 */}
                 <Box sx={{ flexGrow: "1", margin: "auto auto", textAlign: "center", '@media(max-width:600px)': { display: 'none' } }} >
-                    {/* 播放模式：顺序播放为"不循环"中性色，其余循环态用主题色高亮 */}
+                    {/* 播放模式：四种模式统一中性色，与上一曲/下一曲一致；仅以图标区分，悬停提示当前模式名 */}
                     <IconButton
-                        sx={{ color: playbackMethod === 'sequence' ? theme.palette.text.primary : theme.palette.primary.main }}
+                        title={PLAYBACK_METHOD_LABEL[playbackMethod]}
+                        sx={{ color: theme.palette.text.primary }}
                         onClick={handleLoopOptionClick}
                     >
                         {playbackMethod === 'loop' && <Repeat style={{ fontSize: 24 }} />}
