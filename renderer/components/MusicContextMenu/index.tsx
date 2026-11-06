@@ -284,28 +284,6 @@ export default function useMusicContextMenu(props: UseMusicContextMenuProps): [
     //     </ClickAwayListener>
     // )
 
-    const customizedScrollBarStyle = {
-        '::-webkit-scrollbar': {
-            width: '6px',
-            height: ' 8px',
-            backgroundColor: '#e3e3e3', /* or add it to the track */
-            borderRadius: '4px',
-        },
-        '::-webkit-scrollbar-thumb': {
-            background: '#aaa',
-            borderRadius: '4px',
-        },
-        '::-webkit-scrollbar-thumb:hover': {
-            background: '#7c7c7c',
-            borderRadius: '4px',
-        },
-        '::-webkit-scrollbar-track': {
-
-        }
-
-
-    }
-
     const PopoverContextMenu = (
         <Popover
             open={musicMenuOpen}
@@ -484,7 +462,7 @@ export default function useMusicContextMenu(props: UseMusicContextMenuProps): [
                 }}
                 anchorEl={addButtonRef.current}
                 anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
-                sx={{ ".MuiPaper-root": { ...customizedScrollBarStyle }, WebkitAppRegion: 'no-drag' }}
+                sx={{ WebkitAppRegion: 'no-drag' }}
             >
                 <Paper
                     sx={{ display: 'flex', flexDirection: 'column', width: "160px", backgroundColor: theme.palette.pannelBackground.main, }}

@@ -241,45 +241,6 @@ function HeiMusicMainLayout({ children }) {
             });
     }
 
-    const customizedHiddenScrollBarStyle = {
-        '::-webkit-scrollbar': {
-            width: '6px',
-            height: ' 8px',
-            backgroundColor: 'rgba(0,0,0,0)', /* or add it to the track */
-            borderRadius: '4px',
-        },
-        '::-webkit-scrollbar-thumb': {
-            background: 'rgba(0,0,0,0)',
-            borderRadius: '4px',
-        },
-        '::-webkit-scrollbar-thumb:hover': {
-            background: 'rgba(0,0,0,0)',
-            borderRadius: '4px',
-        },
-        '::-webkit-scrollbar-track': {
-
-        }
-    }
-    const customizedScrollBarStyle = {
-        '::-webkit-scrollbar': {
-            width: '6px',
-            height: ' 8px',
-            backgroundColor: '#e3e3e3', /* or add it to the track */
-            borderRadius: '4px',
-        },
-        '::-webkit-scrollbar-thumb': {
-            background: '#aaa',
-            borderRadius: '4px',
-        },
-        '::-webkit-scrollbar-thumb:hover': {
-            background: '#7c7c7c',
-            borderRadius: '4px',
-        },
-        '::-webkit-scrollbar-track': {
-
-        }
-    }
-
     return (
         <HeiMusicUserContext.Provider value={{ userDetail: userDetail }}>
         <Box sx={{ width: 'calc(100vw)', height: 'calc(100%)', display: 'flex', flexDirection: 'column', maxHeight: '100%', overflow: 'hidden', background: `url(${heimusicThemeContext.backgroundUrl})`, backgroundRepeat: 'no-repeat', backgroundSize: 'cover' }}>
@@ -396,7 +357,7 @@ function HeiMusicMainLayout({ children }) {
             </Box>
             {/* 左侧面板 与 右侧 */}
             <Box sx={{ display: 'flex', flexGrow: '1', height: "calc(100% - 64px)" }}>
-                <LeftPannel sx={[{ width: `${leftPannelWidth}px`, height: "calc(100%)", maxHeight: "calc(100%)", flex: '0 0 auto', overflowY: 'auto', display: 'flex', flexDirection: 'column', background: theme.palette.pannelBackground.main, ...customizedHiddenScrollBarStyle, ':hover': { ...customizedScrollBarStyle }, '@media(max-width:600px)': { display: 'none' } },]} />
+                <LeftPannel sx={[{ width: `${leftPannelWidth}px`, height: "calc(100%)", maxHeight: "calc(100%)", flex: '0 0 auto', overflowY: 'auto', display: 'flex', flexDirection: 'column', background: theme.palette.pannelBackground.main, '@media(max-width:600px)': { display: 'none' } },]} />
                 <Drawer variant='temporary' open={leftPannelDrawerOpen} onClose={() => setLeftPannelDrawerOpen(false)} sx={{ height: "calc(100%)" }}>
                     <LeftPannel sx={[{ width: '196px', height: "calc(100%)", maxHeight: "calc(100%)", flex: '0 0 auto', overflowY: 'auto', display: 'flex', flexDirection: 'column', background: theme.palette.pannelBackground.main }]} />
                 </Drawer>

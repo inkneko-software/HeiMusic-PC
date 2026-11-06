@@ -183,3 +183,4 @@ npm run build                # nextron build，完整发布流程（同时重建
 - `android/app/build/`、`app/`、`dist/`、`node_modules/` 均为产物或依赖，不要手改或提交（`.gitignore` 已锚定根目录的 `/app` 与 `/dist`）。
 - CUE 音轨解析在主进程完成（`music-metadata`、`cue-parser`），渲染层通过 `music::parse` / `music::parseCue` 调用；APE/TAK 因 Chromium 内核限制暂不支持播放。
 - 全局热键（播放/上一曲/下一曲）在主进程注册，修改后调用 `config::setHotKey` 会自动注销旧键；配置保存后需 `config::saveAndReload` 生效。
+- **全局悬浮滚动条**：所有可滚动区域的滚动条平时全透明（占位固定 6px，无布局跳动），鼠标指针所在位置的滚动条浮现，触屏不显示走手势。实现全在 `renderer/pages/_app.tsx`：`<Head>` 全局样式（默认 thumb/track 透明 + `.heimusic-sb-hover` 作用域规则着色）+ 指针追踪 useEffect（`pointerover` 时给指针祖先链元素统一加类、离开窗口时清除，仅 `pointerType === 'mouse'`）。**勿改回「元素:hover::-webkit-scrollbar-*」复合选择器**（左侧导航栏旧实现的写法，已随全局化移除）——Chromium 121+ 的滚动条伪元素样式不再响应元素的 `:hover` 状态（2026-11 于 Chromium 152 实测：悬停、滚动均不重绘，id/class 作用域规则则正常且动态切类即时重绘）。刻意完全隐藏滚动条的容器（首页横滑行 `MusicRow`、全屏面板歌词区）用 `::-webkit-scrollbar { display: none }`，不受类规则影响，勿删。
