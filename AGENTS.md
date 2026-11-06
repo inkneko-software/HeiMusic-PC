@@ -41,7 +41,7 @@ renderer/                     渲染层（Next.js）
     LeftPannel/               侧边导航
     MusicControlPannel/       播放控制面板（HTML5 audio 播放器在此；四种播放模式：列表循环/顺序/随机/单曲循环，随机=纯随机索引+历史栈回退，模式经 config.playbackMethod 持久化，非 Electron 走 localStorage）
     MusicContextMenu/         音乐右键菜单（menuType 含 history=播放历史行，多「删除播放记录」项）
-    MusicRow/                 首页曲目横滑行（整行作播放列表；含 MusicRowSkeleton 加载骨架）
+    MusicRow/                 首页曲目横滑行（整行作播放列表；滚动条隐藏，翻页由两侧悬浮箭头承担——行悬停淡入、点击平滑滚 80% 可见宽、到头侧不渲染、触屏 @media(hover:none) 隐藏走手势横滑；含 MusicRowSkeleton 加载骨架）
     Auth/LoginDialog.tsx
     Common/                   通用组件（Toast、Icon、Input、ImageSkeleton…）
   lib/

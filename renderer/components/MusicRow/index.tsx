@@ -1,10 +1,13 @@
 import Box from '@mui/material/Box'
 import CardMedia from '@mui/material/CardMedia'
+import IconButton from '@mui/material/IconButton'
 import Skeleton from '@mui/material/Skeleton'
 import Typography from '@mui/material/Typography'
+import ChevronLeftRoundedIcon from '@mui/icons-material/ChevronLeftRounded'
+import ChevronRightRoundedIcon from '@mui/icons-material/ChevronRightRounded'
 import PlayArrowRoundedIcon from '@mui/icons-material/PlayArrowRounded'
 import { useTheme } from '@mui/styles'
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 import useMusicContextMenu from '@components/MusicContextMenu'
 import { IChangePlayListEvent, IMusicInfo } from '@components/MusicControlPannel/MusicControlPannel'
@@ -34,19 +37,33 @@ const musicRowGap = { xs: '14px', sm: '20px', lg: '24px' } as const;
 /** 卡片宽度（行与骨架行共用） */
 const musicCardWidth = { xs: '104px', sm: '128px' } as const;
 
-/** 滚动条：恒定 6px 占位、拇指默认透明，悬停行时浮现——保持整洁的同时不牺牲鼠标用户的可发现性
- *  （普通滚轮无法滚动横向容器，完全隐藏会让整行滚不动；高度恒定可避免浮现时挤压内容导致卡片跳动） */
-const rowScrollSx = {
-    // Firefox（scrollbar-color 同样以透明实现默认隐藏）
-    scrollbarWidth: 'thin',
-    scrollbarColor: 'transparent transparent',
-    '::-webkit-scrollbar': { height: '6px' },
-    '::-webkit-scrollbar-thumb': { background: 'transparent', borderRadius: '3px' },
-    '::-webkit-scrollbar-track': { background: 'transparent' },
-    ':hover': {
-        scrollbarColor: 'rgba(128,128,128,0.4) transparent',
-    },
-    ':hover::-webkit-scrollbar-thumb': { background: 'rgba(128,128,128,0.4)' },
+/** 滚动条：完全隐藏（横向翻页由两侧悬浮箭头承担，触屏仍可手势横滑、鼠标可 Shift+滚轮），容器本身保持可滚动 */
+const rowScrollHiddenSx = {
+    scrollbarWidth: 'none', // Firefox
+    msOverflowStyle: 'none', // 旧版 Edge
+    '::-webkit-scrollbar': { display: 'none' }, // Chromium/WebKit
+} as const;
+
+/** 两侧悬浮翻页箭头的公共样式：圆形半透明深色底 + 白尖角；垂直居中于封面——封面为正方形、边长即卡片宽，
+ *  top 取半宽（xs 104/2、sm 128/2）即封面中心；默认透明且不拦截点击，行悬停时经 :hover .row-nav 淡入 */
+const navArrowSx = {
+    position: 'absolute',
+    top: { xs: 52, sm: 64 },
+    transform: 'translateY(-50%)',
+    zIndex: 3,
+    width: { xs: 30, sm: 34 },
+    height: { xs: 30, sm: 34 },
+    padding: 0,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    color: '#ffffff',
+    boxShadow: '0 2px 8px rgba(0,0,0,0.35)',
+    backdropFilter: 'blur(4px)',
+    opacity: 0,
+    pointerEvents: 'none',
+    transition: 'opacity 0.2s ease-in-out, background-color 0.2s ease-in-out',
+    ':hover': { backgroundColor: 'rgba(0,0,0,0.75)' },
+    // 触屏设备无行悬停可言且手势横滑更自然，不显示悬浮箭头
+    '@media (hover: none)': { display: 'none' },
 } as const;
 
 interface IMusicRowCard {
@@ -176,23 +193,38 @@ export default function MusicRow(props: IMusicRow) {
         menuType: props.menuType,
         onHistoryDelete: props.onHistoryDelete,
     });
-    //右缘渐隐提示还有更多内容可横滑；滚到尽头/无溢出时取消遮罩（mask 渐隐透出的是真实背景，兼容带背景图的半透明面板主题）
+    //两侧悬浮箭头与渐隐遮罩共用同一判定：对应方向还有未滚入的内容；8px 容差吸收亚像素与平滑滚动的尾差
     const scrollContainerRef = useRef<HTMLDivElement>(null);
+    const [canScrollLeft, setCanScrollLeft] = useState(false);
     const [canScrollRight, setCanScrollRight] = useState(false);
+
+    const updateScrollState = useCallback(() => {
+        const el = scrollContainerRef.current;
+        if (el === null) {
+            return;
+        }
+        setCanScrollLeft(el.scrollLeft > 8);
+        setCanScrollRight(el.scrollWidth - el.clientWidth - el.scrollLeft > 8);
+    }, []);
 
     useEffect(() => {
         const el = scrollContainerRef.current;
         if (el === null) {
             return;
         }
-        const check = () => {
-            setCanScrollRight(el.scrollWidth - el.clientWidth - el.scrollLeft > 8);
-        };
-        check();
-        const observer = new ResizeObserver(check);
+        updateScrollState();
+        const observer = new ResizeObserver(updateScrollState);
         observer.observe(el);
         return () => observer.disconnect();
-    }, [props.musicList.length]);
+    }, [props.musicList.length, updateScrollState]);
+
+    /** 点击悬浮箭头的滚动量：可见宽度的 80%，平滑滚动 */
+    const scrollByNav = (direction: -1 | 1) => {
+        const el = scrollContainerRef.current;
+        if (el !== null) {
+            el.scrollBy({ left: direction * Math.round(el.clientWidth * 0.8), behavior: 'smooth' });
+        }
+    };
 
     const playFrom = (index: number) => {
         const event = new CustomEvent<IChangePlayListEvent>("music-control-panel::changePlayList", {
@@ -204,39 +236,53 @@ export default function MusicRow(props: IMusicRow) {
         document.dispatchEvent(event)
     }
 
+    //边缘渐隐遮罩：哪侧还有未滚入的内容就在哪侧渐隐（mask 渐隐透出的是真实背景，兼容带背景图的半透明面板主题）
+    const rowMaskImage = `linear-gradient(to right, ${canScrollLeft ? 'transparent 0, #000 40px' : '#000 0'}, #000 calc(100% - ${canScrollRight ? '40px' : '0px'}), transparent 100%)`;
+
     return (
-        <Box
-            ref={scrollContainerRef}
-            onScroll={() => {
-                const el = scrollContainerRef.current;
-                if (el !== null) {
-                    setCanScrollRight(el.scrollWidth - el.clientWidth - el.scrollLeft > 8);
+        <Box sx={{ position: 'relative', ':hover .row-nav': { opacity: 1, pointerEvents: 'auto' } }}>
+            <Box
+                ref={scrollContainerRef}
+                onScroll={updateScrollState}
+                sx={[{
+                    display: 'flex', gap: musicRowGap, overflowX: 'auto', paddingBottom: '8px', ...rowScrollHiddenSx
+                }, (canScrollLeft || canScrollRight) && {
+                    WebkitMaskImage: rowMaskImage,
+                    maskImage: rowMaskImage,
+                }]}
+            >
+                {
+                    props.musicList.map((music, index) => (
+                        <MusicRowCard
+                            key={music.musicId}
+                            music={music}
+                            index={index}
+                            rank={props.showRank ? index + 1 : undefined}
+                            cornerCaption={props.cornerCaptions?.[index]}
+                            onPlay={playFrom}
+                            onContextMenu={(event, index) => {
+                                event.preventDefault();
+                                popupMusicContextMenu({ left: event.clientX, top: event.clientY }, index);
+                            }}
+                        />
+                    ))
                 }
-            }}
-            sx={[{
-                display: 'flex', gap: musicRowGap, overflowX: 'auto', paddingBottom: '8px', ...rowScrollSx
-            }, canScrollRight && {
-                WebkitMaskImage: 'linear-gradient(to right, #000 calc(100% - 40px), transparent 100%)',
-                maskImage: 'linear-gradient(to right, #000 calc(100% - 40px), transparent 100%)',
-            }]}
-        >
+                {MusicContextMenu}
+            </Box>
             {
-                props.musicList.map((music, index) => (
-                    <MusicRowCard
-                        key={music.musicId}
-                        music={music}
-                        index={index}
-                        rank={props.showRank ? index + 1 : undefined}
-                        cornerCaption={props.cornerCaptions?.[index]}
-                        onPlay={playFrom}
-                        onContextMenu={(event, index) => {
-                            event.preventDefault();
-                            popupMusicContextMenu({ left: event.clientX, top: event.clientY }, index);
-                        }}
-                    />
-                ))
+                canScrollLeft &&
+                <IconButton className='row-nav' aria-label='向左滚动' onClick={() => scrollByNav(-1)}
+                    sx={{ ...navArrowSx, left: { xs: 2, sm: 4 } }}>
+                    <ChevronLeftRoundedIcon sx={{ fontSize: { xs: '1.2rem', sm: '1.4rem' } }} />
+                </IconButton>
             }
-            {MusicContextMenu}
+            {
+                canScrollRight &&
+                <IconButton className='row-nav' aria-label='向右滚动' onClick={() => scrollByNav(1)}
+                    sx={{ ...navArrowSx, right: { xs: 2, sm: 4 } }}>
+                    <ChevronRightRoundedIcon sx={{ fontSize: { xs: '1.2rem', sm: '1.4rem' } }} />
+                </IconButton>
+            }
         </Box>
     )
 }
